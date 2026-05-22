@@ -1,0 +1,4 @@
+- [x] Import and load the environment variables for testing
+- [x] Verify that DATABASE_URL is loaded and accessible
+- [ ] Initialize tests for bulk scoring endpoint
+- [ ] Verify Azure deployment status and availability of `gpt-4o-mini.
