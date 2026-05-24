@@ -372,7 +372,7 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---- WEB SCRAPING ENDPOINT (používa cloudscraper a BeautifulSoup) ----
+# ---- WEB SCRAPING ENDPOINT (opravený, bez .astext) ----
 class ScrapeRequest(BaseModel):
     url: str
 
@@ -507,13 +507,19 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         else:
             tier = "DEAD"
         
-        # Ulož alebo aktualizuj (merge podľa URL)
+        # Ulož alebo aktualizuj (najskôr skús nájsť podľa primary_identifier, potom podľa URL v lead_metadata – bez .astext)
         async with async_session() as session:
-            stmt = select(Lead).where(Lead.lead_metadata["url"].astext == url)
+            # Skús nájsť existujúceho leada podľa primary_identifier (názov firmy)
+            existing = None
+            stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
             existing = (await session.execute(stmt)).scalar_one_or_none()
             if not existing:
-                stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
-                existing = (await session.execute(stmt)).scalar_one_or_none()
+                # Ak nie je podľa názvu, prejdi všetky leady a skontroluj, či niektorý má v lead_metadata rovnakú URL
+                all_leads = (await session.execute(select(Lead))).scalars().all()
+                for lead in all_leads:
+                    if lead.lead_metadata and lead.lead_metadata.get("scraped_url") == url:
+                        existing = lead
+                        break
             if existing:
                 existing.contact_channels = lead_data["contact_channels"]
                 existing.vertical = vertical
