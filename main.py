@@ -3,7 +3,7 @@ import uuid
 import datetime
 import re
 import json
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Tuple
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,7 +26,7 @@ engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
-# --- SQLAlchemy modely ---
+# --- SQLAlchemy modely (nezmenené) ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -70,7 +70,7 @@ class EmailTemplate(Base):
     body_template = Column(String, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
-# --- Inicializácia DB a seed ---
+# --- Inicializácia DB a seed (nezmenené) ---
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -118,7 +118,7 @@ async def seed_orgs():
             session.add(org2)
         await session.commit()
 
-# --- Rule-based scoring evaluator ---
+# --- Rule-based scoring evaluator (nezmenený) ---
 def evaluate_lead(lead_data: dict, scoring_rules: dict) -> int:
     score = 0
     for sig in scoring_rules.get("positive_signals", []):
@@ -159,12 +159,11 @@ async def startup():
     await init_db()
     await seed_orgs()
 
-# ---- Health check ----
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
-# ---- CRUD pre leadov ----
+# ---- CRUD pre leadov (nezmenené) ----
 class LeadCreate(BaseModel):
     lead_data: dict
 
@@ -256,7 +255,7 @@ async def delete_lead(lead_id: int, user=Depends(verify_jwt)):
         await session.commit()
         return {"ok": True}
 
-# ---- Bulk scoring ----
+# ---- Bulk scoring (nezmenené) ----
 class BulkLeadItem(BaseModel):
     lead_id: str
     lead_data: dict
@@ -296,7 +295,7 @@ async def bulk_score(request: BulkScoreRequest, user=Depends(verify_jwt)):
         ))
     return {"results": results}
 
-# ---- Manuálny AI adjustment ----
+# ---- Manuálny AI adjustment (nezmenené) ----
 class AdjustRequest(BaseModel):
     ai_adjustment: int
 
@@ -323,7 +322,7 @@ async def adjust_lead(lead_id: int, req: AdjustRequest, user=Depends(verify_jwt)
         await session.refresh(lead)
         return lead
 
-# ---- Email templates endpoints ----
+# ---- Email templates (nezmenené) ----
 class EmailTemplateCreate(BaseModel):
     name: str
     subject: str
@@ -371,232 +370,251 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---- WEB SCRAPING ENDPOINT (s detekciou role a bodmi) ----
+# ---------- NOVÉ: Pomocné funkcie pre scrapovanie podstránok ----------
+SUBPAGE_PATHS = [
+    "kontakt", "contact", "kontakty",
+    "obchodne-podmienky", "obchodni-podmienky", "terms", "podmienky",
+    "o-nas", "about-us", "onas", "about",
+    "impressum"
+]
+
+def extract_contact_info_from_soup(soup: BeautifulSoup, base_url: str) -> Dict[str, Any]:
+    """Extrahuje email, telefón, meno a rolu z BeautifulSoup objektu."""
+    result = {
+        "emails": set(),
+        "phones": set(),
+        "names": set(),
+        "text": soup.get_text(),
+        "role_hints": []
+    }
+    # Emaily z mailto a textu
+    for mailto in soup.find_all('a', href=lambda x: x and x.startswith('mailto:')):
+        email = mailto['href'].replace('mailto:', '').split('?')[0]
+        result["emails"].add(email)
+    text = result["text"]
+    email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
+    result["emails"].update(email_matches)
+    
+    # Telefóny
+    for tel in soup.find_all('a', href=lambda x: x and x.startswith('tel:')):
+        phone = tel['href'].replace('tel:', '')
+        result["phones"].add(phone)
+    phone_matches = re.findall(r'(\+421|\+420|0)\d{9,12}', text)
+    result["phones"].update(phone_matches)
+    
+    # Mená (jednoduché: dve slová s veľkými začiatočnými písmenami, okolie telefónu alebo v kontaktoch)
+    # Najprv okolie telefónov
+    for phone in result["phones"]:
+        pos = text.find(phone)
+        if pos != -1:
+            surrounding = text[max(0, pos-100):min(len(text), pos+100)]
+            name_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', surrounding)
+            if name_match:
+                result["names"].add(name_match.group(1))
+    # Hľadaj sekciu "Kontakt" a pod.
+    kontakt_tag = soup.find(text=re.compile(r'Kontakt|Kontakty|Manažér|Ředitel|CEO', re.IGNORECASE))
+    if kontakt_tag:
+        parent = kontakt_tag.find_parent()
+        if parent:
+            name_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', parent.get_text())
+            if name_match:
+                result["names"].add(name_match.group(1))
+    return result
+
+def detect_role_and_points(text: str) -> Tuple[str, int]:
+    """Vyhodnotí rolu a body na základe textu (z viacerých stránok)."""
+    text_lower = text.lower()
+    # Zoznam rolov s kľúčovými slovami a bodmi (vo fáze 2.1 – preferujeme roly)
+    role_keywords = [
+        (["ceo", "generálny riaditeľ", "riaditeľ", "director", "executive", "jednateľ"], "CEO / Riaditeľ", 50),
+        (["obchod", "sales", "obchodný", "obchodné oddelenie", "sales manager"], "Obchod / Sales", 40),
+        (["marketing", "marketingový", "marketing manager"], "Marketing", 30),
+        (["info", "podpora", "support", "customer", "zákaznícka linka", "zákaznícky servis"], "Info / Podpora", 20),
+        (["reklamácia", "reklamácie", "claim"], "Reklamácia", 10),
+    ]
+    for keywords, role, points in role_keywords:
+        if any(kw in text_lower for kw in keywords):
+            return role, points
+    # Fallback: ak nie je rola, ale je meno a telefón -> aspoň bežný kontakt
+    # Toto sa bude používať v hlavnej logike, nie tu. Vrátime "Bežný kontakt" s 5 bodmi.
+    return "Bežný kontakt", 5
+
+def scrape_url(scraper, url: str) -> Optional[BeautifulSoup]:
+    """Vráti BeautifulSoup objekt ak je status 200, inak None."""
+    try:
+        response = scraper.get(url, timeout=15)
+        if response.status_code == 200:
+            return BeautifulSoup(response.text, 'html.parser')
+    except Exception:
+        pass
+    return None
+
+# ---- WEB SCRAPING ENDPOINT (vylepšený o podstránky) ----
 class ScrapeRequest(BaseModel):
     url: str
 
-def detect_role_and_points(text: str) -> tuple:
-    """
-    Vráti (role_name, points) na základe textu.
-    """
-    text_lower = text.lower()
-    # Zoznam (regex, rola, body)
-    patterns = [
-        (r'\b(ceo|chief executive officer|generálny riaditeľ|konateľ|riaditeľ spoločnosti)\b', 'CEO / Riaditeľ', 50),
-        (r'\b(riaditeľ|director|head of|vedúci|manažér|manager|obchodný riaditeľ|sales director|commercial director)\b', 'Riaditeľ / Manažér', 40),
-        (r'\b(obchodn[ý|é] oddelenie|sales department|obchod|sales|obchodný zástupca|account manager|key account manager)\b', 'Obchodné oddelenie / Sales', 30),
-        (r'\b(marketing|marketingové oddelenie|marketing manager|brand manager)\b', 'Marketing', 20),
-        (r'\b(info|information|podpora|support|customer support|zákaznícka linka|helpline)\b', 'Info / Podpora', 10),
-        (r'\b(reklamácia|reklamačné oddelenie|complaint|claims)\b', 'Reklamácia / Claims', 5),
-    ]
-    for pattern, role, points in patterns:
-        if re.search(pattern, text_lower):
-            return role, points
-    return 'Všeobecný kontakt', 0
-
 @app.post("/api/leads/scrape")
 async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
-    url = req.url.strip()
-    if not url.startswith(("http://", "https://")):
-        url = "https://" + url
-    try:
-        scraper = cloudscraper.create_scraper()
-        response = scraper.get(url, timeout=30)
-        if response.status_code != 200:
-            raise HTTPException(status_code=400, detail=f"Nepodarilo sa načítať stránku (status {response.status_code})")
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Názov firmy
-        title = soup.title.string if soup.title else ""
-        meta_title = soup.find('meta', attrs={'name': 'application-name'})
-        meta_title = meta_title['content'] if meta_title else ""
-        primary_identifier = meta_title or title or url.split("//")[-1].split("/")[0]
-        
-        # Email
-        email = None
-        mailto = soup.find('a', href=lambda x: x and x.startswith('mailto:'))
-        if mailto:
-            email = mailto['href'].replace('mailto:', '')
-        if not email:
-            email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', response.text)
-            if email_match:
-                email = email_match.group(0)
-        
-        # Telefón
-        phone = None
-        tel = soup.find('a', href=lambda x: x and x.startswith('tel:'))
-        if tel:
-            phone = tel['href'].replace('tel:', '')
-        if not phone:
-            phone_match = re.search(r'(\+421|\+420|0)\d{9,12}', response.text)
-            if phone_match:
-                phone = phone_match.group(0)
-        
-        # Meno osoby a rola
-        name = None
-        role = 'Všeobecný kontakt'
+    base_url = req.url.strip()
+    if not base_url.startswith(("http://", "https://")):
+        base_url = "https://" + base_url
+    # Odstránenie lomítka na konci
+    base_url = base_url.rstrip('/')
+    
+    scraper = cloudscraper.create_scraper()
+    aggregated = {
+        "emails": set(),
+        "phones": set(),
+        "names": set(),
+        "all_text": "",
+        "main_title": "",
+        "meta_title": ""
+    }
+    
+    # 1. Scrapni hlavnú stránku
+    main_soup = scrape_url(scraper, base_url)
+    if not main_soup:
+        raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
+    main_info = extract_contact_info_from_soup(main_soup, base_url)
+    aggregated["emails"].update(main_info["emails"])
+    aggregated["phones"].update(main_info["phones"])
+    aggregated["names"].update(main_info["names"])
+    aggregated["all_text"] += main_info["text"] + "\n"
+    if main_soup.title:
+        aggregated["main_title"] = main_soup.title.string or ""
+    meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
+    aggregated["meta_title"] = meta_title['content'] if meta_title else ""
+    
+    # 2. Scrapni podstránky
+    for path in SUBPAGE_PATHS:
+        # Skús variant s /path a aj bez lomítka (niektoré stránky majú /kontakt)
+        for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+            soup = scrape_url(scraper, url_variant)
+            if soup:
+                info = extract_contact_info_from_soup(soup, base_url)
+                aggregated["emails"].update(info["emails"])
+                aggregated["phones"].update(info["phones"])
+                aggregated["names"].update(info["names"])
+                aggregated["all_text"] += info["text"] + "\n"
+                break  # ak jedna varianta funguje, nehľadaj druhú pre rovnaký path
+    
+    # 3. Zlúčenie výsledkov
+    email = next(iter(aggregated["emails"])) if aggregated["emails"] else None
+    phone = next(iter(aggregated["phones"])) if aggregated["phones"] else None
+    name = next(iter(aggregated["names"])) if aggregated["names"] else None
+    
+    # 4. Detekcia roly a bodov z celého textu (všetky scrapnuté stránky)
+    role, role_points = detect_role_and_points(aggregated["all_text"])
+    # Ak rola nie je špecifická (Bežný kontakt) ale existuje meno a telefón, daj aspoň 5 bodov
+    if role == "Bežný kontakt" and name and phone:
+        role_points = 5
+    elif role == "Bežný kontakt" and (phone or email):
+        role_points = 5
+    elif role == "Bežný kontakt":
         role_points = 0
-        
-        # Skús nájsť meno v okolí telefónu
-        if phone:
-            pos = response.text.find(phone)
-            if pos != -1:
-                surrounding = response.text[max(0, pos-200):min(len(response.text), pos+200)]
-                name_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', surrounding)
-                if name_match:
-                    name = name_match.group(1)
-                # Detekcia role v okolí telefónu
-                role, role_points = detect_role_and_points(surrounding)
-        # Ak sme nenašli meno, skús hľadať sekciu "Kontakt"
-        if not name:
-            kontakt = soup.find(text=re.compile("Kontakt|Kontakty|Manažér|Ředitel", re.IGNORECASE))
-            if kontakt:
-                parent = kontakt.find_parent()
-                if parent:
-                    parent_text = parent.get_text()
-                    name_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', parent_text)
-                    if name_match:
-                        name = name_match.group(1)
-                    # Detekcia role v rodičovskej časti
-                    role, role_points = detect_role_and_points(parent_text)
-        # Ak sme nenašli ani meno ani rolu, skús prehľadať celú stránku
-        if role_points == 0:
-            role, role_points = detect_role_and_points(response.text)
-        
-        # Vertikála
-        body_text = soup.get_text().lower()
-        vertical = "Unknown"
-        if any(w in body_text for w in ["home garden", "zahrada", "nábytok", "doplnky"]):
-            vertical = "Home & Garden"
-        elif any(w in body_text for w in ["beauty", "kozmetika", "parfum"]):
-            vertical = "Beauty & Personal Care"
-        elif any(w in body_text for w in ["pet", "zvieratá", "pes", "mačka"]):
-            vertical = "Pet Supplies"
-        
-        # Body za kontakt – namiesto pôvodnej logiky použijeme role_points
-        # Ale zachováme aj pôvodné level pre kompatibilitu (premenujeme na contact_level)
-        has_phone = bool(phone)
-        has_email = bool(email)
-        has_name = bool(name and len(name.split()) >= 2)
-        # Pôvodné level vypočítame (pre prípad, že role_points je 0)
-        if has_name and has_phone and (email and email.split('@')[0].lower() not in ['info', 'obchod', 'sales', 'support', 'contact']):
-            level = 3
-        elif has_name and has_phone:
-            level = 2
-        elif has_phone or has_email:
-            level = 1
-        else:
-            level = 0
-        
-        # Body za kontakt: ak sme získali role_points, použijeme ich, inak pôvodné body
-        if role_points > 0:
-            points = role_points
-        else:
-            if has_name and has_phone and (email and email.split('@')[0].lower() not in ['info', 'obchod', 'sales', 'support', 'contact']):
-                points = 45
-            elif has_name and has_phone:
-                points = 30
-            elif has_phone or has_email:
-                points = 15
-            else:
-                points = 0
-        
-        # Priprav dáta pre leada
-        lead_data = {
-            "primary_identifier": primary_identifier,
-            "vertical": vertical,
-            "contact_channels": {},
-            "platform_presence": {},
-            "lead_metadata": {
-                "scraped_url": url,
-                "scraped_at": datetime.datetime.utcnow().isoformat(),
-                "scraped_email": email,
-                "scraped_phone": phone,
-                "contact_name": name,
-                "contact_role": role,
-                "contact_points": points,
-                "contact_level": level   # zachovame aj pre kompatibilitu
-            }
+    
+    # 5. Určenie primárneho identifikátora (názov firmy)
+    primary_identifier = aggregated["meta_title"] or aggregated["main_title"] or base_url.split("//")[-1].split("/")[0]
+    
+    # 6. Vertikála (z hlavnej stránky a celého textu)
+    body_text = aggregated["all_text"].lower()
+    vertical = "Unknown"
+    if any(w in body_text for w in ["home garden", "zahrada", "nábytok", "doplnky"]):
+        vertical = "Home & Garden"
+    elif any(w in body_text for w in ["beauty", "kozmetika", "parfum"]):
+        vertical = "Beauty & Personal Care"
+    elif any(w in body_text for w in ["pet", "zvieratá", "pes", "mačka"]):
+        vertical = "Pet Supplies"
+    
+    # 7. Príprava lead_data pre scoring
+    lead_data = {
+        "primary_identifier": primary_identifier,
+        "vertical": vertical,
+        "contact_channels": {},
+        "platform_presence": {},
+        "lead_metadata": {
+            "scraped_url": base_url,
+            "scraped_at": datetime.datetime.utcnow().isoformat(),
+            "scraped_email": email,
+            "scraped_phone": phone,
+            "contact_name": name,
+            "contact_role": role,
+            "contact_points": role_points
         }
-        if email:
-            lead_data["contact_channels"]["email"] = email
-        if phone:
-            lead_data["contact_channels"]["phone"] = phone
-        
-        # Získaj organizačnú konfiguráciu
-        org_id = 1
-        async with async_session() as session:
-            result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
-            org_config = result.scalar_one_or_none()
-            if not org_config:
-                raise HTTPException(status_code=404, detail="Organization config not found")
-        
-        # Skóre
-        rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
-        final_score = rule_score + points
-        final_score = max(0, min(100, final_score))
-        thresholds = org_config.tier_thresholds
-        if final_score >= thresholds["HOT"]:
-            tier = "HOT"
-        elif final_score >= thresholds["WARM"]:
-            tier = "WARM"
-        elif final_score >= thresholds["COOL"]:
-            tier = "COOL"
+    }
+    if email:
+        lead_data["contact_channels"]["email"] = email
+    if phone:
+        lead_data["contact_channels"]["phone"] = phone
+    
+    # 8. Získaj organizačnú konfiguráciu
+    org_id = 1
+    async with async_session() as session:
+        result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
+        org_config = result.scalar_one_or_none()
+        if not org_config:
+            raise HTTPException(status_code=404, detail="Organization config not found")
+    
+    # 9. Skóre (rule-based + body za kontakt)
+    rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
+    final_score = rule_score + role_points
+    final_score = max(0, min(100, final_score))
+    thresholds = org_config.tier_thresholds
+    if final_score >= thresholds["HOT"]: tier = "HOT"
+    elif final_score >= thresholds["WARM"]: tier = "WARM"
+    elif final_score >= thresholds["COOL"]: tier = "COOL"
+    else: tier = "DEAD"
+    
+    # 10. Ulož alebo aktualizuj (podľa primary_identifier)
+    async with async_session() as session:
+        existing = None
+        stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
+        existing = (await session.execute(stmt)).scalar_one_or_none()
+        if not existing:
+            # Skús podľa URL v lead_metadata (prejdi všetky)
+            all_leads = (await session.execute(select(Lead))).scalars().all()
+            for lead in all_leads:
+                if lead.lead_metadata and lead.lead_metadata.get("scraped_url") == base_url:
+                    existing = lead
+                    break
+        if existing:
+            existing.contact_channels = lead_data["contact_channels"]
+            existing.vertical = vertical
+            existing.lead_metadata = lead_data["lead_metadata"]
+            existing.rule_score = rule_score
+            existing.final_score = final_score
+            existing.tier = tier
+            await session.commit()
+            await session.refresh(existing)
+            return {
+                "action": "updated",
+                "lead_id": existing.lead_id,
+                "primary_identifier": primary_identifier,
+                "score": final_score,
+                "tier": tier,
+                "extracted": {"email": email, "phone": phone, "contact_name": name, "vertical": vertical, "contact_role": role, "contact_points": role_points}
+            }
         else:
-            tier = "DEAD"
-        
-        # Ulož alebo aktualizuj (rovnaká logika ako predtým)
-        async with async_session() as session:
-            existing = None
-            stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
-            existing = (await session.execute(stmt)).scalar_one_or_none()
-            if not existing:
-                all_leads = (await session.execute(select(Lead))).scalars().all()
-                for lead in all_leads:
-                    if lead.lead_metadata and lead.lead_metadata.get("scraped_url") == url:
-                        existing = lead
-                        break
-            if existing:
-                existing.contact_channels = lead_data["contact_channels"]
-                existing.vertical = vertical
-                existing.lead_metadata = lead_data["lead_metadata"]
-                existing.rule_score = rule_score
-                existing.final_score = final_score
-                existing.tier = tier
-                await session.commit()
-                await session.refresh(existing)
-                return {
-                    "action": "updated",
-                    "lead_id": existing.lead_id,
-                    "primary_identifier": existing.primary_identifier,
-                    "score": final_score,
-                    "tier": tier,
-                    "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "vertical": vertical}
-                }
-            else:
-                new_lead = Lead(
-                    lead_id=str(uuid.uuid4()),
-                    primary_identifier=primary_identifier,
-                    vertical=vertical,
-                    platform_presence=lead_data.get("platform_presence", {}),
-                    value_indicators=lead_data.get("value_indicators", {}),
-                    lead_metadata=lead_data,
-                    contact_channels=lead_data.get("contact_channels", {}),
-                    rule_score=rule_score,
-                    final_score=final_score,
-                    tier=tier
-                )
-                session.add(new_lead)
-                await session.commit()
-                await session.refresh(new_lead)
-                return {
-                    "action": "created",
-                    "lead_id": new_lead.lead_id,
-                    "primary_identifier": primary_identifier,
-                    "score": final_score,
-                    "tier": tier,
-                    "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "vertical": vertical}
-                }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Scraping error: {str(e)}")
+            new_lead = Lead(
+                lead_id=str(uuid.uuid4()),
+                primary_identifier=primary_identifier,
+                vertical=vertical,
+                platform_presence=lead_data.get("platform_presence", {}),
+                value_indicators=lead_data.get("value_indicators", {}),
+                lead_metadata=lead_data,
+                contact_channels=lead_data.get("contact_channels", {}),
+                rule_score=rule_score,
+                final_score=final_score,
+                tier=tier
+            )
+            session.add(new_lead)
+            await session.commit()
+            await session.refresh(new_lead)
+            return {
+                "action": "created",
+                "lead_id": new_lead.lead_id,
+                "primary_identifier": primary_identifier,
+                "score": final_score,
+                "tier": tier,
+                "extracted": {"email": email, "phone": phone, "contact_name": name, "vertical": vertical, "contact_role": role, "contact_points": role_points}
+            }
