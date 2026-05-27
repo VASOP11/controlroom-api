@@ -370,14 +370,13 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- NOVÉ: Pomocné funkcie pre scrapovanie s prioritou kontaktnej osoby ----------
+# ---------- NOVÉ: Pomocné funkcie pre scrapovanie s prioritou kontaktnej osoby a fallbackom ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
 def scrape_url(scraper, url: str) -> Optional[BeautifulSoup]:
-    """Vráti BeautifulSoup objekt ak je status 200, inak None."""
     try:
         response = scraper.get(url, timeout=15)
         if response.status_code == 200:
@@ -386,24 +385,23 @@ def scrape_url(scraper, url: str) -> Optional[BeautifulSoup]:
         pass
     return None
 
-def extract_contacts_with_priority(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
+def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone: str = None, fallback_email: str = None) -> Dict[str, Any]:
     """
     Vráti najhodnotnejší kontakt (meno, rola, email, telefón) zo stránky.
-    Priorita: 1. osoba s rolou, 2. osoba bez role ale s kontaktom, 3. fallback info.
+    Ak nájde meno/rolu bez telefónu, pokúsi sa použiť fallback_phone (prvé číslo z hlavnej stránky).
     """
     text = soup.get_text()
-    # Nájdi všetky potenciálne mená (dve slová s veľkými písmenami, povoľ aj tituly)
     name_matches = re.findall(r'([A-Z][a-z]+ [A-Z][a-z]+)', text)
     
     best = {"name": None, "role": None, "email": None, "phone": None, "score": 0}
-    # Pre každé meno skús nájsť v jeho okolí rolu, email, telefón
+    
+    # 1. Hľadaj mená s rolou a kontaktmi v okolí
     for name in set(name_matches):
         pos = text.find(name)
         if pos == -1:
             continue
         surrounding = text[max(0, pos-400):min(len(text), pos+400)]
         
-        # Detekcia role v okolí
         role_keywords = {
             "CEO / Riaditeľ": 50,
             "Obchod / Sales": 40,
@@ -418,35 +416,39 @@ def extract_contacts_with_priority(soup: BeautifulSoup, url: str) -> Dict[str, A
                 found_points = points
                 break
         
-        # Hľadaj email a telefón v okolí
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', surrounding)
         phone_match = re.search(r'(\+421|\+420|0)\d{9,12}', surrounding)
         
-        # Ak máme aspoň meno, a buď email alebo telefón, a rolu (alebo aspoň kus)
         if (email_match or phone_match) and (found_role or len(name) > 5):
             if found_points > best["score"]:
                 best = {
                     "name": name,
-                    "role": found_role if found_role else "Obchod / Sales",
+                    "role": found_role if found_role else ("Obchod / Sales" if (email_match or phone_match) else None),
                     "email": email_match.group(0) if email_match else None,
                     "phone": phone_match.group(0) if phone_match else None,
-                    "score": found_points if found_points else 30
+                    "score": found_points if found_points else (30 if (email_match or phone_match) else 0)
                 }
-    # Ak sme nenašli žiadne meno s kontaktom, hľadaj aspoň email/telefón kdekoľvek
+    
+    # 2. Ak sme našli meno/rolu, ale nemá telefón, použijeme fallback (prvé číslo z hlavnej stránky)
+    if best["name"] and best["role"] and not best["phone"] and fallback_phone:
+        best["phone"] = fallback_phone
+        if not best["email"] and fallback_email:
+            best["email"] = fallback_email
+    
+    # 3. Ak sme nenašli žiadne meno/rolu, použijeme fallback ako Info / Podpora
     if best["score"] == 0:
-        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
-        phone_match = re.search(r'(\+421|\+420|0)\d{9,12}', text)
-        if email_match or phone_match:
+        if fallback_phone or fallback_email:
             best = {
                 "name": None,
                 "role": "Info / Podpora",
-                "email": email_match.group(0) if email_match else None,
-                "phone": phone_match.group(0) if phone_match else None,
+                "email": fallback_email,
+                "phone": fallback_phone,
                 "score": 10
             }
+    
     return best
 
-# ---- WEB SCRAPING ENDPOINT (vylepšený) ----
+# ---- WEB SCRAPING ENDPOINT (vylepšený s fallbackom) ----
 class ScrapeRequest(BaseModel):
     url: str
 
@@ -459,16 +461,20 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     
     scraper = cloudscraper.create_scraper()
     all_text = ""
-    aggregated_contact = {"name": None, "role": None, "email": None, "phone": None, "score": 0}
     
-    # Scrapni hlavnú stránku
+    # Najprv scrapni hlavnú stránku a získaj prvé telefónne číslo a email (fallback)
     main_soup = scrape_url(scraper, base_url)
     if not main_soup:
         raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
-    all_text += main_soup.get_text()
-    best_main = extract_contacts_with_priority(main_soup, base_url)
-    if best_main["score"] > aggregated_contact["score"]:
-        aggregated_contact = best_main
+    main_text = main_soup.get_text()
+    all_text += main_text
+    first_phone = re.search(r'(\+421|\+420|0)\d{9,12}', main_text)
+    fallback_phone = first_phone.group(0) if first_phone else None
+    first_email = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', main_text)
+    fallback_email = first_email.group(0) if first_email else None
+    
+    # Hľadaj kontakt s prioritou (najprv na hlavnej stránke, potom na podstránkach)
+    aggregated_contact = extract_contacts_with_priority(main_soup, base_url, fallback_phone, fallback_email)
     
     # Prejdi podstránky (len kým nenájdeš kontakt s vysokým skóre >= 40)
     for path in SUBPAGE_PATHS:
@@ -477,7 +483,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
             soup = scrape_url(scraper, url_variant)
             if soup:
-                info = extract_contacts_with_priority(soup, base_url)
+                info = extract_contacts_with_priority(soup, base_url, fallback_phone, fallback_email)
                 all_text += soup.get_text()
                 if info["score"] > aggregated_contact["score"]:
                     aggregated_contact = info
@@ -490,12 +496,20 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     phone = aggregated_contact["phone"]
     contact_points = aggregated_contact["score"]
     
+    # Ak sme nenašli žiadny telefón, použijeme fallback
+    if not phone and fallback_phone:
+        phone = fallback_phone
+        if not role:
+            role = "Info / Podpora"
+            contact_points = 10
+    if not email and fallback_email:
+        email = fallback_email
+    
     # Názov firmy z titulky
     title = main_soup.title.string if main_soup.title else ""
     meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
     meta_title = meta_title['content'] if meta_title else ""
     primary_identifier = meta_title or title or base_url.split("//")[-1].split("/")[0]
-    # Vyčisti názov (odstráň nadbytočné whitespace a nové riadky)
     primary_identifier = re.sub(r'\s+', ' ', primary_identifier).strip()
     
     # Vertikála (z celého textu)
