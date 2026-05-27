@@ -370,13 +370,13 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- NOVÉ: Pomocné funkcie pre scrapovanie s prioritou kontaktnej osoby a fallbackom ----------
+# ---------- Pomocné funkcie pre scrapovanie s prioritou kontaktnej osoby a fallbackom ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def scrape_url(scraper, url: str) -> Optional[BeautifulSoup]:
+def scrape_url(scraper, url: str):
     try:
         response = scraper.get(url, timeout=15)
         if response.status_code == 200:
@@ -448,156 +448,161 @@ def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone
     
     return best
 
-# ---- WEB SCRAPING ENDPOINT (vylepšený s fallbackom) ----
+# ---- WEB SCRAPING ENDPOINT (s detailným logovaním chýb) ----
 class ScrapeRequest(BaseModel):
     url: str
 
 @app.post("/api/leads/scrape")
 async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
-    base_url = req.url.strip()
-    if not base_url.startswith(("http://", "https://")):
-        base_url = "https://" + base_url
-    base_url = base_url.rstrip('/')
-    
-    scraper = cloudscraper.create_scraper()
-    all_text = ""
-    
-    # Najprv scrapni hlavnú stránku a získaj prvé telefónne číslo a email (fallback)
-    main_soup = scrape_url(scraper, base_url)
-    if not main_soup:
-        raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
-    main_text = main_soup.get_text()
-    all_text += main_text
-    first_phone = re.search(r'(\+421|\+420|0)\d{9,12}', main_text)
-    fallback_phone = first_phone.group(0) if first_phone else None
-    first_email = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', main_text)
-    fallback_email = first_email.group(0) if first_email else None
-    
-    # Hľadaj kontakt s prioritou (najprv na hlavnej stránke, potom na podstránkach)
-    aggregated_contact = extract_contacts_with_priority(main_soup, base_url, fallback_phone, fallback_email)
-    
-    # Prejdi podstránky (len kým nenájdeš kontakt s vysokým skóre >= 40)
-    for path in SUBPAGE_PATHS:
-        if aggregated_contact["score"] >= 40:
-            break
-        for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-            soup = scrape_url(scraper, url_variant)
-            if soup:
-                info = extract_contacts_with_priority(soup, base_url, fallback_phone, fallback_email)
-                all_text += soup.get_text()
-                if info["score"] > aggregated_contact["score"]:
-                    aggregated_contact = info
-                break  # stačí jedna varianta
-    
-    # Výsledné údaje
-    name = aggregated_contact["name"]
-    role = aggregated_contact["role"]
-    email = aggregated_contact["email"]
-    phone = aggregated_contact["phone"]
-    contact_points = aggregated_contact["score"]
-    
-    # Ak sme nenašli žiadny telefón, použijeme fallback
-    if not phone and fallback_phone:
-        phone = fallback_phone
-        if not role:
-            role = "Info / Podpora"
-            contact_points = 10
-    if not email and fallback_email:
-        email = fallback_email
-    
-    # Názov firmy z titulky
-    title = main_soup.title.string if main_soup.title else ""
-    meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
-    meta_title = meta_title['content'] if meta_title else ""
-    primary_identifier = meta_title or title or base_url.split("//")[-1].split("/")[0]
-    primary_identifier = re.sub(r'\s+', ' ', primary_identifier).strip()
-    
-    # Vertikála (z celého textu)
-    body_lower = all_text.lower()
-    vertical = "Unknown"
-    if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
-        vertical = "Home & Garden"
-    elif any(w in body_lower for w in ["beauty", "kozmetika"]):
-        vertical = "Beauty & Personal Care"
-    elif any(w in body_lower for w in ["pet", "zvieratá"]):
-        vertical = "Pet Supplies"
-    
-    # Priprav lead_data
-    lead_data = {
-        "primary_identifier": primary_identifier,
-        "vertical": vertical,
-        "contact_channels": {},
-        "lead_metadata": {
-            "scraped_url": base_url,
-            "scraped_at": datetime.datetime.utcnow().isoformat(),
-            "contact_name": name,
-            "contact_role": role if role else ("Info / Podpora" if contact_points > 0 else None),
-            "contact_points": contact_points,
-            "scraped_email": email,
-            "scraped_phone": phone
+    try:
+        base_url = req.url.strip()
+        if not base_url.startswith(("http://", "https://")):
+            base_url = "https://" + base_url
+        base_url = base_url.rstrip('/')
+        
+        scraper = cloudscraper.create_scraper()
+        all_text = ""
+        
+        # Hlavná stránka
+        main_soup = scrape_url(scraper, base_url)
+        if not main_soup:
+            raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
+        
+        main_text = main_soup.get_text()
+        all_text += main_text
+        first_phone = re.search(r'(\+421|\+420|0)\d{9,12}', main_text)
+        fallback_phone = first_phone.group(0) if first_phone else None
+        first_email = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', main_text)
+        fallback_email = first_email.group(0) if first_email else None
+        
+        aggregated_contact = extract_contacts_with_priority(main_soup, base_url, fallback_phone, fallback_email)
+        
+        # Podstránky
+        for path in SUBPAGE_PATHS:
+            if aggregated_contact["score"] >= 40:
+                break
+            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+                soup = scrape_url(scraper, url_variant)
+                if soup:
+                    info = extract_contacts_with_priority(soup, base_url, fallback_phone, fallback_email)
+                    all_text += soup.get_text()
+                    if info["score"] > aggregated_contact["score"]:
+                        aggregated_contact = info
+                    break
+        
+        name = aggregated_contact["name"]
+        role = aggregated_contact["role"]
+        email = aggregated_contact["email"]
+        phone = aggregated_contact["phone"]
+        contact_points = aggregated_contact["score"]
+        
+        # Fallback ak nemáme telefón/email
+        if not phone and fallback_phone:
+            phone = fallback_phone
+            if not role:
+                role = "Info / Podpora"
+                contact_points = 10
+        if not email and fallback_email:
+            email = fallback_email
+        
+        # Názov firmy
+        title = main_soup.title.string if main_soup.title else ""
+        meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
+        meta_title = meta_title['content'] if meta_title else ""
+        primary_identifier = meta_title or title or base_url.split("//")[-1].split("/")[0]
+        primary_identifier = re.sub(r'\s+', ' ', primary_identifier).strip()
+        
+        # Vertikála
+        body_lower = all_text.lower()
+        vertical = "Unknown"
+        if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
+            vertical = "Home & Garden"
+        elif any(w in body_lower for w in ["beauty", "kozmetika"]):
+            vertical = "Beauty & Personal Care"
+        elif any(w in body_lower for w in ["pet", "zvieratá"]):
+            vertical = "Pet Supplies"
+        
+        lead_data = {
+            "primary_identifier": primary_identifier,
+            "vertical": vertical,
+            "contact_channels": {},
+            "lead_metadata": {
+                "scraped_url": base_url,
+                "scraped_at": datetime.datetime.utcnow().isoformat(),
+                "contact_name": name,
+                "contact_role": role if role else ("Info / Podpora" if contact_points > 0 else None),
+                "contact_points": contact_points,
+                "scraped_email": email,
+                "scraped_phone": phone
+            }
         }
-    }
-    if email:
-        lead_data["contact_channels"]["email"] = email
-    if phone:
-        lead_data["contact_channels"]["phone"] = phone
-    
-    # Získaj konfiguráciu a spočítaj skóre
-    org_id = 1
-    async with async_session() as session:
-        result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
-        org_config = result.scalar_one_or_none()
-        if not org_config:
-            raise HTTPException(status_code=404, detail="Organization config not found")
-    rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
-    final_score = rule_score + contact_points
-    final_score = max(0, min(100, final_score))
-    thresholds = org_config.tier_thresholds
-    if final_score >= thresholds["HOT"]: tier = "HOT"
-    elif final_score >= thresholds["WARM"]: tier = "WARM"
-    elif final_score >= thresholds["COOL"]: tier = "COOL"
-    else: tier = "DEAD"
-    
-    # Ulož alebo aktualizuj (podľa primary_identifier)
-    async with async_session() as session:
-        stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
-        existing = (await session.execute(stmt)).scalar_one_or_none()
-        if existing:
-            existing.contact_channels = lead_data["contact_channels"]
-            existing.vertical = vertical
-            existing.lead_metadata = lead_data["lead_metadata"]
-            existing.rule_score = rule_score
-            existing.final_score = final_score
-            existing.tier = tier
-            await session.commit()
-            await session.refresh(existing)
-            return {
-                "action": "updated",
-                "lead_id": existing.lead_id,
-                "primary_identifier": primary_identifier,
-                "score": final_score,
-                "tier": tier,
-                "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
-            }
-        else:
-            new_lead = Lead(
-                lead_id=str(uuid.uuid4()),
-                primary_identifier=primary_identifier,
-                vertical=vertical,
-                lead_metadata=lead_data,
-                contact_channels=lead_data.get("contact_channels", {}),
-                rule_score=rule_score,
-                final_score=final_score,
-                tier=tier
-            )
-            session.add(new_lead)
-            await session.commit()
-            await session.refresh(new_lead)
-            return {
-                "action": "created",
-                "lead_id": new_lead.lead_id,
-                "primary_identifier": primary_identifier,
-                "score": final_score,
-                "tier": tier,
-                "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
-            }
+        if email:
+            lead_data["contact_channels"]["email"] = email
+        if phone:
+            lead_data["contact_channels"]["phone"] = phone
+        
+        # Konfigurácia a skóre
+        org_id = 1
+        async with async_session() as session:
+            result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
+            org_config = result.scalar_one_or_none()
+            if not org_config:
+                raise HTTPException(status_code=404, detail="Organization config not found")
+        
+        rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
+        final_score = rule_score + contact_points
+        final_score = max(0, min(100, final_score))
+        thresholds = org_config.tier_thresholds
+        if final_score >= thresholds["HOT"]: tier = "HOT"
+        elif final_score >= thresholds["WARM"]: tier = "WARM"
+        elif final_score >= thresholds["COOL"]: tier = "COOL"
+        else: tier = "DEAD"
+        
+        # Uloženie
+        async with async_session() as session:
+            stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
+            existing = (await session.execute(stmt)).scalar_one_or_none()
+            if existing:
+                existing.contact_channels = lead_data["contact_channels"]
+                existing.vertical = vertical
+                existing.lead_metadata = lead_data["lead_metadata"]
+                existing.rule_score = rule_score
+                existing.final_score = final_score
+                existing.tier = tier
+                await session.commit()
+                await session.refresh(existing)
+                return {
+                    "action": "updated",
+                    "lead_id": existing.lead_id,
+                    "primary_identifier": primary_identifier,
+                    "score": final_score,
+                    "tier": tier,
+                    "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
+                }
+            else:
+                new_lead = Lead(
+                    lead_id=str(uuid.uuid4()),
+                    primary_identifier=primary_identifier,
+                    vertical=vertical,
+                    lead_metadata=lead_data,
+                    contact_channels=lead_data.get("contact_channels", {}),
+                    rule_score=rule_score,
+                    final_score=final_score,
+                    tier=tier
+                )
+                session.add(new_lead)
+                await session.commit()
+                await session.refresh(new_lead)
+                return {
+                    "action": "created",
+                    "lead_id": new_lead.lead_id,
+                    "primary_identifier": primary_identifier,
+                    "score": final_score,
+                    "tier": tier,
+                    "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
+                }
+    except Exception as e:
+        import traceback
+        error_detail = f"Scraping error: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Toto sa vypíše do logov na Renderi
+        raise HTTPException(status_code=500, detail=error_detail)
