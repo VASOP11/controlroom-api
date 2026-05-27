@@ -26,15 +26,15 @@ engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
-# --- Azure OpenAI klient ---
+# --- Azure OpenAI klient (opravená API verzia) ---
 openai_client = AzureOpenAI(
     azure_endpoint=os.getenv("OPENAI_ENDPOINT"),
     api_key=os.getenv("OPENAI_API_KEY"),
-    api_version="2024-02-15-preview"
+    api_version="2024-12-01-preview"   # <--- opravené
 )
 GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 
-# --- SQLAlchemy modely ---
+# --- SQLAlchemy modely (nezmenené) ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
