@@ -3,6 +3,7 @@ import uuid
 import datetime
 import re
 import json
+import time
 from typing import List, Optional, Dict, Any, Tuple
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -377,12 +378,21 @@ SUBPAGE_PATHS = [
 ]
 
 def scrape_url(scraper, url: str):
+    """Vráti BeautifulSoup objekt ak je status 200, inak None. Používa requests namiesto cloudscraper."""
     try:
-        response = scraper.get(url, timeout=15)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'sk,en;q=0.9',
+        }
+        response = requests.get(url, timeout=30, headers=headers)
+        print(f"Scraping {url} - status: {response.status_code}")
         if response.status_code == 200:
             return BeautifulSoup(response.text, 'html.parser')
-    except Exception:
-        pass
+        else:
+            print(f"Chyba: status {response.status_code} pre {url}")
+    except Exception as e:
+        print(f"Výnimka pri scrapovaní {url}: {e}")
     return None
 
 def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone: str = None, fallback_email: str = None) -> Dict[str, Any]:
@@ -460,10 +470,11 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
         
+        # Cloudscraper vytvoríme, ale v scrape_url nepoužijeme (ignorujeme ho)
         scraper = cloudscraper.create_scraper()
         all_text = ""
         
-        # Hlavná stránka
+        # Hlavná stránka (použije upravenú scrape_url s requests)
         main_soup = scrape_url(scraper, base_url)
         if not main_soup:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
