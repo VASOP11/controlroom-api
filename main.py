@@ -27,7 +27,7 @@ engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
-# --- SQLAlchemy modely (nezmenené) ---
+# --- SQLAlchemy modely ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -71,7 +71,7 @@ class EmailTemplate(Base):
     body_template = Column(String, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
-# --- Inicializácia DB a seed (nezmenené) ---
+# --- Inicializácia DB a seed ---
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -119,7 +119,7 @@ async def seed_orgs():
             session.add(org2)
         await session.commit()
 
-# --- Rule-based scoring evaluator (nezmenený) ---
+# --- Rule-based scoring evaluator ---
 def evaluate_lead(lead_data: dict, scoring_rules: dict) -> int:
     score = 0
     for sig in scoring_rules.get("positive_signals", []):
@@ -164,7 +164,7 @@ async def startup():
 async def health():
     return {"status": "ok"}
 
-# ---- CRUD pre leadov (nezmenené) ----
+# ---- CRUD pre leadov ----
 class LeadCreate(BaseModel):
     lead_data: dict
 
@@ -256,7 +256,7 @@ async def delete_lead(lead_id: int, user=Depends(verify_jwt)):
         await session.commit()
         return {"ok": True}
 
-# ---- Bulk scoring (nezmenené) ----
+# ---- Bulk scoring ----
 class BulkLeadItem(BaseModel):
     lead_id: str
     lead_data: dict
@@ -296,7 +296,7 @@ async def bulk_score(request: BulkScoreRequest, user=Depends(verify_jwt)):
         ))
     return {"results": results}
 
-# ---- Manuálny AI adjustment (nezmenené) ----
+# ---- Manuálny AI adjustment ----
 class AdjustRequest(BaseModel):
     ai_adjustment: int
 
@@ -323,7 +323,7 @@ async def adjust_lead(lead_id: int, req: AdjustRequest, user=Depends(verify_jwt)
         await session.refresh(lead)
         return lead
 
-# ---- Email templates (nezmenené) ----
+# ---- Email templates ----
 class EmailTemplateCreate(BaseModel):
     name: str
     subject: str
@@ -371,14 +371,13 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- Pomocné funkcie pre scrapovanie s prioritou kontaktnej osoby a fallbackom ----------
+# ---------- SCRAPING ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
 def scrape_url(scraper, url: str):
-    """Vráti BeautifulSoup objekt ak je status 200, inak None. Používa requests namiesto cloudscraper."""
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
@@ -396,22 +395,14 @@ def scrape_url(scraper, url: str):
     return None
 
 def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone: str = None, fallback_email: str = None) -> Dict[str, Any]:
-    """
-    Vráti najhodnotnejší kontakt (meno, rola, email, telefón) zo stránky.
-    Ak nájde meno/rolu bez telefónu, pokúsi sa použiť fallback_phone (prvé číslo z hlavnej stránky).
-    """
     text = soup.get_text()
     name_matches = re.findall(r'([A-Z][a-z]+ [A-Z][a-z]+)', text)
-    
     best = {"name": None, "role": None, "email": None, "phone": None, "score": 0}
-    
-    # 1. Hľadaj mená s rolou a kontaktmi v okolí
     for name in set(name_matches):
         pos = text.find(name)
         if pos == -1:
             continue
         surrounding = text[max(0, pos-400):min(len(text), pos+400)]
-        
         role_keywords = {
             "CEO / Riaditeľ": 50,
             "Obchod / Sales": 40,
@@ -425,10 +416,8 @@ def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone
                 found_role = role
                 found_points = points
                 break
-        
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', surrounding)
-        phone_match = re.search(r'(\+421|\+420|0)\d{9,12}', surrounding)
-        
+        phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', surrounding)
         if (email_match or phone_match) and (found_role or len(name) > 5):
             if found_points > best["score"]:
                 best = {
@@ -438,14 +427,10 @@ def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone
                     "phone": phone_match.group(0) if phone_match else None,
                     "score": found_points if found_points else (30 if (email_match or phone_match) else 0)
                 }
-    
-    # 2. Ak sme našli meno/rolu, ale nemá telefón, použijeme fallback (prvé číslo z hlavnej stránky)
     if best["name"] and best["role"] and not best["phone"] and fallback_phone:
         best["phone"] = fallback_phone
         if not best["email"] and fallback_email:
             best["email"] = fallback_email
-    
-    # 3. Ak sme nenašli žiadne meno/rolu, použijeme fallback ako Info / Podpora
     if best["score"] == 0:
         if fallback_phone or fallback_email:
             best = {
@@ -455,10 +440,8 @@ def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone
                 "phone": fallback_phone,
                 "score": 10
             }
-    
     return best
 
-# ---- WEB SCRAPING ENDPOINT (s detailným logovaním chýb) ----
 class ScrapeRequest(BaseModel):
     url: str
 
@@ -469,26 +452,22 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not base_url.startswith(("http://", "https://")):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
-        
-        # Cloudscraper vytvoríme, ale v scrape_url nepoužijeme (ignorujeme ho)
         scraper = cloudscraper.create_scraper()
         all_text = ""
-        
-        # Hlavná stránka (použije upravenú scrape_url s requests)
         main_soup = scrape_url(scraper, base_url)
         if not main_soup:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
-        
         main_text = main_soup.get_text()
         all_text += main_text
-        first_phone = re.search(r'(\+421|\+420|0)\d{9,12}', main_text)
-        fallback_phone = first_phone.group(0) if first_phone else None
-        first_email = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', main_text)
-        fallback_email = first_email.group(0) if first_email else None
-        
+        fallback_phone = None
+        phone_match_main = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', main_text)
+        if phone_match_main:
+            fallback_phone = phone_match_main.group(0)
+        fallback_email = None
+        email_match_main = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', main_text)
+        if email_match_main:
+            fallback_email = email_match_main.group(0)
         aggregated_contact = extract_contacts_with_priority(main_soup, base_url, fallback_phone, fallback_email)
-        
-        # Podstránky
         for path in SUBPAGE_PATHS:
             if aggregated_contact["score"] >= 40:
                 break
@@ -500,30 +479,20 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                     if info["score"] > aggregated_contact["score"]:
                         aggregated_contact = info
                     break
-        
         name = aggregated_contact["name"]
         role = aggregated_contact["role"]
         email = aggregated_contact["email"]
         phone = aggregated_contact["phone"]
         contact_points = aggregated_contact["score"]
-        
-        # Fallback ak nemáme telefón/email
-        if not phone and fallback_phone:
-            phone = fallback_phone
-            if not role:
-                role = "Info / Podpora"
-                contact_points = 10
-        if not email and fallback_email:
-            email = fallback_email
-        
-        # Názov firmy
+        if not phone:
+            phone_match_all = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', all_text)
+            if phone_match_all:
+                phone = phone_match_all.group(0)
         title = main_soup.title.string if main_soup.title else ""
         meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
         meta_title = meta_title['content'] if meta_title else ""
         primary_identifier = meta_title or title or base_url.split("//")[-1].split("/")[0]
         primary_identifier = re.sub(r'\s+', ' ', primary_identifier).strip()
-        
-        # Vertikála
         body_lower = all_text.lower()
         vertical = "Unknown"
         if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
@@ -532,7 +501,6 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             vertical = "Beauty & Personal Care"
         elif any(w in body_lower for w in ["pet", "zvieratá"]):
             vertical = "Pet Supplies"
-        
         lead_data = {
             "primary_identifier": primary_identifier,
             "vertical": vertical,
@@ -551,15 +519,12 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             lead_data["contact_channels"]["email"] = email
         if phone:
             lead_data["contact_channels"]["phone"] = phone
-        
-        # Konfigurácia a skóre
         org_id = 1
         async with async_session() as session:
             result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
             org_config = result.scalar_one_or_none()
             if not org_config:
                 raise HTTPException(status_code=404, detail="Organization config not found")
-        
         rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
         final_score = rule_score + contact_points
         final_score = max(0, min(100, final_score))
@@ -568,8 +533,6 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["WARM"]: tier = "WARM"
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
-        
-        # Uloženie
         async with async_session() as session:
             stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
             existing = (await session.execute(stmt)).scalar_one_or_none()
@@ -615,5 +578,5 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     except Exception as e:
         import traceback
         error_detail = f"Scraping error: {str(e)}\n{traceback.format_exc()}"
-        print(error_detail)  # Toto sa vypíše do logov na Renderi
+        print(error_detail)
         raise HTTPException(status_code=500, detail=error_detail)
