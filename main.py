@@ -3,8 +3,7 @@ import uuid
 import datetime
 import re
 import json
-import time
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +14,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
 import requests
 from bs4 import BeautifulSoup
-import cloudscraper
+from openai import AzureOpenAI
 
 load_dotenv()
 
@@ -26,6 +25,14 @@ if not DATABASE_URL:
 engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
+
+# --- Azure OpenAI klient ---
+openai_client = AzureOpenAI(
+    azure_endpoint=os.getenv("OPENAI_ENDPOINT"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    api_version="2024-02-15-preview"
+)
+GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 
 # --- SQLAlchemy modely ---
 class Lead(Base):
@@ -371,76 +378,78 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- SCRAPING ----------
+# ---------- SCRAPING S AI ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def scrape_url(scraper, url: str):
+def fetch_text_from_url(url: str) -> str:
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'sk,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
         }
-        response = requests.get(url, timeout=30, headers=headers)
-        print(f"Scraping {url} - status: {response.status_code}")
-        if response.status_code == 200:
-            return BeautifulSoup(response.text, 'html.parser')
+        resp = requests.get(url, timeout=30, headers=headers)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for script in soup(["script", "style"]):
+                script.decompose()
+            text = soup.get_text(separator=' ', strip=True)
+            return text[:4000]
         else:
-            print(f"Chyba: status {response.status_code} pre {url}")
+            return ""
     except Exception as e:
-        print(f"Výnimka pri scrapovaní {url}: {e}")
-    return None
+        print(f"Chyba pri načítaní {url}: {e}")
+        return ""
 
-def extract_contacts_with_priority(soup: BeautifulSoup, url: str, fallback_phone: str = None, fallback_email: str = None) -> Dict[str, Any]:
-    text = soup.get_text()
-    name_matches = re.findall(r'([A-Z][a-z]+ [A-Z][a-z]+)', text)
-    best = {"name": None, "role": None, "email": None, "phone": None, "score": 0}
-    for name in set(name_matches):
-        pos = text.find(name)
-        if pos == -1:
-            continue
-        surrounding = text[max(0, pos-400):min(len(text), pos+400)]
-        role_keywords = {
-            "CEO / Riaditeľ": 50,
-            "Obchod / Sales": 40,
-            "Marketing": 30,
-            "Reklamácia": 10
-        }
-        found_role = None
-        found_points = 0
-        for role, points in role_keywords.items():
-            if any(kw in surrounding.lower() for kw in role.lower().split()):
-                found_role = role
-                found_points = points
-                break
-        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', surrounding)
-        phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', surrounding)
-        if (email_match or phone_match) and (found_role or len(name) > 5):
-            if found_points > best["score"]:
-                best = {
-                    "name": name,
-                    "role": found_role if found_role else ("Obchod / Sales" if (email_match or phone_match) else None),
-                    "email": email_match.group(0) if email_match else None,
-                    "phone": phone_match.group(0) if phone_match else None,
-                    "score": found_points if found_points else (30 if (email_match or phone_match) else 0)
-                }
-    if best["name"] and best["role"] and not best["phone"] and fallback_phone:
-        best["phone"] = fallback_phone
-        if not best["email"] and fallback_email:
-            best["email"] = fallback_email
-    if best["score"] == 0:
-        if fallback_phone or fallback_email:
-            best = {
-                "name": None,
-                "role": "Info / Podpora",
-                "email": fallback_email,
-                "phone": fallback_phone,
-                "score": 10
-            }
-    return best
+def extract_with_ai(text: str) -> Dict[str, Any]:
+    if not text:
+        return {}
+    prompt = f"""
+Si asistent pre extrakciu firemných údajov z webových stránok.
+Z textu nižšie vyextrahuj nasledujúce informácie:
+- názov firmy (primary_identifier)
+- kontaktnú osobu (meno a priezvisko, ak je; inak None)
+- rolu (CEO, Obchod, Marketing, Info, Reklamácia, inak None)
+- email
+- telefón (zachytaj aj formáty s medzerami, lomkami, pomlčkami)
+
+Vráť LEN platný JSON v tvare:
+{{"primary_identifier": "...", "contact_name": "...", "role": "...", "email": "...", "phone": "..."}}
+
+Ak niečo neexistuje, daj null.
+
+Text:
+{text}
+"""
+    try:
+        response = openai_client.chat.completions.create(
+            model=GPT_DEPLOYMENT,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return result
+    except Exception as e:
+        print(f"AI chyba: {e}")
+        return {}
+
+def role_to_points(role: str) -> int:
+    if not role:
+        return 0
+    role_lower = role.lower()
+    if "ceo" in role_lower or "riaditeľ" in role_lower or "director" in role_lower:
+        return 50
+    if "obchod" in role_lower or "sales" in role_lower:
+        return 40
+    if "marketing" in role_lower:
+        return 30
+    if "reklamácia" in role_lower or "claim" in role_lower:
+        return 10
+    if "info" in role_lower or "podpora" in role_lower:
+        return 10
+    return 5
 
 class ScrapeRequest(BaseModel):
     url: str
@@ -452,48 +461,33 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not base_url.startswith(("http://", "https://")):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
-        scraper = cloudscraper.create_scraper()
-        all_text = ""
-        main_soup = scrape_url(scraper, base_url)
-        if not main_soup:
-            raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
-        main_text = main_soup.get_text()
-        all_text += main_text
-        fallback_phone = None
-        phone_match_main = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', main_text)
-        if phone_match_main:
-            fallback_phone = phone_match_main.group(0)
-        fallback_email = None
-        email_match_main = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', main_text)
-        if email_match_main:
-            fallback_email = email_match_main.group(0)
-        aggregated_contact = extract_contacts_with_priority(main_soup, base_url, fallback_phone, fallback_email)
+        
+        main_text = fetch_text_from_url(base_url)
+        combined_text = main_text
+        
         for path in SUBPAGE_PATHS:
-            if aggregated_contact["score"] >= 40:
-                break
             for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                soup = scrape_url(scraper, url_variant)
-                if soup:
-                    info = extract_contacts_with_priority(soup, base_url, fallback_phone, fallback_email)
-                    all_text += soup.get_text()
-                    if info["score"] > aggregated_contact["score"]:
-                        aggregated_contact = info
+                sub_text = fetch_text_from_url(url_variant)
+                if sub_text:
+                    combined_text += "\n" + sub_text
                     break
-        name = aggregated_contact["name"]
-        role = aggregated_contact["role"]
-        email = aggregated_contact["email"]
-        phone = aggregated_contact["phone"]
-        contact_points = aggregated_contact["score"]
-        if not phone:
-            phone_match_all = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', all_text)
-            if phone_match_all:
-                phone = phone_match_all.group(0)
-        title = main_soup.title.string if main_soup.title else ""
-        meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
-        meta_title = meta_title['content'] if meta_title else ""
-        primary_identifier = meta_title or title or base_url.split("//")[-1].split("/")[0]
-        primary_identifier = re.sub(r'\s+', ' ', primary_identifier).strip()
-        body_lower = all_text.lower()
+        
+        if not combined_text:
+            raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
+        
+        extracted = extract_with_ai(combined_text)
+        if not extracted:
+            raise HTTPException(status_code=500, detail="AI extrakcia zlyhala.")
+        
+        name = extracted.get("primary_identifier") or base_url
+        contact_name = extracted.get("contact_name")
+        role = extracted.get("role")
+        email = extracted.get("email")
+        phone = extracted.get("phone")
+        
+        contact_points = role_to_points(role)
+        
+        body_lower = combined_text.lower()
         vertical = "Unknown"
         if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
             vertical = "Home & Garden"
@@ -501,30 +495,34 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             vertical = "Beauty & Personal Care"
         elif any(w in body_lower for w in ["pet", "zvieratá"]):
             vertical = "Pet Supplies"
+        
         lead_data = {
-            "primary_identifier": primary_identifier,
+            "primary_identifier": name,
             "vertical": vertical,
             "contact_channels": {},
             "lead_metadata": {
                 "scraped_url": base_url,
                 "scraped_at": datetime.datetime.utcnow().isoformat(),
-                "contact_name": name,
-                "contact_role": role if role else ("Info / Podpora" if contact_points > 0 else None),
+                "contact_name": contact_name,
+                "contact_role": role,
                 "contact_points": contact_points,
                 "scraped_email": email,
-                "scraped_phone": phone
+                "scraped_phone": phone,
+                "ai_extracted": extracted
             }
         }
         if email:
             lead_data["contact_channels"]["email"] = email
         if phone:
             lead_data["contact_channels"]["phone"] = phone
+        
         org_id = 1
         async with async_session() as session:
             result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
             org_config = result.scalar_one_or_none()
             if not org_config:
                 raise HTTPException(status_code=404, detail="Organization config not found")
+        
         rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
         final_score = rule_score + contact_points
         final_score = max(0, min(100, final_score))
@@ -533,8 +531,9 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["WARM"]: tier = "WARM"
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
+        
         async with async_session() as session:
-            stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
+            stmt = select(Lead).where(Lead.primary_identifier == name)
             existing = (await session.execute(stmt)).scalar_one_or_none()
             if existing:
                 existing.contact_channels = lead_data["contact_channels"]
@@ -548,15 +547,21 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 return {
                     "action": "updated",
                     "lead_id": existing.lead_id,
-                    "primary_identifier": primary_identifier,
+                    "primary_identifier": name,
                     "score": final_score,
                     "tier": tier,
-                    "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
+                    "extracted": {
+                        "email": email,
+                        "phone": phone,
+                        "contact_name": contact_name,
+                        "contact_role": role,
+                        "contact_points": contact_points
+                    }
                 }
             else:
                 new_lead = Lead(
                     lead_id=str(uuid.uuid4()),
-                    primary_identifier=primary_identifier,
+                    primary_identifier=name,
                     vertical=vertical,
                     lead_metadata=lead_data,
                     contact_channels=lead_data.get("contact_channels", {}),
@@ -570,10 +575,16 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 return {
                     "action": "created",
                     "lead_id": new_lead.lead_id,
-                    "primary_identifier": primary_identifier,
+                    "primary_identifier": name,
                     "score": final_score,
                     "tier": tier,
-                    "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
+                    "extracted": {
+                        "email": email,
+                        "phone": phone,
+                        "contact_name": contact_name,
+                        "contact_role": role,
+                        "contact_points": contact_points
+                    }
                 }
     except Exception as e:
         import traceback
