@@ -26,11 +26,11 @@ engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
-# --- Azure OpenAI klient (opravená API verzia) ---
+# --- Azure OpenAI klient ---
 openai_client = AzureOpenAI(
     azure_endpoint=os.getenv("OPENAI_ENDPOINT"),
     api_key=os.getenv("OPENAI_API_KEY"),
-    api_version="2024-12-01-preview"   # <--- opravené
+    api_version="2024-12-01-preview"
 )
 GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 
@@ -171,7 +171,7 @@ async def startup():
 async def health():
     return {"status": "ok"}
 
-# ---- CRUD pre leadov ----
+# ---- CRUD pre leadov (nezmenené) ----
 class LeadCreate(BaseModel):
     lead_data: dict
 
@@ -378,7 +378,7 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- SCRAPING S AI ----------
+# ---------- SCRAPING S AI A FALLBACKOM ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
@@ -435,6 +435,15 @@ Text:
         print(f"AI chyba: {e}")
         return {}
 
+def regex_fallback(text: str) -> Dict[str, Any]:
+    """Fallback: vyhľadá email a telefón pomocou regex v texte."""
+    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
+    phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', text)
+    return {
+        "email": email_match.group(0) if email_match else None,
+        "phone": phone_match.group(0) if phone_match else None
+    }
+
 def role_to_points(role: str) -> int:
     if not role:
         return 0
@@ -462,6 +471,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
         
+        # Stiahneme hlavnú stránku a podstránky
         main_text = fetch_text_from_url(base_url)
         combined_text = main_text
         
@@ -475,18 +485,23 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
         
+        # AI extrakcia
         extracted = extract_with_ai(combined_text)
         if not extracted:
-            raise HTTPException(status_code=500, detail="AI extrakcia zlyhala.")
+            # Ak AI zlyhala, použijeme fallback (ale pokračujeme ďalej)
+            extracted = {}
         
-        name = extracted.get("primary_identifier") or base_url
+        # Fallback na regex, ak AI nevrátila email/telefón
+        fallback = regex_fallback(combined_text)
+        email = extracted.get("email") or fallback["email"]
+        phone = extracted.get("phone") or fallback["phone"]
+        name = extracted.get("primary_identifier") or base_url.split("//")[-1].split("/")[0]
         contact_name = extracted.get("contact_name")
         role = extracted.get("role")
-        email = extracted.get("email")
-        phone = extracted.get("phone")
         
-        contact_points = role_to_points(role)
+        contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
         
+        # Vertikála (jednoduchá)
         body_lower = combined_text.lower()
         vertical = "Unknown"
         if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
@@ -508,7 +523,8 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 "contact_points": contact_points,
                 "scraped_email": email,
                 "scraped_phone": phone,
-                "ai_extracted": extracted
+                "ai_extracted": extracted,
+                "regex_fallback": fallback
             }
         }
         if email:
@@ -516,6 +532,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if phone:
             lead_data["contact_channels"]["phone"] = phone
         
+        # Konfigurácia a skóre
         org_id = 1
         async with async_session() as session:
             result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
@@ -532,6 +549,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
         
+        # Uloženie
         async with async_session() as session:
             stmt = select(Lead).where(Lead.primary_identifier == name)
             existing = (await session.execute(stmt)).scalar_one_or_none()
