@@ -370,74 +370,11 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- NOVÉ: Pomocné funkcie pre scrapovanie podstránok ----------
+# ---------- NOVÉ: Pomocné funkcie pre scrapovanie s prioritou kontaktnej osoby ----------
 SUBPAGE_PATHS = [
-    "kontakt", "contact", "kontakty",
-    "obchodne-podmienky", "obchodni-podmienky", "terms", "podmienky",
-    "o-nas", "about-us", "onas", "about",
-    "impressum"
+    "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
+    "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
-
-def extract_contact_info_from_soup(soup: BeautifulSoup, base_url: str) -> Dict[str, Any]:
-    """Extrahuje email, telefón, meno a rolu z BeautifulSoup objektu."""
-    result = {
-        "emails": set(),
-        "phones": set(),
-        "names": set(),
-        "text": soup.get_text(),
-        "role_hints": []
-    }
-    # Emaily z mailto a textu
-    for mailto in soup.find_all('a', href=lambda x: x and x.startswith('mailto:')):
-        email = mailto['href'].replace('mailto:', '').split('?')[0]
-        result["emails"].add(email)
-    text = result["text"]
-    email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
-    result["emails"].update(email_matches)
-    
-    # Telefóny
-    for tel in soup.find_all('a', href=lambda x: x and x.startswith('tel:')):
-        phone = tel['href'].replace('tel:', '')
-        result["phones"].add(phone)
-    phone_matches = re.findall(r'(\+421|\+420|0)\d{9,12}', text)
-    result["phones"].update(phone_matches)
-    
-    # Mená (jednoduché: dve slová s veľkými začiatočnými písmenami, okolie telefónu alebo v kontaktoch)
-    # Najprv okolie telefónov
-    for phone in result["phones"]:
-        pos = text.find(phone)
-        if pos != -1:
-            surrounding = text[max(0, pos-100):min(len(text), pos+100)]
-            name_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', surrounding)
-            if name_match:
-                result["names"].add(name_match.group(1))
-    # Hľadaj sekciu "Kontakt" a pod.
-    kontakt_tag = soup.find(text=re.compile(r'Kontakt|Kontakty|Manažér|Ředitel|CEO', re.IGNORECASE))
-    if kontakt_tag:
-        parent = kontakt_tag.find_parent()
-        if parent:
-            name_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', parent.get_text())
-            if name_match:
-                result["names"].add(name_match.group(1))
-    return result
-
-def detect_role_and_points(text: str) -> Tuple[str, int]:
-    """Vyhodnotí rolu a body na základe textu (z viacerých stránok)."""
-    text_lower = text.lower()
-    # Zoznam rolov s kľúčovými slovami a bodmi (vo fáze 2.1 – preferujeme roly)
-    role_keywords = [
-        (["ceo", "generálny riaditeľ", "riaditeľ", "director", "executive", "jednateľ"], "CEO / Riaditeľ", 50),
-        (["obchod", "sales", "obchodný", "obchodné oddelenie", "sales manager"], "Obchod / Sales", 40),
-        (["marketing", "marketingový", "marketing manager"], "Marketing", 30),
-        (["info", "podpora", "support", "customer", "zákaznícka linka", "zákaznícky servis"], "Info / Podpora", 20),
-        (["reklamácia", "reklamácie", "claim"], "Reklamácia", 10),
-    ]
-    for keywords, role, points in role_keywords:
-        if any(kw in text_lower for kw in keywords):
-            return role, points
-    # Fallback: ak nie je rola, ale je meno a telefón -> aspoň bežný kontakt
-    # Toto sa bude používať v hlavnej logike, nie tu. Vrátime "Bežný kontakt" s 5 bodmi.
-    return "Bežný kontakt", 5
 
 def scrape_url(scraper, url: str) -> Optional[BeautifulSoup]:
     """Vráti BeautifulSoup objekt ak je status 200, inak None."""
@@ -449,7 +386,67 @@ def scrape_url(scraper, url: str) -> Optional[BeautifulSoup]:
         pass
     return None
 
-# ---- WEB SCRAPING ENDPOINT (vylepšený o podstránky) ----
+def extract_contacts_with_priority(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
+    """
+    Vráti najhodnotnejší kontakt (meno, rola, email, telefón) zo stránky.
+    Priorita: 1. osoba s rolou, 2. osoba bez role ale s kontaktom, 3. fallback info.
+    """
+    text = soup.get_text()
+    # Nájdi všetky potenciálne mená (dve slová s veľkými písmenami, povoľ aj tituly)
+    name_matches = re.findall(r'([A-Z][a-z]+ [A-Z][a-z]+)', text)
+    
+    best = {"name": None, "role": None, "email": None, "phone": None, "score": 0}
+    # Pre každé meno skús nájsť v jeho okolí rolu, email, telefón
+    for name in set(name_matches):
+        pos = text.find(name)
+        if pos == -1:
+            continue
+        surrounding = text[max(0, pos-400):min(len(text), pos+400)]
+        
+        # Detekcia role v okolí
+        role_keywords = {
+            "CEO / Riaditeľ": 50,
+            "Obchod / Sales": 40,
+            "Marketing": 30,
+            "Reklamácia": 10
+        }
+        found_role = None
+        found_points = 0
+        for role, points in role_keywords.items():
+            if any(kw in surrounding.lower() for kw in role.lower().split()):
+                found_role = role
+                found_points = points
+                break
+        
+        # Hľadaj email a telefón v okolí
+        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', surrounding)
+        phone_match = re.search(r'(\+421|\+420|0)\d{9,12}', surrounding)
+        
+        # Ak máme aspoň meno, a buď email alebo telefón, a rolu (alebo aspoň kus)
+        if (email_match or phone_match) and (found_role or len(name) > 5):
+            if found_points > best["score"]:
+                best = {
+                    "name": name,
+                    "role": found_role if found_role else "Obchod / Sales",
+                    "email": email_match.group(0) if email_match else None,
+                    "phone": phone_match.group(0) if phone_match else None,
+                    "score": found_points if found_points else 30
+                }
+    # Ak sme nenašli žiadne meno s kontaktom, hľadaj aspoň email/telefón kdekoľvek
+    if best["score"] == 0:
+        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
+        phone_match = re.search(r'(\+421|\+420|0)\d{9,12}', text)
+        if email_match or phone_match:
+            best = {
+                "name": None,
+                "role": "Info / Podpora",
+                "email": email_match.group(0) if email_match else None,
+                "phone": phone_match.group(0) if phone_match else None,
+                "score": 10
+            }
+    return best
+
+# ---- WEB SCRAPING ENDPOINT (vylepšený) ----
 class ScrapeRequest(BaseModel):
     url: str
 
@@ -458,88 +455,72 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     base_url = req.url.strip()
     if not base_url.startswith(("http://", "https://")):
         base_url = "https://" + base_url
-    # Odstránenie lomítka na konci
     base_url = base_url.rstrip('/')
     
     scraper = cloudscraper.create_scraper()
-    aggregated = {
-        "emails": set(),
-        "phones": set(),
-        "names": set(),
-        "all_text": "",
-        "main_title": "",
-        "meta_title": ""
-    }
+    all_text = ""
+    aggregated_contact = {"name": None, "role": None, "email": None, "phone": None, "score": 0}
     
-    # 1. Scrapni hlavnú stránku
+    # Scrapni hlavnú stránku
     main_soup = scrape_url(scraper, base_url)
     if not main_soup:
         raise HTTPException(status_code=400, detail="Nepodarilo sa načítať hlavnú stránku")
-    main_info = extract_contact_info_from_soup(main_soup, base_url)
-    aggregated["emails"].update(main_info["emails"])
-    aggregated["phones"].update(main_info["phones"])
-    aggregated["names"].update(main_info["names"])
-    aggregated["all_text"] += main_info["text"] + "\n"
-    if main_soup.title:
-        aggregated["main_title"] = main_soup.title.string or ""
-    meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
-    aggregated["meta_title"] = meta_title['content'] if meta_title else ""
+    all_text += main_soup.get_text()
+    best_main = extract_contacts_with_priority(main_soup, base_url)
+    if best_main["score"] > aggregated_contact["score"]:
+        aggregated_contact = best_main
     
-    # 2. Scrapni podstránky
+    # Prejdi podstránky (len kým nenájdeš kontakt s vysokým skóre >= 40)
     for path in SUBPAGE_PATHS:
-        # Skús variant s /path a aj bez lomítka (niektoré stránky majú /kontakt)
+        if aggregated_contact["score"] >= 40:
+            break
         for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
             soup = scrape_url(scraper, url_variant)
             if soup:
-                info = extract_contact_info_from_soup(soup, base_url)
-                aggregated["emails"].update(info["emails"])
-                aggregated["phones"].update(info["phones"])
-                aggregated["names"].update(info["names"])
-                aggregated["all_text"] += info["text"] + "\n"
-                break  # ak jedna varianta funguje, nehľadaj druhú pre rovnaký path
+                info = extract_contacts_with_priority(soup, base_url)
+                all_text += soup.get_text()
+                if info["score"] > aggregated_contact["score"]:
+                    aggregated_contact = info
+                break  # stačí jedna varianta
     
-    # 3. Zlúčenie výsledkov
-    email = next(iter(aggregated["emails"])) if aggregated["emails"] else None
-    phone = next(iter(aggregated["phones"])) if aggregated["phones"] else None
-    name = next(iter(aggregated["names"])) if aggregated["names"] else None
+    # Výsledné údaje
+    name = aggregated_contact["name"]
+    role = aggregated_contact["role"]
+    email = aggregated_contact["email"]
+    phone = aggregated_contact["phone"]
+    contact_points = aggregated_contact["score"]
     
-    # 4. Detekcia roly a bodov z celého textu (všetky scrapnuté stránky)
-    role, role_points = detect_role_and_points(aggregated["all_text"])
-    # Ak rola nie je špecifická (Bežný kontakt) ale existuje meno a telefón, daj aspoň 5 bodov
-    if role == "Bežný kontakt" and name and phone:
-        role_points = 5
-    elif role == "Bežný kontakt" and (phone or email):
-        role_points = 5
-    elif role == "Bežný kontakt":
-        role_points = 0
+    # Názov firmy z titulky
+    title = main_soup.title.string if main_soup.title else ""
+    meta_title = main_soup.find('meta', attrs={'name': 'application-name'})
+    meta_title = meta_title['content'] if meta_title else ""
+    primary_identifier = meta_title or title or base_url.split("//")[-1].split("/")[0]
+    # Vyčisti názov (odstráň nadbytočné whitespace a nové riadky)
+    primary_identifier = re.sub(r'\s+', ' ', primary_identifier).strip()
     
-    # 5. Určenie primárneho identifikátora (názov firmy)
-    primary_identifier = aggregated["meta_title"] or aggregated["main_title"] or base_url.split("//")[-1].split("/")[0]
-    
-    # 6. Vertikála (z hlavnej stránky a celého textu)
-    body_text = aggregated["all_text"].lower()
+    # Vertikála (z celého textu)
+    body_lower = all_text.lower()
     vertical = "Unknown"
-    if any(w in body_text for w in ["home garden", "zahrada", "nábytok", "doplnky"]):
+    if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
         vertical = "Home & Garden"
-    elif any(w in body_text for w in ["beauty", "kozmetika", "parfum"]):
+    elif any(w in body_lower for w in ["beauty", "kozmetika"]):
         vertical = "Beauty & Personal Care"
-    elif any(w in body_text for w in ["pet", "zvieratá", "pes", "mačka"]):
+    elif any(w in body_lower for w in ["pet", "zvieratá"]):
         vertical = "Pet Supplies"
     
-    # 7. Príprava lead_data pre scoring
+    # Priprav lead_data
     lead_data = {
         "primary_identifier": primary_identifier,
         "vertical": vertical,
         "contact_channels": {},
-        "platform_presence": {},
         "lead_metadata": {
             "scraped_url": base_url,
             "scraped_at": datetime.datetime.utcnow().isoformat(),
-            "scraped_email": email,
-            "scraped_phone": phone,
             "contact_name": name,
-            "contact_role": role,
-            "contact_points": role_points
+            "contact_role": role if role else ("Info / Podpora" if contact_points > 0 else None),
+            "contact_points": contact_points,
+            "scraped_email": email,
+            "scraped_phone": phone
         }
     }
     if email:
@@ -547,17 +528,15 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     if phone:
         lead_data["contact_channels"]["phone"] = phone
     
-    # 8. Získaj organizačnú konfiguráciu
+    # Získaj konfiguráciu a spočítaj skóre
     org_id = 1
     async with async_session() as session:
         result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
         org_config = result.scalar_one_or_none()
         if not org_config:
             raise HTTPException(status_code=404, detail="Organization config not found")
-    
-    # 9. Skóre (rule-based + body za kontakt)
     rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
-    final_score = rule_score + role_points
+    final_score = rule_score + contact_points
     final_score = max(0, min(100, final_score))
     thresholds = org_config.tier_thresholds
     if final_score >= thresholds["HOT"]: tier = "HOT"
@@ -565,18 +544,10 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     elif final_score >= thresholds["COOL"]: tier = "COOL"
     else: tier = "DEAD"
     
-    # 10. Ulož alebo aktualizuj (podľa primary_identifier)
+    # Ulož alebo aktualizuj (podľa primary_identifier)
     async with async_session() as session:
-        existing = None
         stmt = select(Lead).where(Lead.primary_identifier == primary_identifier)
         existing = (await session.execute(stmt)).scalar_one_or_none()
-        if not existing:
-            # Skús podľa URL v lead_metadata (prejdi všetky)
-            all_leads = (await session.execute(select(Lead))).scalars().all()
-            for lead in all_leads:
-                if lead.lead_metadata and lead.lead_metadata.get("scraped_url") == base_url:
-                    existing = lead
-                    break
         if existing:
             existing.contact_channels = lead_data["contact_channels"]
             existing.vertical = vertical
@@ -592,15 +563,13 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 "primary_identifier": primary_identifier,
                 "score": final_score,
                 "tier": tier,
-                "extracted": {"email": email, "phone": phone, "contact_name": name, "vertical": vertical, "contact_role": role, "contact_points": role_points}
+                "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
             }
         else:
             new_lead = Lead(
                 lead_id=str(uuid.uuid4()),
                 primary_identifier=primary_identifier,
                 vertical=vertical,
-                platform_presence=lead_data.get("platform_presence", {}),
-                value_indicators=lead_data.get("value_indicators", {}),
                 lead_metadata=lead_data,
                 contact_channels=lead_data.get("contact_channels", {}),
                 rule_score=rule_score,
@@ -616,5 +585,5 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 "primary_identifier": primary_identifier,
                 "score": final_score,
                 "tier": tier,
-                "extracted": {"email": email, "phone": phone, "contact_name": name, "vertical": vertical, "contact_role": role, "contact_points": role_points}
+                "extracted": {"email": email, "phone": phone, "contact_name": name, "contact_role": role, "contact_points": contact_points}
             }
