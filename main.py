@@ -3,6 +3,7 @@ import uuid
 import datetime
 import re
 import json
+import asyncio
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -15,6 +16,7 @@ from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
 import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
+from playwright.async_api import async_playwright
 
 load_dotenv()
 
@@ -34,7 +36,7 @@ openai_client = AzureOpenAI(
 )
 GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 
-# --- SQLAlchemy modely ---
+# --- SQLAlchemy modely (nezmenené) ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -171,7 +173,7 @@ async def startup():
 async def health():
     return {"status": "ok"}
 
-# ---- CRUD pre leadov ----
+# ---- CRUD pre leadov (nezmenené) ----
 class LeadCreate(BaseModel):
     lead_data: dict
 
@@ -378,29 +380,51 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- SCRAPING S AI A FALLBACKOM ----------
+# ---------- SCRAPING S PLAYWRIGHT A AI ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def fetch_text_from_url(url: str) -> str:
+async def fetch_html_playwright(url: str) -> str:
+    """Získa HTML stránky pomocou Playwright (umožňuje JavaScript)."""
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
-        }
-        resp = requests.get(url, timeout=30, headers=headers)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            for script in soup(["script", "style"]):
-                script.decompose()
-            text = soup.get_text(separator=' ', strip=True)
-            return text[:4000]
-        else:
-            return ""
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, wait_until="networkidle", timeout=30000)
+            content = await page.content()
+            await browser.close()
+            return content
     except Exception as e:
-        print(f"Chyba pri načítaní {url}: {e}")
+        print(f"Playwright error pre {url}: {e}")
         return ""
+
+def extract_text_from_html(html: str) -> str:
+    """Vyčistí HTML a vráti text (max 4000 znakov)."""
+    if not html:
+        return ""
+    soup = BeautifulSoup(html, 'html.parser')
+    for script in soup(["script", "style"]):
+        script.decompose()
+    text = soup.get_text(separator=' ', strip=True)
+    return text[:4000]
+
+async def fetch_text_with_fallback(url: str) -> str:
+    """Najprv skúsi Playwright, ak zlyhá, použije requests."""
+    html = await fetch_html_playwright(url)
+    if html:
+        return extract_text_from_html(html)
+    else:
+        # fallback na requests
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            resp = requests.get(url, timeout=30, headers=headers)
+            if resp.status_code == 200:
+                return extract_text_from_html(resp.text)
+        except Exception:
+            pass
+    return ""
 
 def extract_with_ai(text: str) -> Dict[str, Any]:
     if not text:
@@ -470,15 +494,18 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
         
-        main_text = fetch_text_from_url(base_url)
+        # Hlavná stránka
+        main_text = await fetch_text_with_fallback(base_url)
         combined_text = main_text
         
+        # Podstránky (postupne, s oneskorením)
         for path in SUBPAGE_PATHS:
             for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                sub_text = fetch_text_from_url(url_variant)
+                sub_text = await fetch_text_with_fallback(url_variant)
                 if sub_text:
                     combined_text += "\n" + sub_text
-                    break
+                    break  # stačí jedna varianta
+                await asyncio.sleep(0.5)  # malé oneskorenie
         
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
@@ -488,7 +515,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not extracted:
             extracted = {}
         
-        # Fallback na regex pre email a telefón
+        # Fallback na regex
         fallback = regex_fallback(combined_text)
         email = extracted.get("email") or fallback["email"]
         phone = extracted.get("phone") or fallback["phone"]
@@ -498,7 +525,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         
         contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
         
-        # Vertikála
+        # Vertikála (zjednodušená)
         body_lower = combined_text.lower()
         vertical = "Unknown"
         if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
@@ -529,6 +556,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if phone:
             lead_data["contact_channels"]["phone"] = phone
         
+        # Konfigurácia a skóre
         org_id = 1
         async with async_session() as session:
             result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
@@ -545,6 +573,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
         
+        # Uloženie
         async with async_session() as session:
             stmt = select(Lead).where(Lead.primary_identifier == name)
             existing = (await session.execute(stmt)).scalar_one_or_none()
