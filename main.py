@@ -16,7 +16,7 @@ from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
 import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
-from curl_cffi import requests as curl_requests
+import cloudscraper
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 # --- ScrapingBee API kľúč (voliteľný) ---
 SCRAPINGBEE_API_KEY = os.getenv("SCRAPINGBEE_API_KEY")
 
-# --- SQLAlchemy modely ---
+# --- SQLAlchemy modely (nezmenené) ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -383,27 +383,14 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
             body = body.replace(key, val)
         return {"subject": subject, "body": body}
 
-# ---------- SCRAPING S CURL_CFFI A FALLBACKMI ----------
+# ---------- SCRAPING S SCRAPINGBEE A FALLBACKMI ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def fetch_html_curl_cffi(url: str) -> str:
-    """Získa HTML pomocou curl_cffi (emuluje Chrome 110)."""
-    try:
-        response = curl_requests.get(url, impersonate="chrome110", timeout=30)
-        if response.status_code == 200:
-            return response.text
-        else:
-            print(f"curl_cffi: status {response.status_code} pre {url}")
-            return ""
-    except Exception as e:
-        print(f"curl_cffi výnimka pre {url}: {e}")
-        return ""
-
 def fetch_html_scrapingbee(url: str) -> str:
-    """Získa HTML pomocou ScrapingBee API (vykreslí JS)."""
+    """Získa HTML pomocou ScrapingBee API (vykreslí JavaScript)."""
     if not SCRAPINGBEE_API_KEY:
         return ""
     try:
@@ -418,19 +405,18 @@ def fetch_html_scrapingbee(url: str) -> str:
         print(f"ScrapingBee výnimka: {e}")
         return ""
 
-def fetch_html_cloudscraper_fallback(url: str) -> str:
-    """Posledný fallback – cloudscraper."""
+def fetch_html_cloudscraper(url: str) -> str:
+    """Fallback: získa HTML pomocou cloudscraper (bez JavaScriptu)."""
     try:
-        import cloudscraper
         scraper = cloudscraper.create_scraper()
         resp = scraper.get(url, timeout=30)
         if resp.status_code == 200:
             return resp.text
         else:
-            print(f"cloudscraper: status {resp.status_code} pre {url}")
+            print(f"Cloudscraper chyba: status {resp.status_code}")
             return ""
     except Exception as e:
-        print(f"cloudscraper výnimka pre {url}: {e}")
+        print(f"Cloudscraper výnimka: {e}")
         return ""
 
 def extract_text_from_html(html: str) -> str:
@@ -443,19 +429,15 @@ def extract_text_from_html(html: str) -> str:
     return text[:4000]
 
 async def fetch_text_with_fallback(url: str) -> str:
-    """Skúša curl_cffi, potom ScrapingBee, nakoniec cloudscraper."""
-    html = fetch_html_curl_cffi(url)
+    """Najprv ScrapingBee, potom cloudscraper."""
+    html = fetch_html_scrapingbee(url)
     if html:
-        print(f"✅ curl_cffi OK pre {url}")
+        print(f"✅ ScrapingBee OK pre {url}")
         return extract_text_from_html(html)
-    if SCRAPINGBEE_API_KEY:
-        html = fetch_html_scrapingbee(url)
-        if html:
-            print(f"✅ ScrapingBee OK pre {url}")
-            return extract_text_from_html(html)
-    html = fetch_html_cloudscraper_fallback(url)
+    print(f"⚠️ ScrapingBee zlyhal, skúšam cloudscraper pre {url}")
+    html = fetch_html_cloudscraper(url)
     if html:
-        print(f"✅ cloudscraper OK pre {url}")
+        print(f"✅ Cloudscraper OK pre {url}")
         return extract_text_from_html(html)
     return ""
 
