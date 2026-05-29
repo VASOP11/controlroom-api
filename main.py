@@ -649,3 +649,41 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         error_detail = f"Scraping error: {str(e)}\n{traceback.format_exc()}"
         print(error_detail)
         raise HTTPException(status_code=500, detail=error_detail)
+@app.post("/api/debug/scrape")
+async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
+    """
+    Diagnostický endpoint – vráti surový text a AI extrakciu bez ukladania.
+    """
+    base_url = req.url.strip()
+    if not base_url.startswith(("http://", "https://")):
+        base_url = "https://" + base_url
+    base_url = base_url.rstrip('/')
+    
+    combined_text = ""
+    main_text = await fetch_text_with_fallback(base_url)
+    if main_text:
+        combined_text += main_text
+    for path in SUBPAGE_PATHS:
+        for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+            sub_text = await fetch_text_with_fallback(url_variant)
+            if sub_text:
+                combined_text += "\n" + sub_text
+                break
+            await asyncio.sleep(0.5)
+    
+    # Ukážeme prvých 2000 znakov textu (stačí na orientáciu)
+    text_preview = combined_text[:2000]
+    
+    # AI extrakcia
+    extracted = extract_with_ai(combined_text)
+    
+    # Regex fallback
+    fallback = regex_fallback(combined_text)
+    
+    return {
+        "url": base_url,
+        "text_length": len(combined_text),
+        "text_preview": text_preview,
+        "ai_extracted": extracted,
+        "regex_fallback": fallback
+    }
