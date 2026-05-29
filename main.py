@@ -17,6 +17,9 @@ import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 import cloudscraper
+import chardet
+
+print("ENCODING FIX v2 loaded")
 
 load_dotenv()
 
@@ -399,8 +402,6 @@ def fetch_html_scrapingbee(url: str) -> str:
         api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
         resp = requests.get(api_url, timeout=30)
         if resp.status_code == 200:
-            # Explicitne decode UTF-8 z bytes – resp.text môže hádať encoding
-            # a spôsobiť double-encoding (Ä¾ namiesto ľ)
             return resp.content.decode('utf-8', errors='replace')
         else:
             print(f"ScrapingBee chyba: status {resp.status_code}")
@@ -408,6 +409,19 @@ def fetch_html_scrapingbee(url: str) -> str:
     except Exception as e:
         print(f"ScrapingBee výnimka: {e}")
         return ""
+
+def fetch_raw_bytes_scrapingbee(url: str) -> bytes:
+    """Vráti surové bytes z ScrapingBee – len pre diagnostiku."""
+    if not SCRAPINGBEE_API_KEY:
+        return b""
+    try:
+        api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
+        resp = requests.get(api_url, timeout=30)
+        if resp.status_code == 200:
+            return resp.content
+        return b""
+    except Exception:
+        return b""
 
 def fetch_html_cloudscraper(url: str) -> str:
     """Fallback: získa HTML pomocou cloudscraper (bez JavaScriptu)."""
@@ -707,13 +721,24 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
 @app.post("/api/debug/scrape")
 async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     """
-    Diagnostický endpoint – vráti surový text a AI extrakciu bez ukladania.
+    Diagnostický endpoint – vráti surový text, encoding diagnostiku a AI extrakciu bez ukladania.
     """
     base_url = req.url.strip()
     if not base_url.startswith(("http://", "https://")):
         base_url = "https://" + base_url
     base_url = base_url.rstrip('/')
-    
+
+    # --- Encoding diagnostika: stiahni raw bytes z kontaktnej stránky ---
+    kontakt_url = f"{base_url}/kontakt"
+    raw_bytes = fetch_raw_bytes_scrapingbee(kontakt_url)
+    if not raw_bytes:
+        raw_bytes = fetch_raw_bytes_scrapingbee(base_url)
+
+    chardet_result = chardet.detect(raw_bytes[:4000]) if raw_bytes else {}
+    # repr() prvých 500 bajtov – ukazuje skutočné bajty vrátane \xc4\xbe atď.
+    raw_bytes_preview = repr(raw_bytes[:500])
+
+    # --- Bežné scrapovanie ---
     contact_priority_paths = ["kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas", "vedenie", "management"]
     other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
 
@@ -742,20 +767,21 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         combined_text += "\n" + main_text
     if other_texts:
         combined_text += "\n" + "\n".join(other_texts)
-    
-    # Ukážeme prvých 2000 znakov textu (stačí na orientáciu)
-    text_preview = combined_text[:2000]
-    
+
     # AI extrakcia
     extracted = extract_with_ai(combined_text)
-    
+
     # Regex fallback
     fallback = regex_fallback(combined_text)
-    
+
     return {
         "url": base_url,
+        # Encoding diagnostika
+        "detected_encoding": chardet_result,
+        "raw_bytes_preview": raw_bytes_preview,
+        # Text výstup
         "text_length": len(combined_text),
-        "text_preview": text_preview,
+        "text_preview": combined_text[:2000],
         "ai_extracted": extracted,
         "regex_fallback": fallback
     }
