@@ -394,53 +394,50 @@ SUBPAGE_PATHS = [
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def fetch_html_scrapingbee(url: str) -> str:
-    """Získa HTML pomocou ScrapingBee API (vykreslí JavaScript)."""
+def fetch_html_scrapingbee(url: str) -> bytes:
+    """Získa HTML ako RAW BYTES pomocou ScrapingBee API.
+    Vracia bytes – BeautifulSoup ich dekóduje sám podľa <meta charset> v HTML.
+    NIKDY nedekódujeme tu – to spôsobovalo double-encoding (Ä¾ namiesto ľ).
+    """
     if not SCRAPINGBEE_API_KEY:
-        return ""
+        return b""
     try:
         api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
         resp = requests.get(api_url, timeout=30)
         if resp.status_code == 200:
-            return resp.content.decode('utf-8', errors='replace')
+            return resp.content          # <-- bytes, žiadny decode
         else:
             print(f"ScrapingBee chyba: status {resp.status_code}")
-            return ""
+            return b""
     except Exception as e:
         print(f"ScrapingBee výnimka: {e}")
-        return ""
+        return b""
 
 def fetch_raw_bytes_scrapingbee(url: str) -> bytes:
-    """Vráti surové bytes z ScrapingBee – len pre diagnostiku."""
-    if not SCRAPINGBEE_API_KEY:
-        return b""
-    try:
-        api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
-        resp = requests.get(api_url, timeout=30)
-        if resp.status_code == 200:
-            return resp.content
-        return b""
-    except Exception:
-        return b""
+    """Alias pre diagnostiku – rovnaké ako fetch_html_scrapingbee."""
+    return fetch_html_scrapingbee(url)
 
-def fetch_html_cloudscraper(url: str) -> str:
-    """Fallback: získa HTML pomocou cloudscraper (bez JavaScriptu)."""
+def fetch_html_cloudscraper(url: str) -> bytes:
+    """Fallback: získa HTML ako RAW BYTES pomocou cloudscraper.
+    Vracia bytes z rovnakého dôvodu ako ScrapingBee varianta.
+    """
     try:
         scraper = cloudscraper.create_scraper()
         resp = scraper.get(url, timeout=30)
         if resp.status_code == 200:
-            # Explicitne decode UTF-8 z bytes – rovnaká ochrana ako pri ScrapingBee
-            return resp.content.decode('utf-8', errors='replace')
+            return resp.content          # <-- bytes, žiadny decode
         else:
             print(f"Cloudscraper chyba: status {resp.status_code}")
-            return ""
+            return b""
     except Exception as e:
         print(f"Cloudscraper výnimka: {e}")
-        return ""
+        return b""
 
-def extract_text_from_html(html: str) -> str:
+def extract_text_from_html(html: bytes) -> str:
+    """Prijíma bytes – BS4 detekuje encoding z <meta charset> a dekóduje správne."""
     if not html:
         return ""
+    # 'html.parser' + bytes vstup: BS4 prečíta <meta charset="utf-8"> a dekóduje sám
     soup = BeautifulSoup(html, 'html.parser')
     for script in soup(["script", "style"]):
         script.decompose()
@@ -460,7 +457,9 @@ def extract_text_from_html(html: str) -> str:
     # Normalizuj non-breaking space na regular space
     text = text.replace('\xa0', ' ')
     prefix = ' '.join(contact_hints) + ' ' if contact_hints else ''
-    return (prefix + text)[:5000]
+    # Limit 25 000 znakov – telefón na fgym.sk/kontakt je na pozícii ~21 800
+    # Orezanie na 8 000 sa deje až v extract_with_ai (pre AI), nie tu
+    return (prefix + text)[:25000]
 
 async def fetch_text_with_fallback(url: str) -> str:
     """Najprv ScrapingBee, potom cloudscraper."""
