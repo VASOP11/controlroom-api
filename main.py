@@ -36,7 +36,7 @@ openai_client = AzureOpenAI(
 )
 GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 
-# --- SQLAlchemy modely (nezmenené) ---
+# --- SQLAlchemy modely ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -392,12 +392,14 @@ async def fetch_html_playwright(url: str) -> str:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
+            print(f"🔍 PLAYWRIGHT: Načítavam {url}")
             await page.goto(url, wait_until="networkidle", timeout=30000)
             content = await page.content()
+            print(f"✅ PLAYWRIGHT: Získaných {len(content)} znakov HTML")
             await browser.close()
             return content
     except Exception as e:
-        print(f"Playwright error pre {url}: {e}")
+        print(f"❌ PLAYWRIGHT chyba pre {url}: {e}")
         return ""
 
 def extract_text_from_html(html: str) -> str:
@@ -408,26 +410,33 @@ def extract_text_from_html(html: str) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
     text = soup.get_text(separator=' ', strip=True)
+    print(f"📄 EXTRACTED TEXT: {len(text)} znakov (prvých 200: {text[:200]})")
     return text[:4000]
 
 async def fetch_text_with_fallback(url: str) -> str:
     """Najprv skúsi Playwright, ak zlyhá, použije requests."""
+    print(f"🟢 SCRAPING: Načítavam URL: {url}")
     html = await fetch_html_playwright(url)
     if html:
+        print(f"✅ PLAYWRIGHT OK, získaných {len(html)} znakov HTML")
         return extract_text_from_html(html)
     else:
-        # fallback na requests
+        print(f"⚠️ PLAYWRIGHT zlyhal, skúšam requests fallback")
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             resp = requests.get(url, timeout=30, headers=headers)
             if resp.status_code == 200:
+                print(f"✅ REQUESTS OK: Získaných {len(resp.text)} znakov HTML")
                 return extract_text_from_html(resp.text)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"❌ REQUESTS chyba: {e}")
+    print(f"❌ SCRAPING: Nepodarilo sa získať text z {url}")
     return ""
 
 def extract_with_ai(text: str) -> Dict[str, Any]:
+    print(f"🤖 AI: Spracúvam text dlhý {len(text)} znakov")
     if not text:
+        print("⚠️ AI: Text je prázdny, extrakcia sa nevykoná")
         return {}
     prompt = f"""
 Si asistent pre extrakciu firemných údajov z webových stránok.
@@ -454,14 +463,16 @@ Text:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
+        print(f"✅ AI extrakcia úspešná: {result}")
         return result
     except Exception as e:
-        print(f"AI chyba: {e}")
+        print(f"❌ AI chyba: {e}")
         return {}
 
 def regex_fallback(text: str) -> Dict[str, Any]:
     email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
     phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', text)
+    print(f"📞 REGEX fallback: email={email_match.group(0) if email_match else None}, phone={phone_match.group(0) if phone_match else None}")
     return {
         "email": email_match.group(0) if email_match else None,
         "phone": phone_match.group(0) if phone_match else None
@@ -493,6 +504,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not base_url.startswith(("http://", "https://")):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
+        print(f"🚀 SCRAPE START: {base_url}")
         
         # Hlavná stránka
         main_text = await fetch_text_with_fallback(base_url)
@@ -501,14 +513,18 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         # Podstránky (postupne, s oneskorením)
         for path in SUBPAGE_PATHS:
             for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+                print(f"🔍 SKÚŠAM podstránku: {url_variant}")
                 sub_text = await fetch_text_with_fallback(url_variant)
                 if sub_text:
                     combined_text += "\n" + sub_text
+                    print(f"✅ Pridaný text z {url_variant}")
                     break  # stačí jedna varianta
-                await asyncio.sleep(0.5)  # malé oneskorenie
+                await asyncio.sleep(0.5)
         
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
+        
+        print(f"📝 CELKOVÝ TEXT: {len(combined_text)} znakov")
         
         # AI extrakcia
         extracted = extract_with_ai(combined_text)
@@ -524,6 +540,8 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         role = extracted.get("role")
         
         contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
+        
+        print(f"🎯 VÝSLEDOK: name={name}, contact_name={contact_name}, role={role}, email={email}, phone={phone}, points={contact_points}")
         
         # Vertikála (zjednodušená)
         body_lower = combined_text.lower()
@@ -556,7 +574,6 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if phone:
             lead_data["contact_channels"]["phone"] = phone
         
-        # Konfigurácia a skóre
         org_id = 1
         async with async_session() as session:
             result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
@@ -573,7 +590,6 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
         
-        # Uloženie
         async with async_session() as session:
             stmt = select(Lead).where(Lead.primary_identifier == name)
             existing = (await session.execute(stmt)).scalar_one_or_none()
