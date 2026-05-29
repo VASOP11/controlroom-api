@@ -99,7 +99,9 @@ async def seed_orgs():
                     "positive_signals": [
                         {"name": "active_on_2plus_platforms", "points": 25, "condition": "len(lead_data.get('platform_presence', {}).get('platforms', [])) >= 2"},
                         {"name": "in_target_value_band", "points": 20, "condition": "lead_data.get('value_indicators', {}).get('estimated_value', {}).get('amount', 0) >= 5000 and lead_data.get('value_indicators', {}).get('estimated_value', {}).get('amount', 0) <= 30000"},
-                        {"name": "in_target_vertical", "points": 20, "condition": "lead_data.get('vertical') in ['Home & Garden', 'Beauty', 'Pet', 'Sport', 'Auto-moto']"}
+                        {"name": "in_target_vertical", "points": 20, "condition": "lead_data.get('vertical') in ['Home & Garden', 'Beauty', 'Pet', 'Sport', 'Auto-moto']"},
+                        {"name": "ceo_or_director_contact", "points": 20, "condition": "any(kw in (lead_data.get('lead_metadata', {}).get('contact_role') or '').lower() for kw in ['ceo', 'riaditeľ', 'riaditel', 'director', 'konateľ', 'konatel'])"},
+                        {"name": "has_named_contact", "points": 10, "condition": "bool(lead_data.get('lead_metadata', {}).get('contact_name'))"}
                     ],
                     "negative_signals": [
                         {"name": "outside_target_vertical", "points": -25, "condition": "lead_data.get('vertical') not in ['Home & Garden', 'Beauty', 'Pet', 'Sport', 'Auto-moto'] and lead_data.get('vertical') is not None"}
@@ -425,8 +427,23 @@ def extract_text_from_html(html: str) -> str:
     soup = BeautifulSoup(html, 'html.parser')
     for script in soup(["script", "style"]):
         script.decompose()
+
+    # Explicitne vytiahni tel: a mailto: linky – tieto sa stratia pri get_text()
+    contact_hints = []
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if href.startswith("tel:"):
+            number = href.replace("tel:", "").strip()
+            contact_hints.append(f"Telefón: {number}")
+        elif href.startswith("mailto:"):
+            email = href.replace("mailto:", "").strip()
+            contact_hints.append(f"Email: {email}")
+
     text = soup.get_text(separator=' ', strip=True)
-    return text[:4000]
+    # Normalizuj non-breaking space na regular space
+    text = text.replace('\xa0', ' ')
+    prefix = ' '.join(contact_hints) + ' ' if contact_hints else ''
+    return (prefix + text)[:5000]
 
 async def fetch_text_with_fallback(url: str) -> str:
     """Najprv ScrapingBee, potom cloudscraper."""
@@ -444,28 +461,31 @@ async def fetch_text_with_fallback(url: str) -> str:
 def extract_with_ai(text: str) -> Dict[str, Any]:
     if not text:
         return {}
-    prompt = f"""
-Si asistent pre extrakciu firemných údajov z webových stránok.
-Z textu nižšie vyextrahuj nasledujúce informácie:
-- názov firmy (primary_identifier)
-- kontaktnú osobu (meno a priezvisko, ak je; inak None)
-- rolu (CEO, Obchod, Marketing, Info, Reklamácia, inak None)
-- email
-- telefón (zachytaj aj formáty s medzerami, lomkami, pomlčkami)
+    # Limit textu pre AI – prioritizuj začiatok (kontaktné údaje sú zvyčajne na začiatku agregátu)
+    text_for_ai = text[:8000]
+    prompt = f"""Si asistent pre extrakciu firemných kontaktných údajov z textu webovej stránky.
 
-Vráť LEN platný JSON v tvare:
+Z textu nižšie vyextrahuj:
+- primary_identifier: názov firmy (string)
+- contact_name: celé meno kontaktnej osoby, napr. "Ladislav Ferenci" (string alebo null)
+- role: pozícia osoby – hľadaj CEO, Riaditeľ, Director, Konateľ, Obchod, Sales, Marketing, Info (string alebo null)
+- email: emailová adresa (string alebo null)
+- phone: telefónne číslo vrátane predvoľby, zachovaj pôvodný formát s medzerami (string alebo null)
+
+DÔLEŽITÉ:
+- Hľadaj telefóny aj vo formátoch: "0911 489 439", "+421 911 489 439", "0911/489439"
+- Hľadaj mená pri slovách: riaditeľ, CEO, konateľ, director, manager, vedúci
+- Vráť LEN čistý JSON objekt, žiadny iný text
+
 {{"primary_identifier": "...", "contact_name": "...", "role": "...", "email": "...", "phone": "..."}}
 
-Ak niečo neexistuje, daj null.
-
 Text:
-{text}
-"""
+{text_for_ai}"""
     try:
         response = openai_client.chat.completions.create(
             model=GPT_DEPLOYMENT,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
+            temperature=0.1,
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
@@ -475,11 +495,17 @@ Text:
         return {}
 
 def regex_fallback(text: str) -> Dict[str, Any]:
-    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
-    phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', text)
+    # Normalizuj non-breaking space pred regex hľadaním
+    normalized = text.replace('\xa0', ' ')
+    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', normalized)
+    # Zachytáva formáty: 0911 489 439 / +421911489439 / 0911/489-439 atď.
+    phone_match = re.search(
+        r'(\+421[\s\xa0]?|\+420[\s\xa0]?|0)[\s\xa0]*[-\/]?[\s\xa0]*\d{3}[\s\xa0]*[-\/]?[\s\xa0]*\d{3}[\s\xa0]*[-\/]?[\s\xa0]*\d{3}',
+        normalized
+    )
     return {
         "email": email_match.group(0) if email_match else None,
-        "phone": phone_match.group(0) if phone_match else None
+        "phone": phone_match.group(0).strip() if phone_match else None
     }
 
 def role_to_points(role: str) -> int:
@@ -509,19 +535,36 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
         
-        combined_text = ""
-        # Hlavná stránka
-        main_text = await fetch_text_with_fallback(base_url)
-        if main_text:
-            combined_text += main_text
-        # Podstránky
-        for path in SUBPAGE_PATHS:
+        # Najprv scrapuj kontaktné podstránky (majú prioritu pre AI extrakciu)
+        contact_priority_paths = ["kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas", "vedenie", "management"]
+        other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
+
+        contact_texts = []
+        for path in contact_priority_paths:
             for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
                 sub_text = await fetch_text_with_fallback(url_variant)
                 if sub_text:
-                    combined_text += "\n" + sub_text
+                    contact_texts.append(sub_text)
                     break
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.3)
+
+        main_text = await fetch_text_with_fallback(base_url)
+
+        other_texts = []
+        for path in other_paths:
+            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+                sub_text = await fetch_text_with_fallback(url_variant)
+                if sub_text:
+                    other_texts.append(sub_text)
+                    break
+                await asyncio.sleep(0.3)
+
+        # Kontaktné podstránky idú ako prvé – AI ich dostane pred orezaním na 8000 znakov
+        combined_text = "\n".join(contact_texts)
+        if main_text:
+            combined_text += "\n" + main_text
+        if other_texts:
+            combined_text += "\n" + "\n".join(other_texts)
         
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
@@ -659,17 +702,34 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         base_url = "https://" + base_url
     base_url = base_url.rstrip('/')
     
-    combined_text = ""
-    main_text = await fetch_text_with_fallback(base_url)
-    if main_text:
-        combined_text += main_text
-    for path in SUBPAGE_PATHS:
+    contact_priority_paths = ["kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas", "vedenie", "management"]
+    other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
+
+    contact_texts = []
+    for path in contact_priority_paths:
         for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
             sub_text = await fetch_text_with_fallback(url_variant)
             if sub_text:
-                combined_text += "\n" + sub_text
+                contact_texts.append(sub_text)
                 break
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
+
+    main_text = await fetch_text_with_fallback(base_url)
+
+    other_texts = []
+    for path in other_paths:
+        for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+            sub_text = await fetch_text_with_fallback(url_variant)
+            if sub_text:
+                other_texts.append(sub_text)
+                break
+            await asyncio.sleep(0.3)
+
+    combined_text = "\n".join(contact_texts)
+    if main_text:
+        combined_text += "\n" + main_text
+    if other_texts:
+        combined_text += "\n" + "\n".join(other_texts)
     
     # Ukážeme prvých 2000 znakov textu (stačí na orientáciu)
     text_preview = combined_text[:2000]
