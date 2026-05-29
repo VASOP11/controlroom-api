@@ -399,7 +399,9 @@ def fetch_html_scrapingbee(url: str) -> str:
         api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
         resp = requests.get(api_url, timeout=30)
         if resp.status_code == 200:
-            return resp.text
+            # Explicitne decode UTF-8 z bytes – resp.text môže hádať encoding
+            # a spôsobiť double-encoding (Ä¾ namiesto ľ)
+            return resp.content.decode('utf-8', errors='replace')
         else:
             print(f"ScrapingBee chyba: status {resp.status_code}")
             return ""
@@ -413,7 +415,8 @@ def fetch_html_cloudscraper(url: str) -> str:
         scraper = cloudscraper.create_scraper()
         resp = scraper.get(url, timeout=30)
         if resp.status_code == 200:
-            return resp.text
+            # Explicitne decode UTF-8 z bytes – rovnaká ochrana ako pri ScrapingBee
+            return resp.content.decode('utf-8', errors='replace')
         else:
             print(f"Cloudscraper chyba: status {resp.status_code}")
             return ""
@@ -495,17 +498,26 @@ Text:
         return {}
 
 def regex_fallback(text: str) -> Dict[str, Any]:
-    # Normalizuj non-breaking space pred regex hľadaním
+    # Normalizuj non-breaking space na regular space pred hľadaním
     normalized = text.replace('\xa0', ' ')
     email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', normalized)
-    # Zachytáva formáty: 0911 489 439 / +421911489439 / 0911/489-439 atď.
+    # Telefónny regex – zachytáva všetky bežné slovenské/české formáty:
+    #   0911 489 439  |  0911489439  |  0911/489-439
+    #   +421 911 489 439  |  +421911489439
+    # Pevná štruktúra: (predvoľba|0) + 2-3 číslice + sep? + 3 číslice + sep? + 3 číslice
     phone_match = re.search(
-        r'(\+421[\s\xa0]?|\+420[\s\xa0]?|0)[\s\xa0]*[-\/]?[\s\xa0]*\d{3}[\s\xa0]*[-\/]?[\s\xa0]*\d{3}[\s\xa0]*[-\/]?[\s\xa0]*\d{3}',
+        r'(\+421\s?|\+420\s?|0)'   # medzinárodná predvoľba ALEBO národná nula
+        r'\d{2,3}'                  # ďalšie 2–3 číslice (napr. 911)
+        r'[\s\-\/]?'               # voliteľný oddeľovač
+        r'\d{3}'                    # skupina 3 číslic
+        r'[\s\-\/]?'               # voliteľný oddeľovač
+        r'\d{3}',                   # skupina 3 číslic
         normalized
     )
+    phone_raw = phone_match.group(0).strip() if phone_match else None
     return {
         "email": email_match.group(0) if email_match else None,
-        "phone": phone_match.group(0).strip() if phone_match else None
+        "phone": phone_raw
     }
 
 def role_to_points(role: str) -> int:
