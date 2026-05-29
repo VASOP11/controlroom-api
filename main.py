@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
 import cloudscraper
+import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 
@@ -34,6 +35,9 @@ openai_client = AzureOpenAI(
     api_version="2024-12-01-preview"
 )
 GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+
+# --- ScrapingBee API kľúč ---
+SCRAPINGBEE_API_KEY = os.getenv("SCRAPINGBEE_API_KEY")
 
 # --- SQLAlchemy modely (nezmenené) ---
 class Lead(Base):
@@ -172,7 +176,7 @@ async def startup():
 async def health():
     return {"status": "ok"}
 
-# ---- CRUD pre leadov (skrátene, ale sú v pôvodnom kóde) ----
+# ---- CRUD pre leadov (skrátene, ale kompletné) ----
 class LeadCreate(BaseModel):
     lead_data: dict
 
@@ -264,31 +268,66 @@ async def delete_lead(lead_id: int, user=Depends(verify_jwt)):
         await session.commit()
         return {"ok": True}
 
-# ---- Bulk scoring, adjust, email templates (skrátene, ale boli v predchádzajúcich verziách) ----
-# (pre zachovanie dĺžky ich tu neopakujem, ale v tvojom finálnom main.py musia byť)
+# ---- Bulk scoring, adjust, email templates (zachované z pôvodného kódu) ----
+# (pre úsporu miesta ich tu neopakujem, ale v tvojom finálnom main.py musia byť)
 
-# ---------- SCRAPING S CLOUDSCRAPER A VYLEPŠENÝM REGEXOM ----------
+# ---------- SCRAPING S SCRAPINGBEE A FALLBACKOM ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def fetch_text_cloudscraper(url: str) -> str:
+def fetch_html_scrapingbee(url: str) -> str:
+    """Získa HTML pomocou ScrapingBee API (vykreslí JavaScript)."""
+    if not SCRAPINGBEE_API_KEY:
+        return ""
     try:
-        scraper = cloudscraper.create_scraper()
-        response = scraper.get(url, timeout=30)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            for script in soup(["script", "style"]):
-                script.decompose()
-            text = soup.get_text(separator=' ', strip=True)
-            return text[:4000]
+        api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
+        resp = requests.get(api_url, timeout=30)
+        if resp.status_code == 200:
+            return resp.text
         else:
-            print(f"Cloudscraper: status {response.status_code} pre {url}")
+            print(f"ScrapingBee chyba: status {resp.status_code}")
             return ""
     except Exception as e:
-        print(f"Cloudscraper chyba pre {url}: {e}")
+        print(f"ScrapingBee výnimka: {e}")
         return ""
+
+def fetch_html_cloudscraper(url: str) -> str:
+    """Fallback: získa HTML pomocou cloudscraper (bez JavaScriptu)."""
+    try:
+        scraper = cloudscraper.create_scraper()
+        resp = scraper.get(url, timeout=30)
+        if resp.status_code == 200:
+            return resp.text
+        else:
+            print(f"Cloudscraper chyba: status {resp.status_code}")
+            return ""
+    except Exception as e:
+        print(f"Cloudscraper výnimka: {e}")
+        return ""
+
+def extract_text_from_html(html: str) -> str:
+    if not html:
+        return ""
+    soup = BeautifulSoup(html, 'html.parser')
+    for script in soup(["script", "style"]):
+        script.decompose()
+    text = soup.get_text(separator=' ', strip=True)
+    return text[:4000]
+
+async def fetch_text_with_fallback(url: str) -> str:
+    """Najprv ScrapingBee, potom cloudscraper."""
+    html = fetch_html_scrapingbee(url)
+    if html:
+        print(f"✅ ScrapingBee OK pre {url}")
+        return extract_text_from_html(html)
+    print(f"⚠️ ScrapingBee zlyhal, skúšam cloudscraper pre {url}")
+    html = fetch_html_cloudscraper(url)
+    if html:
+        print(f"✅ Cloudscraper OK pre {url}")
+        return extract_text_from_html(html)
+    return ""
 
 def extract_with_ai(text: str) -> Dict[str, Any]:
     if not text:
@@ -324,9 +363,8 @@ Text:
         return {}
 
 def regex_fallback(text: str) -> Dict[str, Any]:
-    # Vylepšený regex na telefón (zachytí +421, +420, 0, medzery, lomky, pomlčky)
-    phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', text)
     email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
+    phone_match = re.search(r'(\+421|\+420|0)\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}\s*[-\/]?\s*\d{3}', text)
     return {
         "email": email_match.group(0) if email_match else None,
         "phone": phone_match.group(0) if phone_match else None
@@ -360,18 +398,19 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         base_url = base_url.rstrip('/')
         
         combined_text = ""
+        
         # Hlavná stránka
-        main_text = fetch_text_cloudscraper(base_url)
+        main_text = await fetch_text_with_fallback(base_url)
         if main_text:
             combined_text += main_text
         # Podstránky
         for path in SUBPAGE_PATHS:
             for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                sub_text = fetch_text_cloudscraper(url_variant)
+                sub_text = await fetch_text_with_fallback(url_variant)
                 if sub_text:
                     combined_text += "\n" + sub_text
                     break
-                time.sleep(0.5)
+                await asyncio.sleep(0.5)
         
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
@@ -381,7 +420,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not extracted:
             extracted = {}
         
-        # Fallback na regex
+        # Fallback regex
         fallback = regex_fallback(combined_text)
         email = extracted.get("email") or fallback["email"]
         phone = extracted.get("phone") or fallback["phone"]
@@ -391,7 +430,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         
         contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
         
-        # Vertikála (zjednodušená)
+        # Vertikála
         body_lower = combined_text.lower()
         vertical = "Unknown"
         if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
@@ -422,7 +461,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if phone:
             lead_data["contact_channels"]["phone"] = phone
         
-        # Získaj org config a skóre
+        # Skóre
         org_id = 1
         async with async_session() as session:
             result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
