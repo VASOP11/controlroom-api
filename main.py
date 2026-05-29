@@ -3,7 +3,7 @@ import uuid
 import datetime
 import re
 import json
-import time
+import asyncio
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -13,10 +13,10 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
-import cloudscraper
 import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
+from curl_cffi import requests as curl_requests
 
 load_dotenv()
 
@@ -36,10 +36,10 @@ openai_client = AzureOpenAI(
 )
 GPT_DEPLOYMENT = os.getenv("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
 
-# --- ScrapingBee API kľúč ---
+# --- ScrapingBee API kľúč (voliteľný) ---
 SCRAPINGBEE_API_KEY = os.getenv("SCRAPINGBEE_API_KEY")
 
-# --- SQLAlchemy modely (nezmenené) ---
+# --- SQLAlchemy modely ---
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -176,7 +176,7 @@ async def startup():
 async def health():
     return {"status": "ok"}
 
-# ---- CRUD pre leadov (skrátene, ale kompletné) ----
+# ---- CRUD pre leadov ----
 class LeadCreate(BaseModel):
     lead_data: dict
 
@@ -268,17 +268,142 @@ async def delete_lead(lead_id: int, user=Depends(verify_jwt)):
         await session.commit()
         return {"ok": True}
 
-# ---- Bulk scoring, adjust, email templates (zachované z pôvodného kódu) ----
-# (pre úsporu miesta ich tu neopakujem, ale v tvojom finálnom main.py musia byť)
+# ---- Bulk scoring ----
+class BulkLeadItem(BaseModel):
+    lead_id: str
+    lead_data: dict
 
-# ---------- SCRAPING S SCRAPINGBEE A FALLBACKOM ----------
+class BulkScoreRequest(BaseModel):
+    leads: List[BulkLeadItem]
+
+class BulkScoreResponseItem(BaseModel):
+    lead_id: str
+    rule_score: int
+    ai_adjustment: Optional[int] = None
+    final_score: int
+    tier: str
+
+@app.post("/api/leads/score/bulk")
+async def bulk_score(request: BulkScoreRequest, user=Depends(verify_jwt)):
+    org_id = 1
+    async with async_session() as session:
+        result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == org_id))
+        org_config = result.scalar_one_or_none()
+        if not org_config:
+            raise HTTPException(status_code=404, detail="Organization config not found")
+    results = []
+    for item in request.leads:
+        rule_score = evaluate_lead(item.lead_data, org_config.scoring_rules)
+        final_score = rule_score
+        thresholds = org_config.tier_thresholds
+        if final_score >= thresholds["HOT"]: tier = "HOT"
+        elif final_score >= thresholds["WARM"]: tier = "WARM"
+        elif final_score >= thresholds["COOL"]: tier = "COOL"
+        else: tier = "DEAD"
+        results.append(BulkScoreResponseItem(
+            lead_id=item.lead_id,
+            rule_score=rule_score,
+            final_score=final_score,
+            tier=tier
+        ))
+    return {"results": results}
+
+# ---- Manuálny AI adjustment ----
+class AdjustRequest(BaseModel):
+    ai_adjustment: int
+
+@app.post("/api/leads/{lead_id}/adjust")
+async def adjust_lead(lead_id: int, req: AdjustRequest, user=Depends(verify_jwt)):
+    if req.ai_adjustment < -20 or req.ai_adjustment > 20:
+        raise HTTPException(status_code=400, detail="Adjustment must be between -20 and 20")
+    async with async_session() as session:
+        lead = await session.get(Lead, lead_id)
+        if not lead:
+            raise HTTPException(status_code=404, detail="Lead not found")
+        lead.ai_adjustment = req.ai_adjustment
+        new_final = lead.rule_score + req.ai_adjustment
+        lead.final_score = max(0, min(100, new_final))
+        org_result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == 1))
+        org_config = org_result.scalar_one_or_none()
+        if org_config:
+            thresholds = org_config.tier_thresholds
+            if lead.final_score >= thresholds["HOT"]: lead.tier = "HOT"
+            elif lead.final_score >= thresholds["WARM"]: lead.tier = "WARM"
+            elif lead.final_score >= thresholds["COOL"]: lead.tier = "COOL"
+            else: lead.tier = "DEAD"
+        await session.commit()
+        await session.refresh(lead)
+        return lead
+
+# ---- Email templates ----
+class EmailTemplateCreate(BaseModel):
+    name: str
+    subject: str
+    body_template: str
+
+@app.get("/api/email/templates")
+async def list_templates(user=Depends(verify_jwt)):
+    async with async_session() as session:
+        result = await session.execute(select(EmailTemplate).where(EmailTemplate.org_id == 1))
+        templates = result.scalars().all()
+        return templates
+
+@app.post("/api/email/templates")
+async def create_template(tmpl: EmailTemplateCreate, user=Depends(verify_jwt)):
+    new_tmpl = EmailTemplate(org_id=1, name=tmpl.name, subject=tmpl.subject, body_template=tmpl.body_template)
+    async with async_session() as session:
+        session.add(new_tmpl)
+        await session.commit()
+        await session.refresh(new_tmpl)
+        return new_tmpl
+
+class EmailDraftRequest(BaseModel):
+    template_id: int
+
+@app.post("/api/leads/{lead_id}/email-draft")
+async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depends(verify_jwt)):
+    async with async_session() as session:
+        lead = await session.get(Lead, lead_id)
+        if not lead:
+            raise HTTPException(status_code=404, detail="Lead not found")
+        template = await session.get(EmailTemplate, req.template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        replacements = {
+            "{company}": lead.primary_identifier,
+            "{name}": lead.primary_identifier,
+            "{id}": str(lead.id),
+            "{score}": str(lead.final_score),
+            "{tier}": lead.tier
+        }
+        subject = template.subject
+        body = template.body_template
+        for key, val in replacements.items():
+            subject = subject.replace(key, val)
+            body = body.replace(key, val)
+        return {"subject": subject, "body": body}
+
+# ---------- SCRAPING S CURL_CFFI A FALLBACKMI ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
+def fetch_html_curl_cffi(url: str) -> str:
+    """Získa HTML pomocou curl_cffi (emuluje Chrome 110)."""
+    try:
+        response = curl_requests.get(url, impersonate="chrome110", timeout=30)
+        if response.status_code == 200:
+            return response.text
+        else:
+            print(f"curl_cffi: status {response.status_code} pre {url}")
+            return ""
+    except Exception as e:
+        print(f"curl_cffi výnimka pre {url}: {e}")
+        return ""
+
 def fetch_html_scrapingbee(url: str) -> str:
-    """Získa HTML pomocou ScrapingBee API (vykreslí JavaScript)."""
+    """Získa HTML pomocou ScrapingBee API (vykreslí JS)."""
     if not SCRAPINGBEE_API_KEY:
         return ""
     try:
@@ -293,18 +418,19 @@ def fetch_html_scrapingbee(url: str) -> str:
         print(f"ScrapingBee výnimka: {e}")
         return ""
 
-def fetch_html_cloudscraper(url: str) -> str:
-    """Fallback: získa HTML pomocou cloudscraper (bez JavaScriptu)."""
+def fetch_html_cloudscraper_fallback(url: str) -> str:
+    """Posledný fallback – cloudscraper."""
     try:
+        import cloudscraper
         scraper = cloudscraper.create_scraper()
         resp = scraper.get(url, timeout=30)
         if resp.status_code == 200:
             return resp.text
         else:
-            print(f"Cloudscraper chyba: status {resp.status_code}")
+            print(f"cloudscraper: status {resp.status_code} pre {url}")
             return ""
     except Exception as e:
-        print(f"Cloudscraper výnimka: {e}")
+        print(f"cloudscraper výnimka pre {url}: {e}")
         return ""
 
 def extract_text_from_html(html: str) -> str:
@@ -317,15 +443,19 @@ def extract_text_from_html(html: str) -> str:
     return text[:4000]
 
 async def fetch_text_with_fallback(url: str) -> str:
-    """Najprv ScrapingBee, potom cloudscraper."""
-    html = fetch_html_scrapingbee(url)
+    """Skúša curl_cffi, potom ScrapingBee, nakoniec cloudscraper."""
+    html = fetch_html_curl_cffi(url)
     if html:
-        print(f"✅ ScrapingBee OK pre {url}")
+        print(f"✅ curl_cffi OK pre {url}")
         return extract_text_from_html(html)
-    print(f"⚠️ ScrapingBee zlyhal, skúšam cloudscraper pre {url}")
-    html = fetch_html_cloudscraper(url)
+    if SCRAPINGBEE_API_KEY:
+        html = fetch_html_scrapingbee(url)
+        if html:
+            print(f"✅ ScrapingBee OK pre {url}")
+            return extract_text_from_html(html)
+    html = fetch_html_cloudscraper_fallback(url)
     if html:
-        print(f"✅ Cloudscraper OK pre {url}")
+        print(f"✅ cloudscraper OK pre {url}")
         return extract_text_from_html(html)
     return ""
 
@@ -398,7 +528,6 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         base_url = base_url.rstrip('/')
         
         combined_text = ""
-        
         # Hlavná stránka
         main_text = await fetch_text_with_fallback(base_url)
         if main_text:
@@ -430,7 +559,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         
         contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
         
-        # Vertikála
+        # Vertikála (zjednodušená)
         body_lower = combined_text.lower()
         vertical = "Unknown"
         if any(w in body_lower for w in ["home garden", "zahrada", "nábytok"]):
@@ -478,7 +607,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
         
-        # Uloženie
+        # Uloženie alebo aktualizácia
         async with async_session() as session:
             stmt = select(Lead).where(Lead.primary_identifier == name)
             existing = (await session.execute(stmt)).scalar_one_or_none()
