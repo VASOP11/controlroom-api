@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -155,7 +156,12 @@ def evaluate_lead(lead_data: dict, scoring_rules: dict) -> int:
     return max(0, min(100, score))
 
 # --- FastAPI app ---
-app = FastAPI(title="ControlRoom MVP")
+# Vlastná JSON odpoveď s explicitným charset=utf-8 v Content-Type hlavičke.
+# Bez toho Windows PowerShell 5.1 dekóduje telo ako ISO-8859-1 → mojibake (Ä¾).
+class UTF8JSONResponse(JSONResponse):
+    media_type = "application/json; charset=utf-8"
+
+app = FastAPI(title="ControlRoom MVP", default_response_class=UTF8JSONResponse)
 
 app.add_middleware(
     CORSMiddleware,
