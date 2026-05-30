@@ -434,11 +434,14 @@ def fetch_html_cloudscraper(url: str) -> bytes:
         return b""
 
 def extract_text_from_html(html: bytes) -> str:
-    """Prijíma bytes – BS4 detekuje encoding z <meta charset> a dekóduje správne."""
+    """Prijíma bytes – explicitne dekódujeme UTF-8 pred BS4 aby sme obišli
+    UnicodeDammit ktorý môže bytes misdetectovať a spôsobiť double-encoding."""
     if not html:
         return ""
-    # 'html.parser' + bytes vstup: BS4 prečíta <meta charset="utf-8"> a dekóduje sám
-    soup = BeautifulSoup(html, 'html.parser')
+    # Krok 1: bytes → str cez explicitný UTF-8 decode (ScrapingBee vždy vracia UTF-8)
+    # Toto obíde UnicodeDammit v BS4 ktorý môže zle detekovať encoding z bytes
+    html_str = html.decode('utf-8', errors='replace')
+    soup = BeautifulSoup(html_str, 'html.parser')
     for script in soup(["script", "style"]):
         script.decompose()
 
@@ -462,11 +465,21 @@ def extract_text_from_html(html: bytes) -> str:
     return (prefix + text)[:25000]
 
 async def fetch_text_with_fallback(url: str) -> str:
-    """Najprv ScrapingBee, potom cloudscraper."""
+    """Najprv ScrapingBee, pri zlyhaní retry s trailing slash, potom cloudscraper."""
     html = fetch_html_scrapingbee(url)
     if html:
         print(f"✅ ScrapingBee OK pre {url}")
         return extract_text_from_html(html)
+
+    # Retry s trailing slash (napr. /tym zlyhá ale /tym/ funguje)
+    if not url.endswith('/'):
+        url_slash = url + '/'
+        print(f"⚠️ ScrapingBee zlyhal pre {url}, skúšam {url_slash}")
+        html = fetch_html_scrapingbee(url_slash)
+        if html:
+            print(f"✅ ScrapingBee OK pre {url_slash}")
+            return extract_text_from_html(html)
+
     print(f"⚠️ ScrapingBee zlyhal, skúšam cloudscraper pre {url}")
     html = fetch_html_cloudscraper(url)
     if html:
