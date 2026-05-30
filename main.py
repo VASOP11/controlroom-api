@@ -492,21 +492,43 @@ async def fetch_text_with_fallback(url: str) -> str:
         return extract_text_from_html(html)
     return ""
 
+def filter_cookie_boilerplate(text: str) -> str:
+    """Odstráni vety s cookie-consent boilerplate, ktorý zaberá začiatok textu
+    a vytláča skutočné kontaktné údaje za 8000-znakový limit pre AI."""
+    bad_keywords = ["cookies", "cookie", "súhlasím", "suhlasim", "prehliadač", "prehliadac"]
+    # Rozdeľ na "vety" podľa interpunkcie alebo nového riadku
+    parts = re.split(r'(?<=[.!?])\s+|\n+', text)
+    kept = [p for p in parts if not any(k in p.lower() for k in bad_keywords)]
+    return ' '.join(kept)
+
 def extract_with_ai(text: str) -> Dict[str, Any]:
     if not text:
         return {}
-    # Limit textu pre AI – prioritizuj začiatok (kontaktné údaje sú zvyčajne na začiatku agregátu)
-    text_for_ai = text[:8000]
+    # 1. Spusti regex fallback NAJPRV – garantuje že telefón/email máme aj keď
+    #    sú hlboko v texte (za 8000-znakovým limitom pre AI)
+    fb = regex_fallback(text)
+    # 2. Odfiltruj cookie-consent boilerplate (vytláča kontakty za limit)
+    cleaned = filter_cookie_boilerplate(text)
+    # 3. Nájdené kontakty vlož ako PRVÉ riadky – AI ich tak vždy uvidí
+    hints = ""
+    if fb.get("phone"):
+        hints += f"NÁJDENÝ TELEFÓN: {fb['phone']}\n"
+    if fb.get("email"):
+        hints += f"NÁJDENÝ EMAIL: {fb['email']}\n"
+    if hints:
+        hints += "\n"
+    text_for_ai = (hints + cleaned)[:8000]
     prompt = f"""Si asistent pre extrakciu firemných kontaktných údajov z textu webovej stránky.
 
 Z textu nižšie vyextrahuj:
 - primary_identifier: názov firmy (string)
 - contact_name: celé meno kontaktnej osoby, napr. "Ladislav Ferenci" (string alebo null)
-- role: pozícia osoby – hľadaj CEO, Riaditeľ, Director, Konateľ, Obchod, Sales, Marketing, Info (string alebo null)
+- role: pozícia osoby – hľadaj CEO, Riaditeľ, Director, Konateľ, Obchod, Sales, Marketing, Info (string alebo null). Ak rolu NEnájdeš, vráť null – NEHÁDAJ.
 - email: emailová adresa (string alebo null)
 - phone: telefónne číslo vrátane predvoľby, zachovaj pôvodný formát s medzerami (string alebo null)
 
 DÔLEŽITÉ:
+- Ak text obsahuje riadky "NÁJDENÝ TELEFÓN:" alebo "NÁJDENÝ EMAIL:", použi tieto hodnoty.
 - Hľadaj telefóny aj vo formátoch: "0911 489 439", "+421 911 489 439", "0911/489439"
 - Hľadaj mená pri slovách: riaditeľ, CEO, konateľ, director, manager, vedúci
 - Vráť LEN čistý JSON objekt, žiadny iný text
@@ -567,6 +589,80 @@ def role_to_points(role: str) -> int:
         return 10
     return 5
 
+# Generické emailové prefixy (oddelenie/schránka, nie konkrétna osoba)
+GENERIC_EMAIL_PREFIXES = [
+    "info", "podpora", "support", "office", "kontakt", "contact",
+    "sales", "obchod", "reklamacia", "reklamácia", "admin", "hello",
+    "ahoj", "objednavky", "objednávky", "eshop", "shop", "mail", "post", "noreply"
+]
+
+def _domain_of(value: str) -> str:
+    """Vytiahne holú doménu z URL alebo emailu (bez www., bez cesty)."""
+    if not value:
+        return ""
+    v = value.lower().strip()
+    v = v.replace("https://", "").replace("http://", "")
+    v = v.split("@")[-1]          # ak je to email, vezmi časť za @
+    v = v.split("/")[0]            # odstráň cestu
+    if v.startswith("www."):
+        v = v[4:]
+    return v
+
+def is_generic_email(email: str) -> bool:
+    """True ak je email generická schránka (info@, podpora@, office@ ...)."""
+    if not email or "@" not in email:
+        return False
+    local = email.split("@")[0].lower()
+    return any(local == g or local.startswith(g) for g in GENERIC_EMAIL_PREFIXES)
+
+def is_personal_email(email: str, contact_name: Optional[str], website: Optional[str]) -> bool:
+    """True ak je email priamy menný/firemný:
+    - časť pred @ obsahuje časť mena/priezviska (napr. ferenci.ladislav), ALEBO
+    - doména emailu sedí s doménou webu (meno@firma.sk).
+    """
+    if not email or "@" not in email:
+        return False
+    local = email.split("@")[0].lower()
+    # 1. lokálna časť obsahuje meno alebo priezvisko
+    if contact_name:
+        for token in re.split(r'[\s.,]+', contact_name.lower()):
+            if len(token) >= 3 and token in local:
+                return True
+    # 2. doména emailu sedí s doménou webu
+    email_domain = _domain_of(email)
+    web_domain = _domain_of(website or "")
+    if email_domain and web_domain and email_domain == web_domain:
+        return True
+    return False
+
+def score_contact(email: Optional[str], phone: Optional[str], contact_name: Optional[str],
+                  role: Optional[str], website: Optional[str]) -> Dict[str, Any]:
+    """Bodovanie kontaktu podľa priority:
+      - priamy menný/firemný email = 45 (aj bez telefónu)
+      - generický email (info@, podpora@, office@) = 10
+      - len telefón bez mena = 20
+    Ak AI našla rolu, berie sa max(role_to_points, email/phone body) – rolu nehádame.
+    """
+    direct_personal_email = bool(email) and not is_generic_email(email) and \
+        is_personal_email(email, contact_name, website)
+
+    if direct_personal_email:
+        contact_points = 45
+    elif email and is_generic_email(email):
+        contact_points = 10
+    elif email:
+        contact_points = 10          # neznámy email bez zhody mena/domény
+    elif phone:
+        contact_points = 20          # len telefón bez mena
+    else:
+        contact_points = 0
+
+    # Rolu nehádame – ak ju AI našla, môže body iba zvýšiť
+    role_points = role_to_points(role) if role else 0
+    contact_points = max(contact_points, role_points)
+
+    return {"contact_points": contact_points, "direct_personal_email": direct_personal_email}
+
 class ScrapeRequest(BaseModel):
     url: str
 
@@ -623,12 +719,11 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         phone = extracted.get("phone") or fallback["phone"]
         name = extracted.get("primary_identifier") or base_url.split("//")[-1].split("/")[0]
         contact_name = extracted.get("contact_name")
-        role = extracted.get("role")
-        # Fallback: ak máme meno kontaktu ale rola sa nevyextrahovala, priraď generickú rolu
-        if contact_name and not role:
-            role = "Obchodné oddelenie"
+        role = extracted.get("role")  # rolu nehádame – ak ju AI nenašla, ostáva null
 
-        contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
+        contact_eval = score_contact(email, phone, contact_name, role, base_url)
+        contact_points = contact_eval["contact_points"]
+        direct_personal_email = contact_eval["direct_personal_email"]
         
         # Vertikála (zjednodušená)
         body_lower = combined_text.lower()
@@ -650,6 +745,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 "contact_name": contact_name,
                 "contact_role": role,
                 "contact_points": contact_points,
+                "direct_personal_email": direct_personal_email,
                 "scraped_email": email,
                 "scraped_phone": phone,
                 "ai_extracted": extracted,
@@ -791,12 +887,15 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     # AI extrakcia
     extracted = extract_with_ai(combined_text)
 
-    # Fallback: ak máme meno kontaktu ale rola sa nevyextrahovala, priraď generickú rolu
-    if extracted and extracted.get("contact_name") and not extracted.get("role"):
-        extracted["role"] = "Obchodné oddelenie"
-
     # Regex fallback
     fallback = regex_fallback(combined_text)
+
+    # Diagnostika kontaktného skóre (rolu nehádame – ostáva tak ako ju vrátila AI)
+    email = (extracted.get("email") if extracted else None) or fallback["email"]
+    phone = (extracted.get("phone") if extracted else None) or fallback["phone"]
+    contact_name = extracted.get("contact_name") if extracted else None
+    role = extracted.get("role") if extracted else None
+    contact_eval = score_contact(email, phone, contact_name, role, base_url)
 
     return {
         "url": base_url,
@@ -807,5 +906,7 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         "text_length": len(combined_text),
         "text_preview": combined_text[:2000],
         "ai_extracted": extracted,
-        "regex_fallback": fallback
+        "regex_fallback": fallback,
+        # Kontaktné skóre
+        "contact_scoring": contact_eval
     }
