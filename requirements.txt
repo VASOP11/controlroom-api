@@ -58,3 +58,4 @@ greenlet
 openai
 curl_cffi
 chardet
+ftfy==6.3.1

@@ -18,8 +18,9 @@ from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 import cloudscraper
 import chardet
+import ftfy
 
-print("ENCODING FIX v2 loaded")
+print("ENCODING FIX v3 loaded (ftfy mojibake repair)")
 
 load_dotenv()
 
@@ -441,6 +442,10 @@ def extract_text_from_html(html: bytes) -> str:
     # Krok 1: bytes → str cez explicitný UTF-8 decode (ScrapingBee vždy vracia UTF-8)
     # Toto obíde UnicodeDammit v BS4 ktorý môže zle detekovať encoding z bytes
     html_str = html.decode('utf-8', errors='replace')
+    # Krok 2: oprav double-encoded mojibake (Ä¾ -> ľ). ScrapingBee niekedy vracia
+    # už dvojito zakódovaný UTF-8; ftfy to deterministicky opraví. Na čistom
+    # texte je ftfy.fix_text bezpečné (no-op).
+    html_str = ftfy.fix_text(html_str)
     soup = BeautifulSoup(html_str, 'html.parser')
     for script in soup(["script", "style"]):
         script.decompose()
@@ -619,7 +624,10 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         name = extracted.get("primary_identifier") or base_url.split("//")[-1].split("/")[0]
         contact_name = extracted.get("contact_name")
         role = extracted.get("role")
-        
+        # Fallback: ak máme meno kontaktu ale rola sa nevyextrahovala, priraď generickú rolu
+        if contact_name and not role:
+            role = "Obchodné oddelenie"
+
         contact_points = role_to_points(role) if role else (10 if (email or phone) else 0)
         
         # Vertikála (zjednodušená)
@@ -782,6 +790,10 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
 
     # AI extrakcia
     extracted = extract_with_ai(combined_text)
+
+    # Fallback: ak máme meno kontaktu ale rola sa nevyextrahovala, priraď generickú rolu
+    if extracted and extracted.get("contact_name") and not extracted.get("role"):
+        extracted["role"] = "Obchodné oddelenie"
 
     # Regex fallback
     fallback = regex_fallback(combined_text)
