@@ -538,12 +538,32 @@ def extract_text_from_html(html: bytes) -> str:
     # Limit 25 000 znakov – telefón na fgym.sk/kontakt je na pozícii ~21 800
     return (prefix + text)[:25000]
 
-async def fetch_html_playwright(url: str) -> bytes:
+async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
     """Headless Chromium cez Playwright — spustí JS, počká na sieťový idle.
     Použije sa len ako posledná možnosť (pomalší, ~5–10s per stránka).
     Vracia bytes (UTF-8 enkódovaný HTML string).
+    Ak je browser_ctx (playwright BrowserContext) poskytnutý, použije ho
+    namiesto spúšťania nového Chromia — ušetrí ~3–5s na každej URL.
     """
     try:
+        if browser_ctx is not None:
+            page = await browser_ctx.new_page()
+            await page.route(
+                "**/*.{png,jpg,jpeg,gif,webp,svg,ico,woff,woff2,ttf,mp4,mp3}",
+                lambda r: r.abort()
+            )
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=25000)
+            except Exception:
+                pass
+            content = await page.content()
+            await page.close()
+            if content:
+                print(f"✅ Playwright (shared ctx) OK pre {url} ({len(content)} znakov)")
+                return content.encode("utf-8", errors="replace")
+            return b""
+
+        # Standalone režim — spustí vlastný browser (pomalší, pre debug endpoint)
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(
                 headless=True,
@@ -564,7 +584,6 @@ async def fetch_html_playwright(url: str) -> bytes:
                 },
             )
             page = await ctx.new_page()
-            # Blokuj obrázky, fonty, média — nepotrebujeme ich, ušetríme RAM+čas
             await page.route(
                 "**/*.{png,jpg,jpeg,gif,webp,svg,ico,woff,woff2,ttf,mp4,mp3}",
                 lambda r: r.abort()
@@ -572,7 +591,6 @@ async def fetch_html_playwright(url: str) -> bytes:
             try:
                 await page.goto(url, wait_until="networkidle", timeout=25000)
             except Exception:
-                # networkidle timeout — vezmeme čo máme
                 pass
             content = await page.content()
             await browser.close()
@@ -584,8 +602,11 @@ async def fetch_html_playwright(url: str) -> bytes:
         print(f"Playwright výnimka pre {url}: {e}")
         return b""
 
-async def fetch_text_with_fallback(url: str) -> str:
-    """Reťaz fallbackov: httpx → cloudscraper+UA → Playwright → prázdny string."""
+async def fetch_text_with_fallback(url: str, browser_ctx=None) -> str:
+    """Reťaz fallbackov: httpx → cloudscraper+UA → Playwright → prázdny string.
+    browser_ctx: voliteľný playwright BrowserContext — ak je poskytnutý,
+    Playwright ho použije namiesto spúšťania nového Chromia.
+    """
     html = fetch_html_httpx(url)
     if html:
         print(f"✅ httpx OK pre {url}")
@@ -597,7 +618,7 @@ async def fetch_text_with_fallback(url: str) -> str:
         return extract_text_from_html(html)
 
     print(f"⚠️ cloudscraper zlyhalo, skúšam Playwright pre {url}")
-    html = await fetch_html_playwright(url)
+    html = await fetch_html_playwright(url, browser_ctx=browser_ctx)
     if html:
         return extract_text_from_html(html)
 
@@ -972,6 +993,86 @@ def score_contact(email: Optional[str], phone: Optional[str], contact_name: Opti
 class ScrapeRequest(BaseModel):
     url: str
 
+async def _scrape_all_pages(base_url: str) -> str:
+    """Stiahne hlavnú stránku + subpages. Playwright browser sa spustí max raz
+    a zdieľa BrowserContext cez všetky volania fetch_text_with_fallback."""
+    contact_priority_paths = [
+        "kontakt", "contact", "kontakty", "tym", "team",
+        "o-nas", "about-us", "onas", "vedenie", "management"
+    ]
+    other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
+
+    # Zisti či httpx/cloudscraper stačia na hlavnú stránku —
+    # ak áno, Playwright nikdy nespustíme a ušetríme ~5s + RAM.
+    # Ak treba Playwright, spustíme ho raz a zdieľame context.
+    pw_instance = None
+    pw_browser = None
+    browser_ctx = None
+
+    async def _fetch(url: str) -> str:
+        nonlocal pw_instance, pw_browser, browser_ctx
+        # Skús najprv rýchle metódy
+        html = fetch_html_httpx(url)
+        if html:
+            return extract_text_from_html(html)
+        html = fetch_html_cloudscraper_with_ua(url)
+        if html:
+            return extract_text_from_html(html)
+        # Playwright fallback — len ak rýchle metódy zlyhali
+        if browser_ctx is None:
+            print(f"⚡ Spúšťam Playwright browser (zdieľaný pre celý request)...")
+            pw_instance = await async_playwright().start()
+            pw_browser = await pw_instance.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox",
+                      "--disable-dev-shm-usage", "--disable-gpu", "--single-process"],
+            )
+            browser_ctx = await pw_browser.new_context(
+                user_agent=random.choice(_USER_AGENTS),
+                locale="sk-SK",
+                extra_http_headers={
+                    "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7",
+                    "Referer": "https://www.google.com/",
+                },
+            )
+        html = await fetch_html_playwright(url, browser_ctx=browser_ctx)
+        return extract_text_from_html(html) if html else ""
+
+    try:
+        contact_texts = []
+        for path in contact_priority_paths:
+            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+                sub_text = await _fetch(url_variant)
+                if sub_text:
+                    contact_texts.append(sub_text)
+                    break
+                await asyncio.sleep(0.2)
+
+        main_text = await _fetch(base_url)
+
+        other_texts = []
+        for path in other_paths:
+            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
+                sub_text = await _fetch(url_variant)
+                if sub_text:
+                    other_texts.append(sub_text)
+                    break
+                await asyncio.sleep(0.2)
+    finally:
+        # Zavrieme browser ak bol spustený
+        if pw_browser:
+            await pw_browser.close()
+        if pw_instance:
+            await pw_instance.stop()
+
+    combined = "\n".join(contact_texts)
+    if main_text:
+        combined += "\n" + main_text
+    if other_texts:
+        combined += "\n" + "\n".join(other_texts)
+    return combined
+
+
 @app.post("/api/leads/scrape")
 async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     try:
@@ -979,38 +1080,9 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not base_url.startswith(("http://", "https://")):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
-        
-        # Najprv scrapuj kontaktné podstránky (majú prioritu pre AI extrakciu)
-        contact_priority_paths = ["kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas", "vedenie", "management"]
-        other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
 
-        contact_texts = []
-        for path in contact_priority_paths:
-            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                sub_text = await fetch_text_with_fallback(url_variant)
-                if sub_text:
-                    contact_texts.append(sub_text)
-                    break
-                await asyncio.sleep(0.3)
+        combined_text = await _scrape_all_pages(base_url)
 
-        main_text = await fetch_text_with_fallback(base_url)
-
-        other_texts = []
-        for path in other_paths:
-            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                sub_text = await fetch_text_with_fallback(url_variant)
-                if sub_text:
-                    other_texts.append(sub_text)
-                    break
-                await asyncio.sleep(0.3)
-
-        # Kontaktné podstránky idú ako prvé – AI ich dostane pred orezaním na 8000 znakov
-        combined_text = "\n".join(contact_texts)
-        if main_text:
-            combined_text += "\n" + main_text
-        if other_texts:
-            combined_text += "\n" + "\n".join(other_texts)
-        
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
         
@@ -1173,35 +1245,8 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     # repr() prvých 500 bajtov – ukazuje skutočné bajty vrátane \xc4\xbe atď.
     raw_bytes_preview = repr(raw_bytes[:500])
 
-    # --- Bežné scrapovanie ---
-    contact_priority_paths = ["kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas", "vedenie", "management"]
-    other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
-
-    contact_texts = []
-    for path in contact_priority_paths:
-        for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-            sub_text = await fetch_text_with_fallback(url_variant)
-            if sub_text:
-                contact_texts.append(sub_text)
-                break
-            await asyncio.sleep(0.3)
-
-    main_text = await fetch_text_with_fallback(base_url)
-
-    other_texts = []
-    for path in other_paths:
-        for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-            sub_text = await fetch_text_with_fallback(url_variant)
-            if sub_text:
-                other_texts.append(sub_text)
-                break
-            await asyncio.sleep(0.3)
-
-    combined_text = "\n".join(contact_texts)
-    if main_text:
-        combined_text += "\n" + main_text
-    if other_texts:
-        combined_text += "\n" + "\n".join(other_texts)
+    # --- Bežné scrapovanie (zdieľaný Playwright browser) ---
+    combined_text = await _scrape_all_pages(base_url)
 
     # AI extrakcia (s hint názvom firmy z domény)
     domain_hint = _domain_of(base_url)
