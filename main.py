@@ -14,7 +14,9 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
+import random
 import requests
+import httpx
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
 import cloudscraper
@@ -401,32 +403,43 @@ SUBPAGE_PATHS = [
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def fetch_html_scrapingbee(url: str, render_js: bool = True) -> bytes:
-    """Získa HTML ako RAW BYTES pomocou ScrapingBee API.
-    Vracia bytes – BeautifulSoup ich dekóduje sám podľa <meta charset> v HTML.
-    Pri zlyhaní loguje status code aj prvých 200 znakov tela odpovede pre diagnostiku.
-    """
-    if not SCRAPINGBEE_API_KEY:
-        print(f"ScrapingBee: API kľúč nie je nastavený, preskakujem {url}")
-        return b""
+_USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+]
+
+def fetch_html_httpx(url: str) -> bytes:
+    """Získa HTML ako RAW BYTES pomocou httpx s rotáciou User-Agent headerov."""
+    headers = {
+        "User-Agent": random.choice(_USER_AGENTS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7,en;q=0.6",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer": "https://www.google.com/",
+    }
     try:
-        render_param = "true" if render_js else "false"
-        api_url = (f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}"
-                   f"&url={url}&render_js={render_param}")
-        resp = requests.get(api_url, timeout=30)
+        with httpx.Client(follow_redirects=True, timeout=20) as client:
+            resp = client.get(url, headers=headers)
         if resp.status_code == 200 and resp.content:
             return resp.content
-        snippet = (resp.text[:200] if resp.text else "(prázdne telo)").replace('\n', ' ')
-        print(f"ScrapingBee ZLYHALO {url} (render_js={render_js}): "
-              f"status={resp.status_code}, body={snippet!r}")
+        print(f"httpx chyba {url}: status={resp.status_code}")
         return b""
     except Exception as e:
-        print(f"ScrapingBee výnimka pre {url}: {e}")
+        print(f"httpx výnimka pre {url}: {e}")
         return b""
 
+def fetch_html_scrapingbee(url: str, render_js: bool = True) -> bytes:
+    """ScrapingBee – kredity vyčerpané. Kľúč ponechaný v env pre budúcnosť."""
+    if not SCRAPINGBEE_API_KEY:
+        return b""
+    return b""
+
 def fetch_raw_bytes_scrapingbee(url: str) -> bytes:
-    """Alias pre diagnostiku – rovnaké ako fetch_html_scrapingbee."""
-    return fetch_html_scrapingbee(url)
+    """Alias pre diagnostiku – používa httpx."""
+    return fetch_html_httpx(url)
 
 def fetch_html_cloudscraper(url: str) -> bytes:
     """Fallback: získa HTML ako RAW BYTES pomocou cloudscraper.
@@ -481,36 +494,18 @@ def extract_text_from_html(html: bytes) -> str:
     return (prefix + text)[:25000]
 
 async def fetch_text_with_fallback(url: str) -> str:
-    """Reťaz fallbackov:
-       1. ScrapingBee s render_js=true
-       2. ScrapingBee s trailing slash (ak chýba)
-       3. ScrapingBee BEZ render_js (niektoré weby s JS renderom padajú)
-       4. cloudscraper
-    """
-    html = fetch_html_scrapingbee(url, render_js=True)
+    """Reťaz fallbackov: httpx → cloudscraper → prázdny string."""
+    html = fetch_html_httpx(url)
     if html:
-        print(f"✅ ScrapingBee (JS) OK pre {url}")
+        print(f"✅ httpx OK pre {url}")
         return extract_text_from_html(html)
 
-    # Retry s trailing slash
-    if not url.endswith('/'):
-        url_slash = url + '/'
-        html = fetch_html_scrapingbee(url_slash, render_js=True)
-        if html:
-            print(f"✅ ScrapingBee (JS, slash) OK pre {url_slash}")
-            return extract_text_from_html(html)
-
-    # Retry bez render_js – niektoré stránky pri JS renderingu padajú/timeoutujú
-    html = fetch_html_scrapingbee(url, render_js=False)
-    if html:
-        print(f"✅ ScrapingBee (bez JS) OK pre {url}")
-        return extract_text_from_html(html)
-
-    print(f"⚠️ ScrapingBee všetky pokusy zlyhali, skúšam cloudscraper pre {url}")
+    print(f"⚠️ httpx zlyhalo, skúšam cloudscraper pre {url}")
     html = fetch_html_cloudscraper(url)
     if html:
         print(f"✅ Cloudscraper OK pre {url}")
         return extract_text_from_html(html)
+
     print(f"❌ Všetky fetch metódy zlyhali pre {url}")
     return ""
 
