@@ -21,7 +21,7 @@ URLS = [
     "https://www.stylin.sk/",
     "https://www.zeniqo.sk/",
     "https://www.domoss.sk/",
-    "https://eshop.globo-lighting.sk/",
+    "https://www.fgym.sk/",
     "https://www.velkykosik.cz/",
     "https://ema-elektro.sk/",
     "https://lomax.sk/",

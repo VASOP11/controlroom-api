@@ -779,8 +779,11 @@ def is_valid_phone(num: str) -> bool:
     # SK pevná: 0[2-5]X... (10 číslic)
     if len(digits) == 10 and digits[0] == '0' and digits[1] in '2345':
         return True
-    # CZ holých 9 číslic, mobil začína 6/7, pevná 2-5
+    # CZ holých 9 číslic, mobil začína 6/7, pevná 2-5; SK mobil bez 0 (9XX...)
     if len(digits) == 9 and digits[0] in '23456789':
+        return True
+    # SK pevná linka bez leading 0 (napr. 33774800 = oblasť 033)
+    if len(digits) == 8 and digits[0] in '23456789':
         return True
     return False
 
@@ -849,7 +852,25 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     for _sp in [' ', ' ', ' ', ' ', '­']:
         normalized = normalized.replace(_sp, ' ')
     phone_pattern = re.compile(
-        r'(00421\s?|00420\s?|\+421\s?|\+420\s?|0)\d{2,3}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+        r'(?:'
+        # International prefix (+421, +420, 00421, 00420)
+        r'(?:00421|00420|\+421|\+420)\s?(?:\d[\s\-]?){8}\d'
+        r'|'
+        # SK landline 0X/XXXX XXXX — oblastná predvoľba + lomka/medzera + číslo
+        r'0[1-9][\s\/\-]\d{3,4}[\s\/\-]?\d{3,4}'
+        r'|'
+        # SK mobile 09XX XXX XXX (10 číslic)
+        r'0[689]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+        r'|'
+        # Ostatné 0XX XXX XXX (SK/CZ s leading 0, 10 číslic)
+        r'0\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+        r'|'
+        # Bare 9 číslic bez predvoľby (CZ/SK mobil/pevná): 317804046, 777592979 ...
+        r'(?<!\d)[2-9]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
+        r'|'
+        # Bare 8 číslic (SK pevná bez leading 0): 33774800
+        r'(?<!\d)[2-9]\d[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
+        r')'
     )
     seen_phones = set()
     for m in phone_pattern.finditer(normalized):
@@ -953,8 +974,9 @@ VYČISTENÝ TEXT z kontaktnej stránky (prvých 3000 znakov, bez cookies/GDPR):
 PRIORITA výberu (vyber JEDEN kontakt):
 1. menovaná osoba s rolou riaditeľ/ředitel/director/CEO/konateľ/jednatel/majiteľ
 2. menovaná osoba v obchode (obchod/obchodní/sales) alebo manažér/vedúci
-3. menný email (formát meno.priezvisko@firma alebo priezvisko@firma)
-4. generický email (info@, podpora@, office@)
+3. menný email (formát meno.priezvisko@firma, priezvisko@firma, ferenci.ladislav@gmail.com)
+3b. oddeleniový email (servis@, marketing@, eshop@, shop@, technika@) — uprednostni pred info@
+4. generický email (info@, podpora@, office@, kontakt@)
 
 DÔLEŽITÉ:
 - Roly podporuj v SK/CZ/EN: riaditeľ/ředitel/director, konateľ/jednatel, obchod/obchodní/sales, vedúci/vedoucí/head.
