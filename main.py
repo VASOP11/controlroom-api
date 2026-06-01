@@ -672,6 +672,34 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
                 })
                 if len(result["names"]) >= 15:
                     return result
+
+    # === NAMES === blízko emailov (±200 znakov okolo každého emailu)
+    for email_entry in result["emails"]:
+        email_val = email_entry["value"]
+        for em in re.finditer(re.escape(email_val), normalized, re.IGNORECASE):
+            window_start = max(0, em.start() - 200)
+            window_end = min(len(normalized), em.end() + 200)
+            window = normalized[window_start:window_end]
+            for nm in _NAME_PATTERN.finditer(window):
+                name_val = nm.group(0).strip()
+                tokens = [t for t in name_val.split() if not t.endswith('.')]
+                if len(tokens) < 2:
+                    continue
+                if any(t in _NOT_A_NAME_WORD for t in tokens):
+                    continue
+                if name_val in seen_names:
+                    continue
+                seen_names.add(name_val)
+                abs_start = window_start + nm.start()
+                abs_end = window_start + nm.end()
+                result["names"].append({
+                    "value": name_val,
+                    "near_role": f"email:{email_val}",
+                    "context": _context(normalized, abs_start, abs_end)
+                })
+                if len(result["names"]) >= 15:
+                    return result
+
     return result
 
 def extract_with_ai(text: str, company_name_hint: str = "") -> Dict[str, Any]:
@@ -708,6 +736,7 @@ DÔLEŽITÉ:
 - Ak je MENO uvedené v kontexte BLÍZKO telefónu alebo blízko slova "obchod/sales/obchodní", priraď rolu "Obchodné oddelenie" a spáruj toto meno s tým telefónom (z poľa phones).
 - Ak rolu NEMÔŽEŠ jednoznačne určiť, vráť null – nehádaj.
 - contact_name musí pochádzať z poľa names, alebo z local-part menného emailu. Neguruj.
+- Ak je contact_name null ale emails[].value má menný formát (napr. meno.priezvisko@domena, jan.novak@, ladislav.ferenci@), vytiahni meno z local-part emailu sám: rozdeľ podľa "." alebo "-", každú časť daj s veľkým začiatočným písmenom (napr. "ferenci.ladislav" → "Ferenci Ladislav"). Použi tento postup len keď names[] je prázdne alebo neobsahuje reálne meno.
 
 Vráť LEN čistý JSON v tomto tvare (nič iné):
 {{
