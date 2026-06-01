@@ -442,20 +442,44 @@ def fetch_raw_bytes_scrapingbee(url: str) -> bytes:
     return fetch_html_httpx(url)
 
 def fetch_html_cloudscraper(url: str) -> bytes:
-    """Fallback: získa HTML ako RAW BYTES pomocou cloudscraper.
-    Vracia bytes z rovnakého dôvodu ako ScrapingBee varianta.
-    """
+    """Pôvodný cloudscraper bez UA rotácie – zachovaný pre spätnú kompatibilitu."""
     try:
         scraper = cloudscraper.create_scraper()
-        resp = scraper.get(url, timeout=30)
+        resp = scraper.get(url, timeout=20)
         if resp.status_code == 200:
-            return resp.content          # <-- bytes, žiadny decode
-        else:
-            print(f"Cloudscraper chyba: status {resp.status_code}")
-            return b""
+            return resp.content
+        print(f"Cloudscraper chyba: status {resp.status_code}")
+        return b""
     except Exception as e:
         print(f"Cloudscraper výnimka: {e}")
         return b""
+
+def fetch_html_cloudscraper_with_ua(url: str) -> bytes:
+    """Cloudscraper s rotáciou UA a retry 3x pri failure.
+    Pri každom pokuse použije iný User-Agent z _USER_AGENTS listu.
+    Vracia bytes (rovnako ako httpx varianta).
+    """
+    ua_pool = _USER_AGENTS.copy()
+    random.shuffle(ua_pool)
+    for attempt, ua in enumerate(ua_pool[:3], 1):
+        try:
+            scraper = cloudscraper.create_scraper(
+                browser={"custom": ua}
+            )
+            scraper.headers.update({
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7,en;q=0.6",
+                "Referer": "https://www.google.com/",
+            })
+            resp = scraper.get(url, timeout=20)
+            if resp.status_code == 200 and resp.content:
+                print(f"✅ CloudScraper+UA (pokus {attempt}) OK pre {url}")
+                return resp.content
+            print(f"  CloudScraper+UA pokus {attempt}: status={resp.status_code}")
+        except Exception as e:
+            print(f"  CloudScraper+UA pokus {attempt} výnimka: {e}")
+    print(f"❌ CloudScraper+UA všetky 3 pokusy zlyhali pre {url}")
+    return b""
 
 def extract_text_from_html(html: bytes) -> str:
     """Prijíma bytes – explicitne dekódujeme UTF-8 pred BS4 aby sme obišli
@@ -500,10 +524,9 @@ async def fetch_text_with_fallback(url: str) -> str:
         print(f"✅ httpx OK pre {url}")
         return extract_text_from_html(html)
 
-    print(f"⚠️ httpx zlyhalo, skúšam cloudscraper pre {url}")
-    html = fetch_html_cloudscraper(url)
+    print(f"⚠️ httpx zlyhalo, skúšam cloudscraper+UA pre {url}")
+    html = fetch_html_cloudscraper_with_ua(url)
     if html:
-        print(f"✅ Cloudscraper OK pre {url}")
         return extract_text_from_html(html)
 
     print(f"❌ Všetky fetch metódy zlyhali pre {url}")
@@ -699,6 +722,10 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
                 })
                 if len(result["names"]) >= 15:
                     return result
+
+    # WARNING keď všetky kandidáty prázdne
+    if not result["emails"] and not result["phones"] and not result["names"]:
+        print(f"WARNING: 0 candidates found — možný JS-only render alebo blokácia")
 
     return result
 
