@@ -102,6 +102,7 @@ def main():
         print(f"WARN: {e} — pokračujem aj tak")
 
     results = []
+    total_start = time.time()
     for i, url in enumerate(URLS, 1):
         print(f"\n>>> [{i}/{len(URLS)}] Scrapujem {url} ...", flush=True)
         t0 = time.time()
@@ -110,9 +111,11 @@ def main():
         print(f"    hotovo za {elapsed:.1f}s", flush=True)
         print_row(i, row)
         results.append(row)
+    total_elapsed = time.time() - total_start
+    print(f"\nTOTAL TEST TIME: {total_elapsed:.1f}s")
 
     # CSV export
-    csv_path = "scrape_results_v2.csv"
+    csv_path = "scrape_results_v4.csv"
     with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS, delimiter=";")
         writer.writeheader()

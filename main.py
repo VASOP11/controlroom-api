@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, JSON, DateTime, func, select
 import random
+import gc
 import requests
 import httpx
 from bs4 import BeautifulSoup
@@ -23,6 +24,10 @@ import cloudscraper
 import chardet
 import ftfy
 from playwright.async_api import async_playwright
+try:
+    import whois as _whois_lib  # python-whois
+except Exception:
+    _whois_lib = None
 
 print("ENCODING FIX v3 loaded (ftfy mojibake repair)")
 
@@ -422,11 +427,10 @@ def fetch_html_httpx(url: str) -> bytes:
         "Referer": "https://www.google.com/",
     }
     try:
-        with httpx.Client(follow_redirects=True, timeout=20) as client:
+        with httpx.Client(follow_redirects=True, timeout=8) as client:
             resp = client.get(url, headers=headers)
         if resp.status_code == 200 and resp.content:
             return resp.content
-        print(f"httpx chyba {url}: status={resp.status_code}")
         return b""
     except Exception as e:
         print(f"httpx výnimka pre {url}: {e}")
@@ -446,10 +450,9 @@ def fetch_html_cloudscraper(url: str) -> bytes:
     """Pôvodný cloudscraper bez UA rotácie – zachovaný pre spätnú kompatibilitu."""
     try:
         scraper = cloudscraper.create_scraper()
-        resp = scraper.get(url, timeout=20)
+        resp = scraper.get(url, timeout=10)
         if resp.status_code == 200:
             return resp.content
-        print(f"Cloudscraper chyba: status {resp.status_code}")
         return b""
     except Exception as e:
         print(f"Cloudscraper výnimka: {e}")
@@ -466,7 +469,7 @@ def fetch_html_cloudscraper_with_ua(url: str) -> bytes:
     except Exception as e:
         print(f"CloudScraper init zlyhalo: {e}")
         return b""
-    for attempt, ua in enumerate(ua_pool[:3], 1):
+    for attempt, ua in enumerate(ua_pool[:2], 1):  # 2 pokusy stačia
         try:
             scraper.headers.update({
                 "User-Agent": ua,
@@ -474,15 +477,110 @@ def fetch_html_cloudscraper_with_ua(url: str) -> bytes:
                 "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7,en;q=0.6",
                 "Referer": "https://www.google.com/",
             })
-            resp = scraper.get(url, timeout=20)
+            resp = scraper.get(url, timeout=10)
             if resp.status_code == 200 and resp.content:
-                print(f"✅ CloudScraper+UA (pokus {attempt}) OK pre {url}")
                 return resp.content
-            print(f"  CloudScraper+UA pokus {attempt}: status={resp.status_code}")
-        except Exception as e:
-            print(f"  CloudScraper+UA pokus {attempt} výnimka: {e}")
-    print(f"❌ CloudScraper+UA všetky 3 pokusy zlyhali pre {url}")
+        except Exception:
+            pass
     return b""
+
+def extract_jsonld_contacts(html: bytes) -> Dict[str, Any]:
+    """Vytiahne kontaktné info z <script type=\"application/ld+json\">.
+    Väčšina e-shopov má Organization / LocalBusiness schema s contactPoint
+    obsahujúcim telephone, email, name. ZADARMO, žiadny JS render nepotrebný.
+    Vracia {'name','email','phone','contact_name','role'} alebo prázdny dict.
+    """
+    out: Dict[str, Any] = {}
+    if not html:
+        return out
+    try:
+        soup = BeautifulSoup(html.decode("utf-8", errors="replace"), "html.parser")
+        for s in soup.find_all("script", type="application/ld+json"):
+            txt = s.string or s.get_text() or ""
+            if not txt.strip():
+                continue
+            try:
+                data = json.loads(txt)
+            except Exception:
+                continue
+            items = data if isinstance(data, list) else [data]
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                graph = it.get("@graph") if "@graph" in it else [it]
+                if not isinstance(graph, list):
+                    graph = [graph]
+                for node in graph:
+                    if not isinstance(node, dict):
+                        continue
+                    t = node.get("@type", "")
+                    if isinstance(t, list):
+                        t = ",".join(t)
+                    if not any(k in str(t).lower() for k in ("organization", "localbusiness", "store", "corporation")):
+                        continue
+                    if not out.get("name") and node.get("name"):
+                        out["name"] = node["name"]
+                    if not out.get("email") and node.get("email"):
+                        out["email"] = str(node["email"]).replace("mailto:", "")
+                    if not out.get("phone") and node.get("telephone"):
+                        out["phone"] = str(node["telephone"])
+                    cp = node.get("contactPoint")
+                    if cp:
+                        if isinstance(cp, dict):
+                            cp = [cp]
+                        for c in cp:
+                            if not isinstance(c, dict):
+                                continue
+                            if not out.get("email") and c.get("email"):
+                                out["email"] = str(c["email"]).replace("mailto:", "")
+                            if not out.get("phone") and c.get("telephone"):
+                                out["phone"] = str(c["telephone"])
+                            if not out.get("role") and c.get("contactType"):
+                                out["role"] = str(c["contactType"])
+                            if not out.get("contact_name") and c.get("name"):
+                                out["contact_name"] = str(c["name"])
+        if out:
+            print(f"📦 JSON-LD extrahované: {list(out.keys())}")
+    except Exception as e:
+        print(f"JSON-LD parser výnimka: {e}")
+    return out
+
+def whois_contacts(domain: str) -> Dict[str, Any]:
+    """WHOIS lookup pre fallback. Pre .sk/.cz commercial domains väčšinou
+    skryté GDPR-om, ale občas vráti registrant email/name. ZADARMO."""
+    if not _whois_lib or not domain:
+        return {}
+    try:
+        bare = _domain_of(domain)
+        if not bare:
+            return {}
+        w = _whois_lib.whois(bare)
+        out: Dict[str, Any] = {}
+        email = getattr(w, "emails", None)
+        if isinstance(email, list) and email:
+            email = next((e for e in email if "@" in str(e)), None)
+        if email and "@" in str(email):
+            out["email"] = str(email)
+        name = getattr(w, "name", None) or getattr(w, "registrant_name", None)
+        if name and isinstance(name, str) and len(name.split()) >= 2:
+            out["contact_name"] = name
+        if out:
+            print(f"🌐 WHOIS pre {bare}: {list(out.keys())}")
+        return out
+    except Exception as e:
+        print(f"WHOIS výnimka pre {domain}: {e}")
+        return {}
+
+def has_good_contacts(text: str) -> bool:
+    """Heuristika: vrátime True ak v texte už máme dobrý kontakt
+    (email + telefón ALEBO email + meno blízko role). Vtedy Playwright netreba."""
+    if not text:
+        return False
+    cand = extract_all_candidates(text)
+    has_email = bool(cand.get("emails"))
+    has_phone = bool(cand.get("phones"))
+    has_name = bool(cand.get("names"))
+    return has_email and (has_phone or has_name)
 
 def extract_text_from_html(html: bytes) -> str:
     """Prijíma bytes – explicitne dekódujeme UTF-8 pred BS4 aby sme obišli
@@ -553,7 +651,7 @@ async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
                 lambda r: r.abort()
             )
             try:
-                await page.goto(url, wait_until="networkidle", timeout=25000)
+                await page.goto(url, wait_until="domcontentloaded", timeout=20000)
             except Exception:
                 pass
             content = await page.content()
@@ -589,7 +687,7 @@ async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
                 lambda r: r.abort()
             )
             try:
-                await page.goto(url, wait_until="networkidle", timeout=25000)
+                await page.goto(url, wait_until="domcontentloaded", timeout=20000)
             except Exception:
                 pass
             content = await page.content()
@@ -732,8 +830,6 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     if not text:
         return result
     normalized = text.replace('\xa0', ' ')
-    # DEBUG: prvých 5000 znakov textu do stderr pre diagnostiku
-    print(f"[DEBUG extract_all_candidates] text[:5000]:\n{normalized[:5000]}", file=__import__('sys').stderr)
 
     # === EMAILS ===
     seen_emails = set()
@@ -993,84 +1089,135 @@ def score_contact(email: Optional[str], phone: Optional[str], contact_name: Opti
 class ScrapeRequest(BaseModel):
     url: str
 
-async def _scrape_all_pages(base_url: str) -> str:
-    """Stiahne hlavnú stránku + subpages. Playwright browser sa spustí max raz
-    a zdieľa BrowserContext cez všetky volania fetch_text_with_fallback."""
+async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
+    """Optimalizované scrapovanie pre Render free tier.
+
+    Stratégia (poradí kroky):
+      1. Stiahni homepage cez httpx → vytiahni JSON-LD kontakty (zadarmo, žiadny JS)
+      2. Paralelne (asyncio.gather, Semaphore=5) stiahni VŠETKY subpages cez
+         httpx → cloudscraper. Toto je rýchle a nepotrebuje Playwright.
+      3. Heuristika has_good_contacts(): ak máme email + (telefón alebo meno),
+         Playwright vôbec nespúšťame.
+      4. Ak nemáme dosť kontaktov, spusti Playwright (1 browser instance) pre
+         max 3 stránky: homepage + /kontakt + /o-nas (prvé existujúce).
+      5. Po každej Playwright stránke: page.close() + context.clear_cookies()
+         + gc.collect() pre RAM management.
+      6. Ak všetko zlyhalo: WHOIS lookup ako absolútny posledný fallback.
+
+    Vracia dict: {'text': str, 'jsonld': dict, 'whois': dict}
+    """
     contact_priority_paths = [
         "kontakt", "contact", "kontakty", "tym", "team",
         "o-nas", "about-us", "onas", "vedenie", "management"
     ]
     other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
+    all_paths = contact_priority_paths + other_paths
 
-    # Zisti či httpx/cloudscraper stačia na hlavnú stránku —
-    # ak áno, Playwright nikdy nespustíme a ušetríme ~5s + RAM.
-    # Ak treba Playwright, spustíme ho raz a zdieľame context.
+    jsonld_data: Dict[str, Any] = {}
+    whois_data: Dict[str, Any] = {}
+
+    # === KROK 1: homepage cez httpx + JSON-LD ===
+    home_bytes = fetch_html_httpx(base_url)
+    if home_bytes:
+        jsonld_data = extract_jsonld_contacts(home_bytes)
+
+    home_text = extract_text_from_html(home_bytes) if home_bytes else ""
+
+    # === KROK 2: paralelný httpx + cloudscraper na všetky subpages ===
+    sem = asyncio.Semaphore(5)  # max 5 concurrent fetches pre Render free tier (0.5 CPU)
+
+    async def _fetch_fast(url: str) -> str:
+        """Skúsi httpx, potom cloudscraper. Bez Playwright. Vracia text alebo prázdny string."""
+        async with sem:
+            loop = asyncio.get_event_loop()
+            html = await loop.run_in_executor(None, fetch_html_httpx, url)
+            if not html:
+                html = await loop.run_in_executor(None, fetch_html_cloudscraper_with_ua, url)
+            return extract_text_from_html(html) if html else ""
+
+    # Postavíme zoznam URL — pre každý path prvý variant (bez slash); ak treba, doplníme slash
+    subpage_urls = [f"{base_url}/{p}" for p in all_paths]
+    results = await asyncio.gather(*[_fetch_fast(u) for u in subpage_urls], return_exceptions=True)
+
+    sub_texts: List[str] = []
+    for r in results:
+        if isinstance(r, str) and r:
+            sub_texts.append(r)
+
+    combined = (home_text + "\n" + "\n".join(sub_texts)).strip()
+
+    # === KROK 3: skip Playwright ak máme dosť kontaktov ===
+    if has_good_contacts(combined):
+        print(f"✅ httpx+cloudscraper stačili pre {base_url} (Playwright preskočený)")
+        return {"text": combined, "jsonld": jsonld_data, "whois": whois_data}
+
+    # === KROK 4: Playwright — len max 3 stránky ===
+    print(f"⚡ httpx/cloudscraper nedali dosť kontaktov, spúšťam Playwright (max 3 stránky)")
+    pw_urls = [base_url]  # homepage vždy
+    # Pridaj prvý existujúci kontakt path
+    for p in ["kontakt", "contact", "kontakty"]:
+        pw_urls.append(f"{base_url}/{p}")
+        break
+    # Pridaj prvý "o-nas" alebo "team" path
+    for p in ["o-nas", "about-us", "tym", "team"]:
+        pw_urls.append(f"{base_url}/{p}")
+        break
+    pw_urls = pw_urls[:3]
+
     pw_instance = None
     pw_browser = None
     browser_ctx = None
-
-    async def _fetch(url: str) -> str:
-        nonlocal pw_instance, pw_browser, browser_ctx
-        # Skús najprv rýchle metódy
-        html = fetch_html_httpx(url)
-        if html:
-            return extract_text_from_html(html)
-        html = fetch_html_cloudscraper_with_ua(url)
-        if html:
-            return extract_text_from_html(html)
-        # Playwright fallback — len ak rýchle metódy zlyhali
-        if browser_ctx is None:
-            print(f"⚡ Spúšťam Playwright browser (zdieľaný pre celý request)...")
-            pw_instance = await async_playwright().start()
-            pw_browser = await pw_instance.chromium.launch(
-                headless=True,
-                args=["--no-sandbox", "--disable-setuid-sandbox",
-                      "--disable-dev-shm-usage", "--disable-gpu", "--single-process"],
-            )
-            browser_ctx = await pw_browser.new_context(
-                user_agent=random.choice(_USER_AGENTS),
-                locale="sk-SK",
-                extra_http_headers={
-                    "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7",
-                    "Referer": "https://www.google.com/",
-                },
-            )
-        html = await fetch_html_playwright(url, browser_ctx=browser_ctx)
-        return extract_text_from_html(html) if html else ""
-
+    pw_texts: List[str] = []
     try:
-        contact_texts = []
-        for path in contact_priority_paths:
-            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                sub_text = await _fetch(url_variant)
-                if sub_text:
-                    contact_texts.append(sub_text)
-                    break
-                await asyncio.sleep(0.2)
-
-        main_text = await _fetch(base_url)
-
-        other_texts = []
-        for path in other_paths:
-            for url_variant in [f"{base_url}/{path}", f"{base_url}/{path}/"]:
-                sub_text = await _fetch(url_variant)
-                if sub_text:
-                    other_texts.append(sub_text)
-                    break
-                await asyncio.sleep(0.2)
+        pw_instance = await async_playwright().start()
+        pw_browser = await pw_instance.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox",
+                  "--disable-dev-shm-usage", "--disable-gpu", "--single-process"],
+        )
+        browser_ctx = await pw_browser.new_context(
+            user_agent=random.choice(_USER_AGENTS),
+            locale="sk-SK",
+            extra_http_headers={
+                "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7",
+                "Referer": "https://www.google.com/",
+            },
+        )
+        for url in pw_urls:
+            html = await fetch_html_playwright(url, browser_ctx=browser_ctx)
+            if html:
+                # Vytiahni JSON-LD ak sme ho ešte nemali
+                if not jsonld_data:
+                    jsonld_data = extract_jsonld_contacts(html)
+                pw_texts.append(extract_text_from_html(html))
+            # Memory cleanup po každej stránke
+            try:
+                await browser_ctx.clear_cookies()
+            except Exception:
+                pass
+            gc.collect()
+    except Exception as e:
+        print(f"Playwright loop výnimka: {e}")
     finally:
-        # Zavrieme browser ak bol spustený
         if pw_browser:
-            await pw_browser.close()
+            try:
+                await pw_browser.close()
+            except Exception:
+                pass
         if pw_instance:
-            await pw_instance.stop()
+            try:
+                await pw_instance.stop()
+            except Exception:
+                pass
+        gc.collect()
 
-    combined = "\n".join(contact_texts)
-    if main_text:
-        combined += "\n" + main_text
-    if other_texts:
-        combined += "\n" + "\n".join(other_texts)
-    return combined
+    combined = (combined + "\n" + "\n".join(pw_texts)).strip()
+
+    # === KROK 5: WHOIS ako absolútny fallback ===
+    if not has_good_contacts(combined) and not jsonld_data.get("email"):
+        whois_data = whois_contacts(base_url)
+
+    return {"text": combined, "jsonld": jsonld_data, "whois": whois_data}
 
 
 @app.post("/api/leads/scrape")
@@ -1081,11 +1228,14 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             base_url = "https://" + base_url
         base_url = base_url.rstrip('/')
 
-        combined_text = await _scrape_all_pages(base_url)
+        scrape_out = await _scrape_all_pages(base_url)
+        combined_text = scrape_out["text"]
+        jsonld_data = scrape_out.get("jsonld", {})
+        whois_data = scrape_out.get("whois", {})
 
-        if not combined_text:
+        if not combined_text and not jsonld_data and not whois_data:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
-        
+
         # AI extrakcia s hint názvom firmy z domény
         domain_hint = _domain_of(base_url)
         extracted = extract_with_ai(combined_text, company_name_hint=domain_hint)
@@ -1097,11 +1247,12 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         first_email = candidates["emails"][0]["value"] if candidates["emails"] else None
         first_phone = candidates["phones"][0]["value"] if candidates["phones"] else None
 
-        email = extracted.get("email") or first_email
-        phone = extracted.get("phone") or first_phone
-        name = extracted.get("primary_identifier") or base_url.split("//")[-1].split("/")[0]
-        contact_name = extracted.get("contact_name")
-        role = extracted.get("role")  # rolu nehádame – ak ju AI nenašla, ostáva null
+        # JSON-LD a WHOIS dopĺňajú údaje keď AI/regex zlyhali
+        email = extracted.get("email") or first_email or jsonld_data.get("email") or whois_data.get("email")
+        phone = extracted.get("phone") or first_phone or jsonld_data.get("phone")
+        name = extracted.get("primary_identifier") or jsonld_data.get("name") or base_url.split("//")[-1].split("/")[0]
+        contact_name = extracted.get("contact_name") or jsonld_data.get("contact_name") or whois_data.get("contact_name")
+        role = extracted.get("role") or jsonld_data.get("role")
         reasoning = extracted.get("reasoning")
 
         contact_eval = score_contact(email, phone, contact_name, role, base_url)
@@ -1245,8 +1396,11 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     # repr() prvých 500 bajtov – ukazuje skutočné bajty vrátane \xc4\xbe atď.
     raw_bytes_preview = repr(raw_bytes[:500])
 
-    # --- Bežné scrapovanie (zdieľaný Playwright browser) ---
-    combined_text = await _scrape_all_pages(base_url)
+    # --- Bežné scrapovanie ---
+    scrape_out = await _scrape_all_pages(base_url)
+    combined_text = scrape_out["text"]
+    jsonld_data = scrape_out.get("jsonld", {})
+    whois_data = scrape_out.get("whois", {})
 
     # AI extrakcia (s hint názvom firmy z domény)
     domain_hint = _domain_of(base_url)
@@ -1258,11 +1412,24 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     first_phone = candidates["phones"][0]["value"] if candidates["phones"] else None
     fallback = {"email": first_email, "phone": first_phone}
 
-    # Diagnostika kontaktného skóre (rolu nehádame – ostáva tak ako ju vrátila AI)
-    email = extracted.get("email") or first_email
-    phone = extracted.get("phone") or first_phone
-    contact_name = extracted.get("contact_name")
-    role = extracted.get("role")
+    # JSON-LD a WHOIS doplňujú hodnoty pre kontaktné skóre
+    email = extracted.get("email") or first_email or jsonld_data.get("email") or whois_data.get("email")
+    phone = extracted.get("phone") or first_phone or jsonld_data.get("phone")
+    contact_name = extracted.get("contact_name") or jsonld_data.get("contact_name") or whois_data.get("contact_name")
+    role = extracted.get("role") or jsonld_data.get("role")
+
+    # Ak AI nedala primary_identifier (combined_text bol prázdny), použijeme JSON-LD/doménu
+    if not extracted.get("primary_identifier"):
+        extracted["primary_identifier"] = jsonld_data.get("name") or domain_hint
+    if email and not extracted.get("email"):
+        extracted["email"] = email
+    if phone and not extracted.get("phone"):
+        extracted["phone"] = phone
+    if contact_name and not extracted.get("contact_name"):
+        extracted["contact_name"] = contact_name
+    if role and not extracted.get("role"):
+        extracted["role"] = role
+
     contact_eval = score_contact(email, phone, contact_name, role, base_url)
 
     return {
@@ -1280,5 +1447,8 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         # Spätná kompatibilita pre starý klient
         "regex_fallback": fallback,
         # Kontaktné skóre
-        "contact_scoring": contact_eval
+        "contact_scoring": contact_eval,
+        # Free fallbacky
+        "jsonld": jsonld_data,
+        "whois": whois_data,
     }
