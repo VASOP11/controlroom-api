@@ -401,23 +401,27 @@ SUBPAGE_PATHS = [
     "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
 ]
 
-def fetch_html_scrapingbee(url: str) -> bytes:
+def fetch_html_scrapingbee(url: str, render_js: bool = True) -> bytes:
     """Získa HTML ako RAW BYTES pomocou ScrapingBee API.
     Vracia bytes – BeautifulSoup ich dekóduje sám podľa <meta charset> v HTML.
-    NIKDY nedekódujeme tu – to spôsobovalo double-encoding (Ä¾ namiesto ľ).
+    Pri zlyhaní loguje status code aj prvých 200 znakov tela odpovede pre diagnostiku.
     """
     if not SCRAPINGBEE_API_KEY:
+        print(f"ScrapingBee: API kľúč nie je nastavený, preskakujem {url}")
         return b""
     try:
-        api_url = f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}&url={url}&render_js=true"
+        render_param = "true" if render_js else "false"
+        api_url = (f"https://app.scrapingbee.com/api/v1?api_key={SCRAPINGBEE_API_KEY}"
+                   f"&url={url}&render_js={render_param}")
         resp = requests.get(api_url, timeout=30)
-        if resp.status_code == 200:
-            return resp.content          # <-- bytes, žiadny decode
-        else:
-            print(f"ScrapingBee chyba: status {resp.status_code}")
-            return b""
+        if resp.status_code == 200 and resp.content:
+            return resp.content
+        snippet = (resp.text[:200] if resp.text else "(prázdne telo)").replace('\n', ' ')
+        print(f"ScrapingBee ZLYHALO {url} (render_js={render_js}): "
+              f"status={resp.status_code}, body={snippet!r}")
+        return b""
     except Exception as e:
-        print(f"ScrapingBee výnimka: {e}")
+        print(f"ScrapingBee výnimka pre {url}: {e}")
         return b""
 
 def fetch_raw_bytes_scrapingbee(url: str) -> bytes:
@@ -470,79 +474,256 @@ def extract_text_from_html(html: bytes) -> str:
     text = soup.get_text(separator=' ', strip=True)
     # Normalizuj non-breaking space na regular space
     text = text.replace('\xa0', ' ')
+    # Odstráň cookie/legal/GDPR boilerplate hneď tu – uvoľní miesto pre reálny obsah
+    text = filter_boilerplate(text)
     prefix = ' '.join(contact_hints) + ' ' if contact_hints else ''
     # Limit 25 000 znakov – telefón na fgym.sk/kontakt je na pozícii ~21 800
-    # Orezanie na 8 000 sa deje až v extract_with_ai (pre AI), nie tu
     return (prefix + text)[:25000]
 
 async def fetch_text_with_fallback(url: str) -> str:
-    """Najprv ScrapingBee, pri zlyhaní retry s trailing slash, potom cloudscraper."""
-    html = fetch_html_scrapingbee(url)
+    """Reťaz fallbackov:
+       1. ScrapingBee s render_js=true
+       2. ScrapingBee s trailing slash (ak chýba)
+       3. ScrapingBee BEZ render_js (niektoré weby s JS renderom padajú)
+       4. cloudscraper
+    """
+    html = fetch_html_scrapingbee(url, render_js=True)
     if html:
-        print(f"✅ ScrapingBee OK pre {url}")
+        print(f"✅ ScrapingBee (JS) OK pre {url}")
         return extract_text_from_html(html)
 
-    # Retry s trailing slash (napr. /tym zlyhá ale /tym/ funguje)
+    # Retry s trailing slash
     if not url.endswith('/'):
         url_slash = url + '/'
-        print(f"⚠️ ScrapingBee zlyhal pre {url}, skúšam {url_slash}")
-        html = fetch_html_scrapingbee(url_slash)
+        html = fetch_html_scrapingbee(url_slash, render_js=True)
         if html:
-            print(f"✅ ScrapingBee OK pre {url_slash}")
+            print(f"✅ ScrapingBee (JS, slash) OK pre {url_slash}")
             return extract_text_from_html(html)
 
-    print(f"⚠️ ScrapingBee zlyhal, skúšam cloudscraper pre {url}")
+    # Retry bez render_js – niektoré stránky pri JS renderingu padajú/timeoutujú
+    html = fetch_html_scrapingbee(url, render_js=False)
+    if html:
+        print(f"✅ ScrapingBee (bez JS) OK pre {url}")
+        return extract_text_from_html(html)
+
+    print(f"⚠️ ScrapingBee všetky pokusy zlyhali, skúšam cloudscraper pre {url}")
     html = fetch_html_cloudscraper(url)
     if html:
         print(f"✅ Cloudscraper OK pre {url}")
         return extract_text_from_html(html)
+    print(f"❌ Všetky fetch metódy zlyhali pre {url}")
     return ""
 
-def filter_cookie_boilerplate(text: str) -> str:
-    """Odstráni vety s cookie-consent boilerplate, ktorý zaberá začiatok textu
-    a vytláča skutočné kontaktné údaje za 8000-znakový limit pre AI."""
-    bad_keywords = ["cookies", "cookie", "súhlasím", "suhlasim", "prehliadač", "prehliadac"]
+# --- Boilerplate filter (cookies, GDPR, obchodné podmienky atď.) ---
+BOILERPLATE_KEYWORDS = [
+    "cookies", "cookie", "súhlasím", "suhlasim", "prehliadač", "prehliadac",
+    "gdpr", "obchodné podmienky", "obchodne podmienky", "vseobecne podmienky",
+    "všeobecné podmienky", "reklamačný poriadok", "reklamacny poriadok",
+    "ochrana osobných údajov", "ochrana osobnych udajov", "spracovanie osobných údajov",
+    "spracovanie osobnych udajov",
+]
+
+def filter_boilerplate(text: str) -> str:
+    """Zahodí vety obsahujúce cookie/GDPR/legal boilerplate.
+    Uvoľní miesto v 8000-znakovom okne pre AI a v 25k limite extract_text_from_html.
+    """
+    if not text:
+        return ""
     # Rozdeľ na "vety" podľa interpunkcie alebo nového riadku
     parts = re.split(r'(?<=[.!?])\s+|\n+', text)
-    kept = [p for p in parts if not any(k in p.lower() for k in bad_keywords)]
+    kept = [p for p in parts if not any(k in p.lower() for k in BOILERPLATE_KEYWORDS)]
     return ' '.join(kept)
 
-def extract_with_ai(text: str) -> Dict[str, Any]:
+# --- Validácia telefónnych čísel ---
+def is_valid_phone(num: str) -> bool:
+    """True ak ide o reálne SK/CZ telefónne číslo. Odmietne 0900000000, 0123456789,
+    príliš krátke/dlhé čísla, čísla so všetkými rovnakými číslicami atď.
+    """
+    if not num:
+        return False
+    digits = re.sub(r'\D', '', num)
+    if not digits:
+        return False
+
+    # Odmietni placeholdery: všetky rovnaké číslice (000..., 999...), sekvencie 12345...
+    if len(set(digits)) <= 2:
+        return False
+    if digits in ('0123456789', '1234567890', '0987654321'):
+        return False
+    # Odmietni očividné fake čísla
+    if digits.endswith('0000000') or digits.endswith('1234567'):
+        return False
+
+    # +421 / 421 + 9 SK
+    if digits.startswith('421') and len(digits) == 12:
+        return True
+    # +420 / 420 + 9 CZ
+    if digits.startswith('420') and len(digits) == 12:
+        return True
+    # SK mobil: 09XX XXX XXX (10 číslic, začína 09)
+    if len(digits) == 10 and digits.startswith('09'):
+        return True
+    # SK pevná: 0[2-5]X... (10 číslic)
+    if len(digits) == 10 and digits[0] == '0' and digits[1] in '2345':
+        return True
+    # CZ holých 9 číslic, mobil začína 6/7, pevná 2-5
+    if len(digits) == 9 and digits[0] in '23456789':
+        return True
+    return False
+
+
+# --- Role keywords (SK / CZ / EN) ---
+ROLE_KEYWORDS = [
+    "riaditeľ", "riaditel", "ředitel", "reditel", "director", "ceo",
+    "konateľ", "konatel", "jednatel",
+    "obchodný", "obchodny", "obchodní", "obchodni", "obchod", "sales",
+    "vedúci", "veduci", "vedoucí", "vedouci", "head",
+    "manažér", "manazer", "manažer", "manager",
+    "kontaktná osoba", "kontaktna osoba", "kontaktní osoba", "kontaktni osoba",
+    "majiteľ", "majitel",
+]
+
+# Explicitné rozsahy SK/CZ veľkých a malých písmen.
+# Nesmieme použiť [A-ZÁ-Ž] – ten rozsah obsahuje aj malé Unicode písmená (é, í, ...)
+# a pattern by zachytával `ér` z `manažér` ako začiatok mena.
+_UPPER = "A-ZÁČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ"
+_LOWER = "a-záčďéíľĺňóôŕšťúýž"
+# Titul + 2-3 Capitalized slová oddelené iba medzerou/tabom (NIE newline – meno sa nezalamuje cez riadky)
+_NAME_PATTERN = re.compile(
+    rf'(?:Mgr\.|Ing\.|Bc\.|JUDr\.|MUDr\.|PhDr\.|prof\.|doc\.|MVDr\.|RNDr\.)?[ \t]*'
+    rf'[{_UPPER}][{_LOWER}]+(?:[ \t]+[{_UPPER}][{_LOWER}]+){{1,2}}'
+)
+# Slová ktoré nie sú meno – vyhodíme ich keď ich pattern zachytí ako "druhé slovo"
+_NOT_A_NAME_WORD = {
+    "Email", "Mail", "Telefón", "Telefon", "Mobil", "Phone", "Tel",
+    "Web", "Adresa", "Address", "Sídlo", "Sidlo", "Kontakt", "Contact",
+    "Firma", "Spoločnosť", "Spolocnost", "Company", "Office", "Info",
+    "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota", "Nedeľa",
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+}
+
+def _context(text: str, start: int, end: int, width: int = 150) -> str:
+    """Vráti text okolo [start:end] s ±width znakov."""
+    s = max(0, start - width)
+    e = min(len(text), end + width)
+    return text[s:e].strip()
+
+def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
+    """Zozbiera VŠETKÝCH kandidátov (emails, validné telefóny, mená pri role keywords)
+    s ~150-znakovým kontextom okolo každého výskytu. AI dostane tento štruktúrovaný
+    zoznam namiesto surového textu.
+    """
+    result: Dict[str, List[Dict[str, Any]]] = {"emails": [], "phones": [], "names": []}
+    if not text:
+        return result
+    normalized = text.replace('\xa0', ' ')
+
+    # === EMAILS ===
+    seen_emails = set()
+    for m in re.finditer(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', normalized):
+        addr = m.group(0)
+        key = addr.lower()
+        if key in seen_emails:
+            continue
+        seen_emails.add(key)
+        result["emails"].append({
+            "value": addr,
+            "context": _context(normalized, m.start(), m.end())
+        })
+
+    # === PHONES === (regex + validácia)
+    phone_pattern = re.compile(
+        r'(\+421\s?|\+420\s?|0)\d{2,3}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+    )
+    seen_phones = set()
+    for m in phone_pattern.finditer(normalized):
+        raw = m.group(0).strip()
+        norm = re.sub(r'\D', '', raw)
+        if norm in seen_phones:
+            continue
+        if not is_valid_phone(raw):
+            continue
+        seen_phones.add(norm)
+        result["phones"].append({
+            "value": raw,
+            "context": _context(normalized, m.start(), m.end())
+        })
+
+    # === NAMES === blízko role kľúčových slov
+    seen_names = set()
+    for kw in ROLE_KEYWORDS:
+        for m in re.finditer(re.escape(kw), normalized, re.IGNORECASE):
+            window_start = max(0, m.start() - 120)
+            window_end = min(len(normalized), m.end() + 120)
+            window = normalized[window_start:window_end]
+            for nm in _NAME_PATTERN.finditer(window):
+                name_val = nm.group(0).strip()
+                # Filter: musí mať aspoň 2 slová (krstné + priezvisko, akademický titul sa neráta)
+                tokens = [t for t in name_val.split() if not t.endswith('.')]
+                if len(tokens) < 2:
+                    continue
+                # Filter: žiadne tokeny zo zoznamu nenázvov (Email, Telefón, Adresa...)
+                if any(t in _NOT_A_NAME_WORD for t in tokens):
+                    continue
+                if name_val in seen_names:
+                    continue
+                seen_names.add(name_val)
+                abs_start = window_start + nm.start()
+                abs_end = window_start + nm.end()
+                result["names"].append({
+                    "value": name_val,
+                    "near_role": kw,
+                    "context": _context(normalized, abs_start, abs_end)
+                })
+                if len(result["names"]) >= 15:
+                    return result
+    return result
+
+def extract_with_ai(text: str, company_name_hint: str = "") -> Dict[str, Any]:
+    """AI vyberie JEDEN najlepší obchodný kontakt zo zoznamu kandidátov.
+    Namiesto 8000 znakov surového textu pošle AI štruktúrovaných kandidátov."""
     if not text:
         return {}
-    # 1. Spusti regex fallback NAJPRV – garantuje že telefón/email máme aj keď
-    #    sú hlboko v texte (za 8000-znakovým limitom pre AI)
-    fb = regex_fallback(text)
-    # 2. Odfiltruj cookie-consent boilerplate (vytláča kontakty za limit)
-    cleaned = filter_cookie_boilerplate(text)
-    # 3. Nájdené kontakty vlož ako PRVÉ riadky – AI ich tak vždy uvidí
-    hints = ""
-    if fb.get("phone"):
-        hints += f"NÁJDENÝ TELEFÓN: {fb['phone']}\n"
-    if fb.get("email"):
-        hints += f"NÁJDENÝ EMAIL: {fb['email']}\n"
-    if hints:
-        hints += "\n"
-    text_for_ai = (hints + cleaned)[:8000]
-    prompt = f"""Si asistent pre extrakciu firemných kontaktných údajov z textu webovej stránky.
+    candidates = extract_all_candidates(text)
+    cleaned_preview = filter_boilerplate(text)[:3000]
 
-Z textu nižšie vyextrahuj:
-- primary_identifier: názov firmy (string)
-- contact_name: celé meno kontaktnej osoby, napr. "Ladislav Ferenci" (string alebo null)
-- role: pozícia osoby – hľadaj CEO, Riaditeľ, Director, Konateľ, Obchod, Sales, Marketing, Info (string alebo null). Ak rolu NEnájdeš, vráť null – NEHÁDAJ.
-- email: emailová adresa (string alebo null)
-- phone: telefónne číslo vrátane predvoľby, zachovaj pôvodný formát s medzerami (string alebo null)
+    payload = {
+        "company_name_hint": company_name_hint or "",
+        "emails": candidates["emails"][:10],
+        "phones": candidates["phones"][:10],
+        "names": candidates["names"][:10],
+    }
+
+    prompt = f"""Si asistent pre výber NAJLEPŠIEHO obchodného kontaktu firmy z extrahovaných kandidátov.
+
+KANDIDÁTI (z webu, deduplikovaní, telefóny už validované):
+{json.dumps(payload, ensure_ascii=False, indent=2)}
+
+VYČISTENÝ TEXT z kontaktnej stránky (prvých 3000 znakov, bez cookies/GDPR):
+{cleaned_preview}
+
+PRIORITA výberu (vyber JEDEN kontakt):
+1. menovaná osoba s rolou riaditeľ/ředitel/director/CEO/konateľ/jednatel/majiteľ
+2. menovaná osoba v obchode (obchod/obchodní/sales) alebo manažér/vedúci
+3. menný email (formát meno.priezvisko@firma alebo priezvisko@firma)
+4. generický email (info@, podpora@, office@)
 
 DÔLEŽITÉ:
-- Ak text obsahuje riadky "NÁJDENÝ TELEFÓN:" alebo "NÁJDENÝ EMAIL:", použi tieto hodnoty.
-- Hľadaj telefóny aj vo formátoch: "0911 489 439", "+421 911 489 439", "0911/489439"
-- Hľadaj mená pri slovách: riaditeľ, CEO, konateľ, director, manager, vedúci
-- Vráť LEN čistý JSON objekt, žiadny iný text
+- Roly podporuj v SK/CZ/EN: riaditeľ/ředitel/director, konateľ/jednatel, obchod/obchodní/sales, vedúci/vedoucí/head.
+- Ak je MENO uvedené v kontexte BLÍZKO telefónu alebo blízko slova "obchod/sales/obchodní", priraď rolu "Obchodné oddelenie" a spáruj toto meno s tým telefónom (z poľa phones).
+- Ak rolu NEMÔŽEŠ jednoznačne určiť, vráť null – nehádaj.
+- contact_name musí pochádzať z poľa names, alebo z local-part menného emailu. Neguruj.
 
-{{"primary_identifier": "...", "contact_name": "...", "role": "...", "email": "...", "phone": "..."}}
-
-Text:
-{text_for_ai}"""
+Vráť LEN čistý JSON v tomto tvare (nič iné):
+{{
+  "primary_identifier": "názov firmy",
+  "contact_name": "meno priezvisko alebo null",
+  "role": "rola alebo null",
+  "email": "email alebo null",
+  "phone": "telefón v pôvodnom formáte z phones[].value, alebo null",
+  "reasoning": "1-2 vety prečo si vybral práve tento kontakt"
+}}
+"""
     try:
         response = openai_client.chat.completions.create(
             model=GPT_DEPLOYMENT,
@@ -551,32 +732,19 @@ Text:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
+        # priložíme kandidátov do výsledku pre debug a fallbacky vyššie
+        result["_candidates"] = candidates
         return result
     except Exception as e:
         print(f"AI chyba: {e}")
-        return {}
+        return {"_candidates": candidates}
 
 def regex_fallback(text: str) -> Dict[str, Any]:
-    # Normalizuj non-breaking space na regular space pred hľadaním
-    normalized = text.replace('\xa0', ' ')
-    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', normalized)
-    # Telefónny regex – zachytáva všetky bežné slovenské/české formáty:
-    #   0911 489 439  |  0911489439  |  0911/489-439
-    #   +421 911 489 439  |  +421911489439
-    # Pevná štruktúra: (predvoľba|0) + 2-3 číslice + sep? + 3 číslice + sep? + 3 číslice
-    phone_match = re.search(
-        r'(\+421\s?|\+420\s?|0)'   # medzinárodná predvoľba ALEBO národná nula
-        r'\d{2,3}'                  # ďalšie 2–3 číslice (napr. 911)
-        r'[\s\-\/]?'               # voliteľný oddeľovač
-        r'\d{3}'                    # skupina 3 číslic
-        r'[\s\-\/]?'               # voliteľný oddeľovač
-        r'\d{3}',                   # skupina 3 číslic
-        normalized
-    )
-    phone_raw = phone_match.group(0).strip() if phone_match else None
+    """Spätná kompatibilita – vráti prvý platný email a telefón z kandidátov."""
+    cand = extract_all_candidates(text or "")
     return {
-        "email": email_match.group(0) if email_match else None,
-        "phone": phone_raw
+        "email": cand["emails"][0]["value"] if cand["emails"] else None,
+        "phone": cand["phones"][0]["value"] if cand["phones"] else None,
     }
 
 def role_to_points(role: str) -> int:
@@ -714,22 +882,29 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not combined_text:
             raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
         
-        # AI extrakcia
-        extracted = extract_with_ai(combined_text)
+        # AI extrakcia s hint názvom firmy z domény
+        domain_hint = _domain_of(base_url)
+        extracted = extract_with_ai(combined_text, company_name_hint=domain_hint)
         if not extracted:
             extracted = {}
-        
-        # Fallback regex
-        fallback = regex_fallback(combined_text)
-        email = extracted.get("email") or fallback["email"]
-        phone = extracted.get("phone") or fallback["phone"]
+
+        # Kandidáti z extract_with_ai (regex) – fallback pre prípad zlyhania AI
+        candidates = extracted.get("_candidates") or extract_all_candidates(combined_text)
+        first_email = candidates["emails"][0]["value"] if candidates["emails"] else None
+        first_phone = candidates["phones"][0]["value"] if candidates["phones"] else None
+
+        email = extracted.get("email") or first_email
+        phone = extracted.get("phone") or first_phone
         name = extracted.get("primary_identifier") or base_url.split("//")[-1].split("/")[0]
         contact_name = extracted.get("contact_name")
         role = extracted.get("role")  # rolu nehádame – ak ju AI nenašla, ostáva null
+        reasoning = extracted.get("reasoning")
 
         contact_eval = score_contact(email, phone, contact_name, role, base_url)
         contact_points = contact_eval["contact_points"]
         direct_personal_email = contact_eval["direct_personal_email"]
+        # spätná kompatibilita pre staré polia v lead_metadata
+        fallback = {"email": first_email, "phone": first_phone}
         
         # Vertikála (zjednodušená)
         body_lower = combined_text.lower()
@@ -754,7 +929,13 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 "direct_personal_email": direct_personal_email,
                 "scraped_email": email,
                 "scraped_phone": phone,
-                "ai_extracted": extracted,
+                "ai_reasoning": reasoning,
+                "candidates_count": {
+                    "emails": len(candidates.get("emails", [])),
+                    "phones": len(candidates.get("phones", [])),
+                    "names": len(candidates.get("names", [])),
+                },
+                "ai_extracted": {k: v for k, v in extracted.items() if k != "_candidates"},
                 "regex_fallback": fallback
             }
         }
@@ -890,17 +1071,21 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     if other_texts:
         combined_text += "\n" + "\n".join(other_texts)
 
-    # AI extrakcia
-    extracted = extract_with_ai(combined_text)
+    # AI extrakcia (s hint názvom firmy z domény)
+    domain_hint = _domain_of(base_url)
+    extracted = extract_with_ai(combined_text, company_name_hint=domain_hint) or {}
+    candidates = extracted.pop("_candidates", None) or extract_all_candidates(combined_text)
 
-    # Regex fallback
-    fallback = regex_fallback(combined_text)
+    # Fallback hodnoty z kandidátov
+    first_email = candidates["emails"][0]["value"] if candidates["emails"] else None
+    first_phone = candidates["phones"][0]["value"] if candidates["phones"] else None
+    fallback = {"email": first_email, "phone": first_phone}
 
     # Diagnostika kontaktného skóre (rolu nehádame – ostáva tak ako ju vrátila AI)
-    email = (extracted.get("email") if extracted else None) or fallback["email"]
-    phone = (extracted.get("phone") if extracted else None) or fallback["phone"]
-    contact_name = extracted.get("contact_name") if extracted else None
-    role = extracted.get("role") if extracted else None
+    email = extracted.get("email") or first_email
+    phone = extracted.get("phone") or first_phone
+    contact_name = extracted.get("contact_name")
+    role = extracted.get("role")
     contact_eval = score_contact(email, phone, contact_name, role, base_url)
 
     return {
@@ -911,7 +1096,11 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         # Text výstup
         "text_length": len(combined_text),
         "text_preview": combined_text[:2000],
+        # AI výber + reasoning
         "ai_extracted": extracted,
+        # Všetci kandidáti (regex)
+        "candidates": candidates,
+        # Spätná kompatibilita pre starý klient
         "regex_fallback": fallback,
         # Kontaktné skóre
         "contact_scoring": contact_eval
