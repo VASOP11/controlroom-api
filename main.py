@@ -500,7 +500,7 @@ def extract_text_from_html(html: bytes) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
 
-    # Explicitne vytiahni tel: a mailto: linky – tieto sa stratia pri get_text()
+    # Explicitne vytiahni tel:, mailto: a WhatsApp linky – tieto sa stratia pri get_text()
     contact_hints = []
     for a in soup.find_all("a", href=True):
         href = a["href"]
@@ -510,6 +510,24 @@ def extract_text_from_html(html: bytes) -> str:
         elif href.startswith("mailto:"):
             email = href.replace("mailto:", "").strip()
             contact_hints.append(f"Email: {email}")
+        elif "wa.me/" in href or "whatsapp.com/send" in href:
+            # WhatsApp linky obsahujú číslo vo formáte 00421XXXXXXXXX alebo 421XXXXXXXXX
+            # Prevedieme na +421 formát aby ho phone regex zachytil
+            import urllib.parse
+            wa_num = ""
+            if "wa.me/" in href:
+                wa_num = href.split("wa.me/")[-1].split("?")[0].strip()
+            elif "phone=" in href:
+                wa_num = urllib.parse.parse_qs(urllib.parse.urlparse(href).query).get("phone", [""])[0]
+            wa_num = re.sub(r'\D', '', wa_num)
+            if wa_num.startswith("00421") or wa_num.startswith("00420"):
+                wa_num = "+" + wa_num[2:]  # 00421 → +421
+            elif wa_num.startswith("421") and len(wa_num) == 12:
+                wa_num = "+" + wa_num
+            elif wa_num.startswith("420") and len(wa_num) == 12:
+                wa_num = "+" + wa_num
+            if wa_num.startswith("+"):
+                contact_hints.append(f"Telefón: {wa_num}")
 
     text = soup.get_text(separator=' ', strip=True)
     # Normalizuj non-breaking space na regular space
@@ -626,10 +644,14 @@ def is_valid_phone(num: str) -> bool:
     if digits.endswith('0000000') or digits.endswith('1234567'):
         return False
 
-    # +421 / 421 + 9 SK
+    # 00421 / +421 / 421 + 9 SK  (00421XXXXXXXXX = 14 digits, 421XXXXXXXXX = 12)
+    if digits.startswith('00421') and len(digits) == 14:
+        return True
     if digits.startswith('421') and len(digits) == 12:
         return True
-    # +420 / 420 + 9 CZ
+    # 00420 / +420 / 420 + 9 CZ
+    if digits.startswith('00420') and len(digits) == 14:
+        return True
     if digits.startswith('420') and len(digits) == 12:
         return True
     # SK mobil: 09XX XXX XXX (10 číslic, začína 09)
@@ -689,6 +711,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     if not text:
         return result
     normalized = text.replace('\xa0', ' ')
+    # DEBUG: prvých 5000 znakov textu do stderr pre diagnostiku
+    print(f"[DEBUG extract_all_candidates] text[:5000]:\n{normalized[:5000]}", file=__import__('sys').stderr)
 
     # === EMAILS ===
     seen_emails = set()
@@ -704,8 +728,11 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         })
 
     # === PHONES === (regex + validácia)
+    # Normalizuj ďalšie Unicode medzery ktoré \xa0 replace nezachytí
+    for _sp in [' ', ' ', ' ', ' ', '­']:
+        normalized = normalized.replace(_sp, ' ')
     phone_pattern = re.compile(
-        r'(\+421\s?|\+420\s?|0)\d{2,3}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+        r'(00421\s?|00420\s?|\+421\s?|\+420\s?|0)\d{2,3}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
     )
     seen_phones = set()
     for m in phone_pattern.finditer(normalized):
