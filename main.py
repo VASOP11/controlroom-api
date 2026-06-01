@@ -22,6 +22,7 @@ from openai import AzureOpenAI
 import cloudscraper
 import chardet
 import ftfy
+from playwright.async_api import async_playwright
 
 print("ENCODING FIX v3 loaded (ftfy mojibake repair)")
 
@@ -519,8 +520,54 @@ def extract_text_from_html(html: bytes) -> str:
     # Limit 25 000 znakov – telefón na fgym.sk/kontakt je na pozícii ~21 800
     return (prefix + text)[:25000]
 
+async def fetch_html_playwright(url: str) -> bytes:
+    """Headless Chromium cez Playwright — spustí JS, počká na sieťový idle.
+    Použije sa len ako posledná možnosť (pomalší, ~5–10s per stránka).
+    Vracia bytes (UTF-8 enkódovaný HTML string).
+    """
+    try:
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--single-process",
+                ],
+            )
+            ctx = await browser.new_context(
+                user_agent=random.choice(_USER_AGENTS),
+                locale="sk-SK",
+                extra_http_headers={
+                    "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7",
+                    "Referer": "https://www.google.com/",
+                },
+            )
+            page = await ctx.new_page()
+            # Blokuj obrázky, fonty, média — nepotrebujeme ich, ušetríme RAM+čas
+            await page.route(
+                "**/*.{png,jpg,jpeg,gif,webp,svg,ico,woff,woff2,ttf,mp4,mp3}",
+                lambda r: r.abort()
+            )
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=25000)
+            except Exception:
+                # networkidle timeout — vezmeme čo máme
+                pass
+            content = await page.content()
+            await browser.close()
+            if content:
+                print(f"✅ Playwright OK pre {url} ({len(content)} znakov)")
+                return content.encode("utf-8", errors="replace")
+            return b""
+    except Exception as e:
+        print(f"Playwright výnimka pre {url}: {e}")
+        return b""
+
 async def fetch_text_with_fallback(url: str) -> str:
-    """Reťaz fallbackov: httpx → cloudscraper → prázdny string."""
+    """Reťaz fallbackov: httpx → cloudscraper+UA → Playwright → prázdny string."""
     html = fetch_html_httpx(url)
     if html:
         print(f"✅ httpx OK pre {url}")
@@ -528,6 +575,11 @@ async def fetch_text_with_fallback(url: str) -> str:
 
     print(f"⚠️ httpx zlyhalo, skúšam cloudscraper+UA pre {url}")
     html = fetch_html_cloudscraper_with_ua(url)
+    if html:
+        return extract_text_from_html(html)
+
+    print(f"⚠️ cloudscraper zlyhalo, skúšam Playwright pre {url}")
+    html = await fetch_html_playwright(url)
     if html:
         return extract_text_from_html(html)
 
