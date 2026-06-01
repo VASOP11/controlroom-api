@@ -791,12 +791,16 @@ def is_valid_phone(num: str) -> bool:
 # --- Role keywords (SK / CZ / EN) ---
 ROLE_KEYWORDS = [
     "riaditeľ", "riaditel", "ředitel", "reditel", "director", "ceo",
-    "konateľ", "konatel", "jednatel",
+    "konateľ", "konatel", "jednatel", "jednateľ",
     "obchodný", "obchodny", "obchodní", "obchodni", "obchod", "sales",
     "vedúci", "veduci", "vedoucí", "vedouci", "head",
     "manažér", "manazer", "manažer", "manager",
     "kontaktná osoba", "kontaktna osoba", "kontaktní osoba", "kontaktni osoba",
-    "majiteľ", "majitel",
+    "majiteľ", "majitel", "majitel'",
+    "prevádzkovateľ", "prevadzkovatel", "provozovatel",
+    "zodpovedný vedúci", "zodpovedny veduci",
+    "zodpovedná osoba", "zodpovedna osoba",
+    "zastúpený", "zastupeny",
 ]
 
 # Explicitné rozsahy SK/CZ veľkých a malých písmen.
@@ -979,11 +983,14 @@ PRIORITA výberu (vyber JEDEN kontakt):
 4. generický email (info@, podpora@, office@, kontakt@)
 
 DÔLEŽITÉ:
-- Roly podporuj v SK/CZ/EN: riaditeľ/ředitel/director, konateľ/jednatel, obchod/obchodní/sales, vedúci/vedoucí/head.
+- Roly podporuj v SK/CZ/EN: riaditeľ/ředitel/director, konateľ/jednatel, obchod/obchodní/sales, vedúci/vedoucí/head, prevádzkovateľ/provozovatel, majiteľ/majitel.
+- Ak meno je nájdené blízko "zodpovedný vedúci" alebo "prevádzkovateľ" → rola = "Konateľ". Blízko "eshop" alebo "objednávky" → rola = "Eshop oddelenie".
 - Ak je MENO uvedené v kontexte BLÍZKO telefónu alebo blízko slova "obchod/sales/obchodní", priraď rolu "Obchodné oddelenie" a spáruj toto meno s tým telefónom (z poľa phones).
 - Ak rolu NEMÔŽEŠ jednoznačne určiť, vráť null – nehádaj.
+- PREFERUJ EMAIL BLÍZKO MENA: ak v kontexte vidíš "Rastislav Fiala E-mail: podpora@firma.sk", vyber podpora@ nie info@. Email ktorý je v kontexte (±200 znakov) od mena má prednosť pred iným emailom.
+- Oddeleniové emaily (servis@, marketing@, eshop@, obchod@, objednavky@, technika@, helpdesk@, dotazy@, svietidla@) UPREDNOSTNI pred info@.
 - contact_name musí pochádzať z poľa names, alebo z local-part menného emailu. Neguruj.
-- Ak je contact_name null ale emails[].value má menný formát (napr. meno.priezvisko@domena, jan.novak@, ladislav.ferenci@), vytiahni meno z local-part emailu sám: rozdeľ podľa "." alebo "-", každú časť daj s veľkým začiatočným písmenom (napr. "ferenci.ladislav" → "Ferenci Ladislav"). Použi tento postup len keď names[] je prázdne alebo neobsahuje reálne meno.
+- Ak je contact_name null ale emails[].value má menný formát (napr. meno.priezvisko@domena, jan.novak@, ladislav.ferenci@, lukacova@firma), vytiahni meno z local-part emailu sám: rozdeľ podľa "." alebo "-", každú časť daj s veľkým začiatočným písmenom (napr. "ferenci.ladislav" → "Ferenci Ladislav", "lukacova" → "Lukáčová"). Použi tento postup len keď names[] je prázdne alebo neobsahuje reálne meno.
 
 Vráť LEN čistý JSON v tomto tvare (nič iné):
 {{
