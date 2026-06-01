@@ -456,17 +456,19 @@ def fetch_html_cloudscraper(url: str) -> bytes:
 
 def fetch_html_cloudscraper_with_ua(url: str) -> bytes:
     """Cloudscraper s rotáciou UA a retry 3x pri failure.
-    Pri každom pokuse použije iný User-Agent z _USER_AGENTS listu.
-    Vracia bytes (rovnako ako httpx varianta).
+    Jeden scraper instance (šetrí RAM) — mení len User-Agent header medzi pokusmi.
     """
     ua_pool = _USER_AGENTS.copy()
     random.shuffle(ua_pool)
+    try:
+        scraper = cloudscraper.create_scraper()
+    except Exception as e:
+        print(f"CloudScraper init zlyhalo: {e}")
+        return b""
     for attempt, ua in enumerate(ua_pool[:3], 1):
         try:
-            scraper = cloudscraper.create_scraper(
-                browser={"custom": ua}
-            )
             scraper.headers.update({
+                "User-Agent": ua,
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                 "Accept-Language": "sk-SK,sk;q=0.9,cs;q=0.8,en-US;q=0.7,en;q=0.6",
                 "Referer": "https://www.google.com/",
