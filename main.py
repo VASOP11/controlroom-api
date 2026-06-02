@@ -883,7 +883,7 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         return result
     normalized = text.replace('\xa0', ' ')
     # Remove garbled binary-looking sequences (non-printable chars) but keep Slovak chars
-    normalized = re.sub(r'[^\x09\x0a\x0d\x20-\x7e\x80-\x024f]+', ' ', normalized)
+    normalized = re.sub(r'[^\u0009\u000a\u000d\u0020-\u007e\u0080-\u024f]+', ' ', normalized)
     # Collapse multiple spaces
     normalized = re.sub(r' {3,}', '  ', normalized)
 
