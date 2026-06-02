@@ -909,8 +909,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         # SK mobile 09XX XXX XXX (10 číslic)
         r'0[689]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
         r'|'
-        # Ostatné 0XX XXX XXX (SK/CZ s leading 0, 10 číslic)
-        r'0\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+        # Ostatné 0XX XXX XXX (SK/CZ s leading 0, 10 číslic) — posledná skupina 3 ALEBO 4 číslice
+        r'0\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3,4}'
         r'|'
         # Bare 9 číslic bez predvoľby (CZ/SK mobil/pevná): 317804046, 777592979 ...
         r'(?<!\d)[2-9]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
@@ -1060,10 +1060,12 @@ PRIORITA KONTAKTU (vyber JEDEN kontakt s najvyšším skóre):
 2. obchodný riaditeľ/obchodní ředitel/sales director = 85b → role_category="obchodne"
 3. obchodné oddelenie/prodejní oddělenie s menom osoby = 70b → role_category="obchodne"
 4. ŠPECIÁLNE: ak je kdekoľvek na stránke konkrétne meno OSOBY (nie firmy) spolu s číslom ALEBO emailom, AJ BEZ EXPLICITNEJ ROLY → role_category="obchodne", 65b. Fyzická osoba zverejnená na firemnom webe má bližšie k rozhodovaniu ako anonymná infolinka.
-5. menný email (meno.priezvisko@ alebo meno@firma) bez roly = 55b → role_category="eshop" ak kontext naznačuje obchod, inak "info"
-6. eshop@/shop@/obchod@/prodej@ = 35b → role_category="eshop"
-7. info@/kontakt@/hello@ = 20b → role_category="info"
-8. len telefón bez emailu a mena, 3+ čísla = 15b → role_category="infolinka"
+5. menný email (meno.priezvisko@ alebo meno@firma) bez roly = 55b → role_category podľa kontextu
+6. objednavky@/orders@/objednávky@/prodej@ = 40b → role_category="obchodne" (objednávkové oddelenie = priamy predajný kontakt)
+7. eshop@/shop@/obchod@ = 35b → role_category="eshop"
+8. info@/kontakt@/hello@/podpora@ + 2+ telefóny + ŽIADNA konkrétna osoba → role_category="infolinka" (generický kontaktný bod)
+9. info@/kontakt@/hello@ bez telefónov alebo s 1 telefónom → role_category="info", 20b
+10. len telefóny (3+) bez emailu a mena → role_category="infolinka", 15b
 
 ŠPECIÁLNE PRAVIDLÁ:
 - all_phones = VŠETKY validné telefóny z celej stránky (všetky z poľa phones[])
