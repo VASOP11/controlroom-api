@@ -1063,9 +1063,10 @@ PRIORITA KONTAKTU (vyber JEDEN kontakt s najvyšším skóre):
 5. menný email (meno.priezvisko@ alebo meno@firma) bez roly = 55b → role_category podľa kontextu
 6. objednavky@/orders@/objednávky@/prodej@ = 40b → role_category="obchodne" (objednávkové oddelenie = priamy predajný kontakt)
 7. eshop@/shop@/obchod@ = 35b → role_category="eshop"
-8. info@/kontakt@/hello@/podpora@ + 2+ telefóny + ŽIADNA konkrétna osoba → role_category="infolinka" (generický kontaktný bod)
-9. info@/kontakt@/hello@ bez telefónov alebo s 1 telefónom → role_category="info", 20b
-10. len telefóny (3+) bez emailu a mena → role_category="infolinka", 15b
+8. info@/kontakt@/hello@/podpora@ + 2+ RÔZNYCH telefónov (all_phones má 2+ čiarkou oddelených čísiel) + ŽIADNA konkrétna osoba → role_category="infolinka"
+9. info@/kontakt@/hello@ s 0-1 telefónmi alebo keď je len 1 unikátne číslo → role_category="info", 20b
+10. len telefóny (3+) bez akéhokoľvek emailu a mena → role_category="infolinka", 15b
+POZNÁMKA k pravidlu 8: rovnaké číslo viackrát sa počíta ako 1 (niet infolinka); rôzne čísla (mobil + pevná linka) = 2 → infolinka
 
 ŠPECIÁLNE PRAVIDLÁ:
 - all_phones = VŠETKY validné telefóny z celej stránky (všetky z poľa phones[])
