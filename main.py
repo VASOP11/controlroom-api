@@ -1243,6 +1243,64 @@ def score_contact(email: Optional[str], phone: Optional[str], contact_name: Opti
 class ScrapeRequest(BaseModel):
     url: str
 
+def extract_nav_links(html: bytes, base_url: str) -> List[str]:
+    """Extracts all internal links from navigation, footer, and header elements.
+    Returns list of absolute URLs. Prioritizes contact/about pages."""
+    if not html:
+        return []
+    try:
+        soup = BeautifulSoup(html.decode("utf-8", errors="replace"), "html.parser")
+
+        # Look in nav, footer, header first — then full page
+        search_areas = (
+            soup.find_all(["nav", "footer", "header"]) or
+            [soup]
+        )
+
+        contact_keywords = [
+            "kontakt", "contact", "o-nas", "o firme", "about", "team", "tym",
+            "vedenie", "management", "impressum", "napiste", "napíšte"
+        ]
+
+        found_urls = []
+        seen = set()
+
+        # Priority pass: contact/about links
+        for area in search_areas:
+            for a in area.find_all("a", href=True):
+                href = a["href"].strip()
+                text = a.get_text(strip=True).lower()
+
+                # Skip external, mailto, tel, anchors
+                if href.startswith(("mailto:", "tel:", "#", "javascript:")):
+                    continue
+                if href.startswith("http") and not href.startswith(base_url):
+                    continue
+
+                # Build absolute URL
+                if href.startswith("http"):
+                    abs_url = href.rstrip("/")
+                elif href.startswith("/"):
+                    abs_url = base_url + href.rstrip("/")
+                else:
+                    abs_url = base_url + "/" + href.rstrip("/")
+
+                if abs_url in seen or abs_url == base_url:
+                    continue
+                seen.add(abs_url)
+
+                # Prioritize contact/about pages by link text or URL
+                is_priority = any(kw in text or kw in href.lower() for kw in contact_keywords)
+                if is_priority:
+                    found_urls.insert(0, abs_url)  # prepend priority links
+                else:
+                    found_urls.append(abs_url)
+
+        return found_urls[:20]  # cap at 20 to avoid scraping entire site
+    except Exception as e:
+        print(f"extract_nav_links výnimka: {e}")
+        return []
+
 async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
     """Optimalizované scrapovanie pre Render free tier.
 
@@ -1277,6 +1335,10 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
 
     home_text = extract_text_from_html(home_bytes) if home_bytes else ""
 
+    # Discover actual navigation links from homepage HTML
+    nav_links = extract_nav_links(home_bytes, base_url) if home_bytes else []
+    print(f"🔗 Nav links objavené: {len(nav_links)} — {nav_links[:5]}")
+
     # === KROK 2: paralelný httpx + cloudscraper na všetky subpages ===
     sem = asyncio.Semaphore(5)  # max 5 concurrent fetches pre Render free tier (0.5 CPU)
 
@@ -1289,8 +1351,17 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
                 html = await loop.run_in_executor(None, fetch_html_cloudscraper_with_ua, url)
             return extract_text_from_html(html) if html else ""
 
-    # Postavíme zoznam URL — pre každý path prvý variant (bez slash); ak treba, doplníme slash
-    subpage_urls = [f"{base_url}/{p}" for p in all_paths]
+    # Use discovered nav links first, fall back to hardcoded paths
+    if nav_links:
+        # Merge: nav_links (real) + classic paths (fallback), deduplicated
+        classic_urls = [f"{base_url}/{p}" for p in all_paths]
+        combined_urls = nav_links.copy()
+        for u in classic_urls:
+            if u not in combined_urls:
+                combined_urls.append(u)
+        subpage_urls = combined_urls[:25]  # cap total
+    else:
+        subpage_urls = [f"{base_url}/{p}" for p in all_paths]
     results = await asyncio.gather(*[_fetch_fast(u) for u in subpage_urls], return_exceptions=True)
 
     sub_texts: List[str] = []
@@ -1307,15 +1378,23 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
 
     # === KROK 4: Playwright — len max 3 stránky ===
     print(f"⚡ httpx/cloudscraper nedali dosť kontaktov, spúšťam Playwright (max 3 stránky)")
-    pw_urls = [base_url]  # homepage vždy
-    # Pridaj prvý existujúci kontakt path
-    for p in ["kontakt", "contact", "kontakty"]:
-        pw_urls.append(f"{base_url}/{p}")
-        break
-    # Pridaj prvý "o-nas" alebo "team" path
-    for p in ["o-nas", "about-us", "tym", "team"]:
-        pw_urls.append(f"{base_url}/{p}")
-        break
+    pw_urls = [base_url]
+    # Use discovered nav links for contact/about pages instead of hardcoded paths
+    contact_keywords = ["kontakt", "contact", "o-nas", "o firme", "about", "napiste", "napíšte"]
+    for url in nav_links:
+        if any(kw in url.lower() for kw in contact_keywords):
+            pw_urls.append(url)
+        if len(pw_urls) >= 3:
+            break
+    # Fallback to hardcoded paths if nav discovery found nothing useful
+    if len(pw_urls) < 2:
+        for p in ["kontakt", "contact", "kontakty"]:
+            pw_urls.append(f"{base_url}/{p}")
+            break
+    if len(pw_urls) < 3:
+        for p in ["o-nas", "about-us", "tym", "team"]:
+            pw_urls.append(f"{base_url}/{p}")
+            break
     pw_urls = pw_urls[:3]
 
     pw_instance = None
