@@ -61,29 +61,59 @@ BENCHMARK = [
 ]
 
 
+DELAY_BETWEEN = 15  # sekúnd medzi requestami — Render free tier (0.5 CPU) padá pod záťažou
+MAX_RETRIES = 2     # retry pre 502/503
+
+
 def norm_phone(p: str) -> str:
+    """Normalizuj telefón na holé lokálne číslo pre porovnanie.
+    +421908761091 → 908761091, 0911489439 → 911489439, 245008200 → 245008200"""
     if not p:
         return ""
-    return re.sub(r'\D', '', p)
+    d = re.sub(r'\D', '', p)
+    # Odstráň medzinárodné predvoľby
+    if d.startswith('00421'):
+        d = d[5:]
+    elif d.startswith('00420'):
+        d = d[5:]
+    elif d.startswith('421') and len(d) >= 12:
+        d = d[3:]
+    elif d.startswith('420') and len(d) >= 12:
+        d = d[3:]
+    # Odstráň leading 0 pre SK/CZ (09xx → 9xx, 02xx → 2xx)
+    if d.startswith('0') and len(d) == 10:
+        d = d[1:]
+    return d
 
 
 def scrape_one(url: str) -> dict:
     row = {"url": url, "email": "", "phone": "", "name": "", "error": ""}
-    try:
-        resp = requests.post(ENDPOINT, json={"url": url}, headers=HEADERS, timeout=TIMEOUT)
-        if resp.status_code != 200:
-            row["error"] = f"HTTP {resp.status_code}"
+    for attempt in range(1, MAX_RETRIES + 2):
+        try:
+            resp = requests.post(ENDPOINT, json={"url": url}, headers=HEADERS, timeout=TIMEOUT)
+            if resp.status_code in (502, 503) and attempt <= MAX_RETRIES:
+                print(f"  HTTP {resp.status_code}, retry {attempt}...", end=" ", flush=True)
+                time.sleep(30)
+                continue
+            if resp.status_code != 200:
+                row["error"] = f"HTTP {resp.status_code}"
+                return row
+            data = resp.json()
+            ai = data.get("ai_extracted") or {}
+            fb = data.get("regex_fallback") or {}
+            row["email"] = ai.get("email") or fb.get("email") or ""
+            row["phone"] = ai.get("phone") or fb.get("phone") or ""
+            row["name"] = ai.get("contact_name") or ""
             return row
-        data = resp.json()
-        ai = data.get("ai_extracted") or {}
-        fb = data.get("regex_fallback") or {}
-        row["email"] = ai.get("email") or fb.get("email") or ""
-        row["phone"] = ai.get("phone") or fb.get("phone") or ""
-        row["name"] = ai.get("contact_name") or ""
-    except requests.exceptions.Timeout:
-        row["error"] = "TIMEOUT"
-    except Exception as e:
-        row["error"] = str(e)[:80]
+        except requests.exceptions.Timeout:
+            if attempt <= MAX_RETRIES:
+                print(f"  TIMEOUT, retry {attempt}...", end=" ", flush=True)
+                time.sleep(30)
+                continue
+            row["error"] = "TIMEOUT"
+        except Exception as e:
+            row["error"] = str(e)[:80]
+            break
     return row
 
 
@@ -112,6 +142,8 @@ def main():
         elapsed = time.time() - t0
         print(f"{elapsed:.1f}s", flush=True)
         results.append((bench, row))
+        if i < len(BENCHMARK):
+            time.sleep(DELAY_BETWEEN)
 
     total_elapsed = time.time() - total_start
 

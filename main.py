@@ -1061,8 +1061,8 @@ PRIORITA KONTAKTU (vyber JEDEN kontakt s najvyšším skóre):
 3. obchodné oddelenie/prodejní oddělenie s menom osoby = 70b → role_category="obchodne"
 4. ŠPECIÁLNE: ak je kdekoľvek na stránke konkrétne meno OSOBY (nie firmy) spolu s číslom ALEBO emailom, AJ BEZ EXPLICITNEJ ROLY → role_category="obchodne", 65b. Fyzická osoba zverejnená na firemnom webe má bližšie k rozhodovaniu ako anonymná infolinka.
 5. menný email (meno.priezvisko@ alebo meno@firma) bez roly = 55b → role_category podľa kontextu
-6. objednavky@/orders@/objednávky@/prodej@ = 40b → role_category="obchodne" (objednávkové oddelenie = priamy predajný kontakt)
-7. eshop@/shop@/obchod@ = 35b → role_category="eshop"
+6. objednavky@/orders@/objednávky@/prodej@/marketing@/reklama@ = 40b → role_category="obchodne" (objednávkové/marketingové oddelenie = priamy biznis kontakt)
+7. eshop@/shop@/obchod@/svietidla@/e-shop@ = 35b → role_category="eshop"
 8. info@/kontakt@/hello@/podpora@ + 2+ RÔZNYCH telefónov (all_phones má 2+ čiarkou oddelených čísiel) + ŽIADNA konkrétna osoba → role_category="infolinka"
 9. info@/kontakt@/hello@ s 0-1 telefónmi alebo keď je len 1 unikátne číslo → role_category="info", 20b
 10. len telefóny (3+) bez akéhokoľvek emailu a mena → role_category="infolinka", 15b
@@ -1155,7 +1155,8 @@ def role_category_to_points(role_category: str, all_phones: str = "") -> int:
 GENERIC_EMAIL_PREFIXES = [
     "info", "podpora", "support", "office", "kontakt", "contact",
     "sales", "obchod", "reklamacia", "reklamácia", "admin", "hello",
-    "ahoj", "objednavky", "objednávky", "eshop", "shop", "mail", "post", "noreply"
+    "ahoj", "objednavky", "objednávky", "eshop", "shop", "mail", "post", "noreply",
+    "marketing", "reklama", "helpdesk", "dotazy", "servis", "info2",
 ]
 
 def _domain_of(value: str) -> str:
