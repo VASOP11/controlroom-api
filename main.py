@@ -782,8 +782,8 @@ def is_valid_phone(num: str) -> bool:
     # CZ holých 9 číslic, mobil začína 6/7, pevná 2-5; SK mobil bez 0 (9XX...)
     if len(digits) == 9 and digits[0] in '23456789':
         return True
-    # SK pevná linka bez leading 0 (napr. 33774800 = oblasť 033)
-    if len(digits) == 8 and digits[0] in '23456789':
+    # SK/CZ pevná linka bez leading 0 (napr. 33774800 = oblasť 033) — len predvoľby 2x-5x
+    if len(digits) == 8 and digits[0] in '2345':
         return True
     return False
 
@@ -851,7 +851,7 @@ _LOWER = "a-záčďéíľĺňóôŕšťúýž"
 # Titul + 2-3 Capitalized slová oddelené iba medzerou/tabom (NIE newline – meno sa nezalamuje cez riadky)
 _NAME_PATTERN = re.compile(
     rf'(?:Mgr\.|Ing\.|Bc\.|JUDr\.|MUDr\.|PhDr\.|prof\.|doc\.|MVDr\.|RNDr\.)?[ \t]*'
-    rf'[{_UPPER}][{_LOWER}]+(?:[ \t]+[{_UPPER}][{_LOWER}]+){{1,2}}'
+    rf'[{_UPPER}][{_LOWER}]{{2,}}(?:[ \t]+[{_UPPER}][{_LOWER}]{{2,}}){{1,2}}'
 )
 # Slová ktoré nie sú meno – vyhodíme ich keď ich pattern zachytí ako "druhé slovo"
 _NOT_A_NAME_WORD = {
@@ -860,6 +860,7 @@ _NOT_A_NAME_WORD = {
     "Firma", "Spoločnosť", "Spolocnost", "Company", "Office", "Info",
     "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota", "Nedeľa",
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+    "Wi", "Sk", "Cz", "Eu", "Id", "Ok", "Sr",
 }
 
 def _context(text: str, start: int, end: int, width: int = 150) -> str:
@@ -903,8 +904,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         # International prefix (+421, +420, 00421, 00420)
         r'(?:00421|00420|\+421|\+420)\s?(?:\d[\s\-]?){8}\d'
         r'|'
-        # SK landline 0X/XXXX XXXX — oblastná predvoľba + lomka/medzera + číslo
-        r'0[1-9][\s\/\-]\d{3,4}[\s\/\-]?\d{3,4}'
+        # SK landline 0X / XXXX XXXX — predvoľba + separator (aj "02 / 1234 5678") + číslo
+        r'0[1-9][\s\/\-]{1,3}\d{3,4}[\s\/\-]?\d{3,4}'
         r'|'
         # SK mobile 09XX XXX XXX (10 číslic)
         r'0[689]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
@@ -915,8 +916,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         # Bare 9 číslic bez predvoľby (CZ/SK mobil/pevná): 317804046, 777592979 ...
         r'(?<!\d)[2-9]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
         r'|'
-        # Bare 8 číslic (SK pevná bez leading 0): 33774800
-        r'(?<!\d)[2-9]\d[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
+        # Bare 8 číslic (SK/CZ pevná bez leading 0): 33774800 — len oblastné predvoľby 2x-5x
+        r'(?<!\d)[2-5]\d[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
         r')'
     )
     seen_phones = set()
@@ -1078,6 +1079,8 @@ POZNÁMKA k pravidlu 8: rovnaké číslo viackrát sa počíta ako 1 (niet infol
 - Ak je meno blízko "zodpovedný vedúci" alebo "prevádzkovateľ" → role="konateľ", role_category="CEO"
 - PREFERUJ email blízko mena pred generickým emailom
 - contact_name z poľa names[], alebo vytiahni z local-part menného emailu (ferenci.ladislav → Ferenci Ladislav)
+- contact_name MUSÍ byť reálne meno osoby: každé slovo min. 3 znaky, žiadne skratky (Wi, Sk, Cz, OK), nie produktové kódy
+- phone MUSÍ byť JEDNO číslo z phones[].value, nie celá veta — ak phones[] je prázdny, daj null
 
 Vráť LEN čistý JSON:
 {{
