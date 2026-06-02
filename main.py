@@ -651,9 +651,11 @@ async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
                 lambda r: r.abort()
             )
             try:
-                await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                await page.goto(url, wait_until="networkidle", timeout=25000)
+                await page.wait_for_timeout(1500)
             except Exception:
                 pass
+            await page.evaluate("document.querySelectorAll('[style*=\"display:none\"],[style*=\"visibility:hidden\"]').forEach(el => { el.style.display='block'; el.style.visibility='visible'; })")
             content = await page.content()
             await page.close()
             if content:
@@ -687,9 +689,11 @@ async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
                 lambda r: r.abort()
             )
             try:
-                await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                await page.goto(url, wait_until="networkidle", timeout=25000)
+                await page.wait_for_timeout(1500)
             except Exception:
                 pass
+            await page.evaluate("document.querySelectorAll('[style*=\"display:none\"],[style*=\"visibility:hidden\"]').forEach(el => { el.style.display='block'; el.style.visibility='visible'; })")
             content = await page.content()
             await browser.close()
             if content:
