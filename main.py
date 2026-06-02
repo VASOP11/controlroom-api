@@ -803,6 +803,46 @@ ROLE_KEYWORDS = [
     "zastúpený", "zastupeny",
 ]
 
+# Ignorované domény (dopravcovia, štátne inštitúcie, banky, Heureka)
+IGNORED_CONTACT_DOMAINS: set = {
+    "soi.sk", "coi.cz",
+    "dpd.com", "dpd.sk", "dpd.cz", "dpdgroup.com",
+    "gls-group.com", "gls-parcelshop.sk", "glsgroup.eu", "gls.sk", "gls.cz",
+    "ups.com", "ups.sk", "ups.cz",
+    "sps-sro.sk", "sps.sk",
+    "packeta.com", "packeta.sk", "packeta.cz", "packetery.com",
+    "zasilkovna.cz", "zasilkovna.sk",
+    "heureka.sk", "heureka.cz",
+    "slsp.sk", "vub.sk", "tatrabanka.sk",
+    "csas.cz", "csob.sk", "csob.cz",
+    "sberbank.sk", "unicreditbank.sk", "unicreditbank.cz",
+    "raiffeisen.sk", "rb.cz", "postovabanka.sk",
+    "kb.cz", "moneta.cz", "airbank.cz",
+}
+
+_IGNORED_CTX_RE = re.compile(
+    r'\bsoi\b|obchodn[aá] in[sš]pekcia|česká obchodní inspekce'
+    r'|\bdpd\b|\bgls\b|\bups\b|\bpacketa\b|zásilkovna|zasilkovna'
+    r'|\bsps\b|heureka|\bbanka\b|\bbank\b'
+    r'|štátna|statna|statni|státní',
+    re.IGNORECASE,
+)
+
+def _email_is_ignored(addr: str, context: str = "") -> bool:
+    """True ak email patrí dopravcovi, SOI, banke, Heureke."""
+    if addr and "@" in addr:
+        domain = addr.split("@")[-1].lower().strip()
+        if domain.startswith("www."):
+            domain = domain[4:]
+        if domain in IGNORED_CONTACT_DOMAINS:
+            return True
+        for ign in IGNORED_CONTACT_DOMAINS:
+            if domain.endswith("." + ign):
+                return True
+    if context and _IGNORED_CTX_RE.search(context):
+        return True
+    return False
+
 # Explicitné rozsahy SK/CZ veľkých a malých písmen.
 # Nesmieme použiť [A-ZÁ-Ž] – ten rozsah obsahuje aj malé Unicode písmená (é, í, ...)
 # a pattern by zachytával `ér` z `manažér` ako začiatok mena.
@@ -845,10 +885,13 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         key = addr.lower()
         if key in seen_emails:
             continue
+        ctx = _context(normalized, m.start(), m.end())
+        if _email_is_ignored(addr, ctx):
+            continue
         seen_emails.add(key)
         result["emails"].append({
             "value": addr,
-            "context": _context(normalized, m.start(), m.end())
+            "context": ctx
         })
 
     # === PHONES === (regex + validácia)
@@ -943,7 +986,39 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
                     "near_role": f"email:{email_val}",
                     "context": _context(normalized, abs_start, abs_end)
                 })
-                if len(result["names"]) >= 15:
+                if len(result["names"]) >= 20:
+                    return result
+
+    # === NAMES === blízko telefónov (špeciálne pravidlo 4: meno + telefón → "Obchodné oddelenie")
+    for phone_entry in result["phones"]:
+        phone_val = phone_entry["value"]
+        phone_norm = re.sub(r'\s+', r'\\s*', re.escape(phone_val.strip()))
+        try:
+            phone_re = re.compile(phone_norm)
+        except Exception:
+            continue
+        for pm in phone_re.finditer(normalized):
+            window_start = max(0, pm.start() - 200)
+            window_end = min(len(normalized), pm.end() + 200)
+            window = normalized[window_start:window_end]
+            for nm in _NAME_PATTERN.finditer(window):
+                name_val = nm.group(0).strip()
+                tokens = [t for t in name_val.split() if not t.endswith('.')]
+                if len(tokens) < 2:
+                    continue
+                if any(t in _NOT_A_NAME_WORD for t in tokens):
+                    continue
+                if name_val in seen_names:
+                    continue
+                seen_names.add(name_val)
+                abs_start = window_start + nm.start()
+                abs_end = window_start + nm.end()
+                result["names"].append({
+                    "value": name_val,
+                    "near_role": f"phone:{phone_val}",
+                    "context": _context(normalized, abs_start, abs_end)
+                })
+                if len(result["names"]) >= 20:
                     return result
 
     # WARNING keď všetky kandidáty prázdne
@@ -953,53 +1028,65 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     return result
 
 def extract_with_ai(text: str, company_name_hint: str = "") -> Dict[str, Any]:
-    """AI vyberie JEDEN najlepší obchodný kontakt zo zoznamu kandidátov.
-    Namiesto 8000 znakov surového textu pošle AI štruktúrovaných kandidátov."""
+    """AI vyberie JEDEN najlepší obchodný kontakt zo zoznamu kandidátov (B2B sales researcher)."""
     if not text:
         return {}
     candidates = extract_all_candidates(text)
     cleaned_preview = filter_boilerplate(text)[:3000]
 
+    all_phones_list = [p["value"] for p in candidates["phones"][:15]]
+    all_phones_str = ", ".join(all_phones_list) if all_phones_list else "žiadne"
+
     payload = {
         "company_name_hint": company_name_hint or "",
-        "emails": candidates["emails"][:10],
-        "phones": candidates["phones"][:10],
-        "names": candidates["names"][:10],
+        "emails": candidates["emails"][:15],
+        "phones": candidates["phones"][:15],
+        "names": candidates["names"][:15],
     }
 
-    prompt = f"""Si asistent pre výber NAJLEPŠIEHO obchodného kontaktu firmy z extrahovaných kandidátov.
+    prompt = f"""Si B2B sales researcher. Nájdi JEDEN najlepší obchodný kontakt spoločnosti.
 
-KANDIDÁTI (z webu, deduplikovaní, telefóny už validované):
+KANDIDÁTI (deduplikovaní, telefóny validované):
 {json.dumps(payload, ensure_ascii=False, indent=2)}
 
-VYČISTENÝ TEXT z kontaktnej stránky (prvých 3000 znakov, bez cookies/GDPR):
+Celkový počet nájdených telefónov: {len(candidates["phones"])}
+Všetky nájdené telefóny: {all_phones_str}
+
+VYČISTENÝ TEXT (prvých 3000 znakov):
 {cleaned_preview}
 
-PRIORITA výberu (vyber JEDEN kontakt):
-1. menovaná osoba s rolou riaditeľ/ředitel/director/CEO/konateľ/jednatel/majiteľ
-2. menovaná osoba v obchode (obchod/obchodní/sales) alebo manažér/vedúci
-3. menný email (formát meno.priezvisko@firma, priezvisko@firma, ferenci.ladislav@gmail.com)
-3b. oddeleniový email (servis@, marketing@, eshop@, shop@, technika@) — uprednostni pred info@
-4. generický email (info@, podpora@, office@, kontakt@)
+PRIORITA KONTAKTU (vyber JEDEN kontakt s najvyšším skóre):
+1. jednateľ/konateľ/jednatel/CEO/majiteľ/owner — meno+email+tel = 100b → role_category="CEO"
+2. obchodný riaditeľ/obchodní ředitel/sales director = 85b → role_category="obchodne"
+3. obchodné oddelenie/prodejní oddělenie s menom osoby = 70b → role_category="obchodne"
+4. ŠPECIÁLNE: ak je kdekoľvek na stránke konkrétne meno OSOBY (nie firmy) spolu s číslom ALEBO emailom, AJ BEZ EXPLICITNEJ ROLY → role_category="obchodne", 65b. Fyzická osoba zverejnená na firemnom webe má bližšie k rozhodovaniu ako anonymná infolinka.
+5. menný email (meno.priezvisko@ alebo meno@firma) bez roly = 55b → role_category="eshop" ak kontext naznačuje obchod, inak "info"
+6. eshop@/shop@/obchod@/prodej@ = 35b → role_category="eshop"
+7. info@/kontakt@/hello@ = 20b → role_category="info"
+8. len telefón bez emailu a mena, 3+ čísla = 15b → role_category="infolinka"
 
-DÔLEŽITÉ:
-- Roly podporuj v SK/CZ/EN: riaditeľ/ředitel/director, konateľ/jednatel, obchod/obchodní/sales, vedúci/vedoucí/head, prevádzkovateľ/provozovatel, majiteľ/majitel.
-- Ak meno je nájdené blízko "zodpovedný vedúci" alebo "prevádzkovateľ" → rola = "Konateľ". Blízko "eshop" alebo "objednávky" → rola = "Eshop oddelenie".
-- Ak je MENO uvedené v kontexte BLÍZKO telefónu alebo blízko slova "obchod/sales/obchodní", priraď rolu "Obchodné oddelenie" a spáruj toto meno s tým telefónom (z poľa phones).
-- Ak rolu NEMÔŽEŠ jednoznačne určiť, vráť null – nehádaj.
-- PREFERUJ EMAIL BLÍZKO MENA: ak v kontexte vidíš "Rastislav Fiala E-mail: podpora@firma.sk", vyber podpora@ nie info@. Email ktorý je v kontexte (±200 znakov) od mena má prednosť pred iným emailom.
-- Oddeleniové emaily (servis@, marketing@, eshop@, obchod@, objednavky@, technika@, helpdesk@, dotazy@, svietidla@) UPREDNOSTNI pred info@.
-- contact_name musí pochádzať z poľa names, alebo z local-part menného emailu. Neguruj.
-- Ak je contact_name null ale emails[].value má menný formát (napr. meno.priezvisko@domena, jan.novak@, ladislav.ferenci@, lukacova@firma), vytiahni meno z local-part emailu sám: rozdeľ podľa "." alebo "-", každú časť daj s veľkým začiatočným písmenom (napr. "ferenci.ladislav" → "Ferenci Ladislav", "lukacova" → "Lukáčová"). Použi tento postup len keď names[] je prázdne alebo neobsahuje reálne meno.
+ŠPECIÁLNE PRAVIDLÁ:
+- all_phones = VŠETKY validné telefóny z celej stránky (všetky z poľa phones[])
+- Viac telefónov pri jednom kontakte → ulož VŠETKY do all_phones
+- Meno v emaile (iva.absolonova@) → contact_name="Iva Absolonová"
+- Ignoruj: bankové účty, PSČ, IČO, DIČ, čísla kratšie ako 8 číslic
+- Ignoruj kontakty SOI, ČOI, Heureka, dopravcov (DPD/GLS/UPS/SPS/Packeta/Zásilkovna), bánk
+- Roly SK/CZ/EN: riaditeľ/ředitel/director, konateľ/jednatel, obchod/obchodní/sales, vedúci/vedoucí, prevádzkovateľ/provozovatel, majiteľ/majitel
+- Ak je meno blízko "zodpovedný vedúci" alebo "prevádzkovateľ" → role="konateľ", role_category="CEO"
+- PREFERUJ email blízko mena pred generickým emailom
+- contact_name z poľa names[], alebo vytiahni z local-part menného emailu (ferenci.ladislav → Ferenci Ladislav)
 
-Vráť LEN čistý JSON v tomto tvare (nič iné):
+Vráť LEN čistý JSON:
 {{
-  "primary_identifier": "názov firmy",
+  "primary_identifier": "názov firmy alebo doména",
   "contact_name": "meno priezvisko alebo null",
-  "role": "rola alebo null",
+  "role": "konkrétna rola alebo null",
+  "role_category": "CEO|obchodne|eshop|info|infolinka",
   "email": "email alebo null",
-  "phone": "telefón v pôvodnom formáte z phones[].value, alebo null",
-  "reasoning": "1-2 vety prečo si vybral práve tento kontakt"
+  "phone": "hlavný telefón z phones[].value alebo null",
+  "all_phones": "všetky telefóny zo stránky čiarkou, alebo null",
+  "priority_score": číslo,
+  "reasoning": "1-2 vety"
 }}
 """
     try:
@@ -1010,8 +1097,10 @@ Vráť LEN čistý JSON v tomto tvare (nič iné):
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        # priložíme kandidátov do výsledku pre debug a fallbacky vyššie
         result["_candidates"] = candidates
+        # Ak AI nevyplnila all_phones, doplníme zo všetkých kandidátov
+        if not result.get("all_phones") and all_phones_list:
+            result["all_phones"] = ", ".join(all_phones_list)
         return result
     except Exception as e:
         print(f"AI chyba: {e}")
@@ -1041,6 +1130,24 @@ def role_to_points(role: str) -> int:
         return 10
     return 5
 
+def role_category_to_points(role_category: str, all_phones: str = "") -> int:
+    """Bodovanie podľa role_category z AI výstupu (nová logika)."""
+    if not role_category:
+        return 0
+    rc = role_category.lower().strip()
+    if rc == "ceo":
+        return 50
+    if rc == "obchodne":
+        return 40
+    if rc == "eshop":
+        return 25
+    if rc == "infolinka":
+        phones = [p.strip() for p in (all_phones or "").split(",") if p.strip()]
+        return 20 if len(phones) >= 3 else 15
+    if rc == "info":
+        return 10
+    return 10
+
 # Generické emailové prefixy (oddelenie/schránka, nie konkrétna osoba)
 GENERIC_EMAIL_PREFIXES = [
     "info", "podpora", "support", "office", "kontakt", "contact",
@@ -1067,6 +1174,10 @@ def is_generic_email(email: str) -> bool:
     local = email.split("@")[0].lower()
     return any(local == g or local.startswith(g) for g in GENERIC_EMAIL_PREFIXES)
 
+def is_ignored_contact(email: str = "", context: str = "") -> bool:
+    """True ak email patrí dopravcovi, SOI, banke, Heureke (použitie v API layer)."""
+    return _email_is_ignored(email, context)
+
 def is_personal_email(email: str, contact_name: Optional[str], website: Optional[str]) -> bool:
     """True ak je email priamy menný/firemný:
     - časť pred @ obsahuje časť mena/priezviska (napr. ferenci.ladislav), ALEBO
@@ -1088,32 +1199,35 @@ def is_personal_email(email: str, contact_name: Optional[str], website: Optional
     return False
 
 def score_contact(email: Optional[str], phone: Optional[str], contact_name: Optional[str],
-                  role: Optional[str], website: Optional[str]) -> Dict[str, Any]:
-    """Bodovanie kontaktu podľa priority:
-      - priamy menný/firemný email = 45 (aj bez telefónu)
-      - generický email (info@, podpora@, office@) = 10
-      - len telefón bez mena = 20
-    Ak AI našla rolu, berie sa max(role_to_points, email/phone body) – rolu nehádame.
-    """
+                  role: Optional[str], website: Optional[str],
+                  role_category: Optional[str] = None,
+                  all_phones: Optional[str] = None) -> Dict[str, Any]:
+    """Bodovanie kontaktu. Ak AI vrátila role_category, použije novú logiku (Fáza 3)."""
     direct_personal_email = bool(email) and not is_generic_email(email) and \
         is_personal_email(email, contact_name, website)
 
-    if direct_personal_email:
-        contact_points = 45
-    elif email and is_generic_email(email):
-        contact_points = 10
-    elif email:
-        contact_points = 10          # neznámy email bez zhody mena/domény
-    elif phone:
-        contact_points = 20          # len telefón bez mena
+    if role_category:
+        contact_points = role_category_to_points(role_category, all_phones or "")
     else:
-        contact_points = 0
+        # Starý fallback scoring
+        if direct_personal_email:
+            contact_points = 45
+        elif email and is_generic_email(email):
+            contact_points = 10
+        elif email:
+            contact_points = 10
+        elif phone:
+            contact_points = 20
+        else:
+            contact_points = 0
+        role_points = role_to_points(role) if role else 0
+        contact_points = max(contact_points, role_points)
 
-    # Rolu nehádame – ak ju AI našla, môže body iba zvýšiť
-    role_points = role_to_points(role) if role else 0
-    contact_points = max(contact_points, role_points)
-
-    return {"contact_points": contact_points, "direct_personal_email": direct_personal_email}
+    return {
+        "contact_points": contact_points,
+        "direct_personal_email": direct_personal_email,
+        "role_category": role_category or "",
+    }
 
 class ScrapeRequest(BaseModel):
     url: str
@@ -1282,14 +1396,17 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         name = extracted.get("primary_identifier") or jsonld_data.get("name") or base_url.split("//")[-1].split("/")[0]
         contact_name = extracted.get("contact_name") or jsonld_data.get("contact_name") or whois_data.get("contact_name")
         role = extracted.get("role") or jsonld_data.get("role")
+        role_category = extracted.get("role_category") or ""
+        all_phones = extracted.get("all_phones") or ""
+        priority_score = extracted.get("priority_score")
         reasoning = extracted.get("reasoning")
 
-        contact_eval = score_contact(email, phone, contact_name, role, base_url)
+        contact_eval = score_contact(email, phone, contact_name, role, base_url,
+                                     role_category=role_category, all_phones=all_phones)
         contact_points = contact_eval["contact_points"]
         direct_personal_email = contact_eval["direct_personal_email"]
-        # spätná kompatibilita pre staré polia v lead_metadata
         fallback = {"email": first_email, "phone": first_phone}
-        
+
         # Vertikála (zjednodušená)
         body_lower = combined_text.lower()
         vertical = "Unknown"
@@ -1299,7 +1416,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             vertical = "Beauty & Personal Care"
         elif any(w in body_lower for w in ["pet", "zvieratá"]):
             vertical = "Pet Supplies"
-        
+
         lead_data = {
             "primary_identifier": name,
             "vertical": vertical,
@@ -1309,6 +1426,9 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                 "scraped_at": datetime.datetime.utcnow().isoformat(),
                 "contact_name": contact_name,
                 "contact_role": role,
+                "role_category": role_category,
+                "all_phones": all_phones,
+                "priority_score": priority_score,
                 "contact_points": contact_points,
                 "direct_personal_email": direct_personal_email,
                 "scraped_email": email,
@@ -1327,7 +1447,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             lead_data["contact_channels"]["email"] = email
         if phone:
             lead_data["contact_channels"]["phone"] = phone
-        
+
         # Skóre
         org_id = 1
         async with async_session() as session:
@@ -1335,7 +1455,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             org_config = result.scalar_one_or_none()
             if not org_config:
                 raise HTTPException(status_code=404, detail="Organization config not found")
-        
+
         rule_score = evaluate_lead(lead_data, org_config.scoring_rules)
         final_score = rule_score + contact_points
         final_score = max(0, min(100, final_score))
@@ -1344,7 +1464,7 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
         elif final_score >= thresholds["WARM"]: tier = "WARM"
         elif final_score >= thresholds["COOL"]: tier = "COOL"
         else: tier = "DEAD"
-        
+
         # Uloženie alebo aktualizácia
         async with async_session() as session:
             stmt = select(Lead).where(Lead.primary_identifier == name)
@@ -1367,8 +1487,11 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                     "extracted": {
                         "email": email,
                         "phone": phone,
+                        "all_phones": all_phones,
                         "contact_name": contact_name,
                         "contact_role": role,
+                        "role_category": role_category,
+                        "priority_score": priority_score,
                         "contact_points": contact_points
                     }
                 }
@@ -1395,8 +1518,11 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
                     "extracted": {
                         "email": email,
                         "phone": phone,
+                        "all_phones": all_phones,
                         "contact_name": contact_name,
                         "contact_role": role,
+                        "role_category": role_category,
+                        "priority_score": priority_score,
                         "contact_points": contact_points
                     }
                 }
@@ -1446,6 +1572,9 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     phone = extracted.get("phone") or first_phone or jsonld_data.get("phone")
     contact_name = extracted.get("contact_name") or jsonld_data.get("contact_name") or whois_data.get("contact_name")
     role = extracted.get("role") or jsonld_data.get("role")
+    role_category = extracted.get("role_category") or ""
+    all_phones = extracted.get("all_phones") or ""
+    priority_score = extracted.get("priority_score")
 
     # Ak AI nedala primary_identifier (combined_text bol prázdny), použijeme JSON-LD/doménu
     if not extracted.get("primary_identifier"):
@@ -1459,7 +1588,8 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     if role and not extracted.get("role"):
         extracted["role"] = role
 
-    contact_eval = score_contact(email, phone, contact_name, role, base_url)
+    contact_eval = score_contact(email, phone, contact_name, role, base_url,
+                                 role_category=role_category, all_phones=all_phones)
 
     return {
         "url": base_url,
@@ -1471,6 +1601,13 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         "text_preview": combined_text[:2000],
         # AI výber + reasoning
         "ai_extracted": extracted,
+        # Kľúčové polia pre rýchle porovnanie (expected vs actual)
+        "contact_name": contact_name,
+        "role_category": role_category,
+        "email": email,
+        "phone": phone,
+        "all_phones": all_phones,
+        "priority_score": priority_score,
         # Všetci kandidáti (regex)
         "candidates": candidates,
         # Spätná kompatibilita pre starý klient
