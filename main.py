@@ -882,10 +882,6 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     if not text:
         return result
     normalized = text.replace('\xa0', ' ')
-    # Remove garbled binary-looking sequences (non-printable chars) but keep Slovak chars
-    normalized = re.sub(r'[^\u0009\u000a\u000d\u0020-\u007e\u0080-\u024f]+', ' ', normalized)
-    # Collapse multiple spaces
-    normalized = re.sub(r' {3,}', '  ', normalized)
 
     # === EMAILS ===
     seen_emails = set()
@@ -1068,7 +1064,7 @@ PRIORITA KONTAKTU (vyber JEDEN kontakt s najvyšším skóre):
 1. jednateľ/konateľ/jednatel/CEO/majiteľ/owner — meno+email+tel = 100b → role_category="CEO"
 2. obchodný riaditeľ/obchodní ředitel/sales director = 85b → role_category="obchodne"
 3. obchodné oddelenie/prodejní oddělenie s menom osoby = 70b → role_category="obchodne"
-4. ŠPECIÁLNE: ak je kdekoľvek na stránke konkrétne meno OSOBY (nie firmy) spolu s číslom ALEBO emailom, AJ BEZ EXPLICITNEJ ROLY → role_category="obchodne", 65b. Fyzická osoba zverejnená na firemnom webe má bližšie k rozhodovaniu ako anonymná infolinka.
+4. ŠPECIÁLNE — KONTAKTNÝ BLOK: ak na kontaktnej stránke existuje blok kde je meno osoby v rovnakom oddiele (do 400 znakov) ako email alebo telefón — aj keď sú oddelené adresou, IČO, DIČ alebo PSČ — SPOJ ich do jedného kontaktu. Typická štruktúra SK/CZ e-shopov: 'Prevádzkovateľ: [MENO] [adresa] [IČO] [DIČ] Email: [email] Telefón: [tel]' 'Zodpovedný vedúci: [MENO] E-mail: [email]' 'Konateľ: [MENO] [adresa] Tel: [tel]' V týchto prípadoch: contact_name=[MENO], role=nadpis bloku (Prevádzkovateľ/Zodpovedný vedúci/Konateľ), role_category='CEO', email a phone z toho istého bloku. IGNORUJ IČO/DIČ/PSČ/IBAN ako 'čísla' — nie sú to telefóny.
 5. menný email (meno.priezvisko@ alebo meno@firma) bez roly = 55b → role_category podľa kontextu
 6. objednavky@/orders@/objednávky@/prodej@/marketing@/reklama@ = 40b → role_category="obchodne" (objednávkové/marketingové oddelenie = priamy biznis kontakt)
 7. eshop@/shop@/obchod@/svietidla@/e-shop@ = 35b → role_category="eshop"
