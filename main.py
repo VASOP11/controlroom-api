@@ -1780,3 +1780,79 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
         "jsonld": jsonld_data,
         "whois": whois_data,
     }
+
+
+@app.post("/api/leads/raw-extract")
+async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
+    """
+    Vráti všetky nájdené kontakty (emaily + telefóny s kontextom) bez AI tieringu.
+    Určené pre manuálnu kontrolu — človek vidí čo bolo nájdené a kde.
+    """
+    base_url = req.url.strip()
+    if not base_url.startswith(("http://", "https://")):
+        base_url = "https://" + base_url
+    base_url = base_url.rstrip("/")
+
+    firma = _domain_of(base_url)
+
+    scrape_out = await _scrape_all_pages(base_url)
+    combined_text = scrape_out.get("text", "")
+    jsonld_data = scrape_out.get("jsonld", {})
+
+    candidates = extract_all_candidates(combined_text)
+
+    # --- Emaily ---
+    emails_out: List[str] = []
+    seen_emails: set = set()
+    # Pridaj z JSON-LD ako prvý (najspoľahlivejší zdroj)
+    if jsonld_data.get("email"):
+        e = jsonld_data["email"].strip().lower()
+        if e and e not in seen_emails:
+            seen_emails.add(e)
+            emails_out.append(jsonld_data["email"].strip())
+    for entry in candidates["emails"]:
+        key = entry["value"].lower()
+        if key not in seen_emails:
+            seen_emails.add(key)
+            emails_out.append(entry["value"])
+
+    # --- Telefóny s kontextom ---
+    cisla_out: List[Dict[str, str]] = []
+    seen_phones: set = set()
+    # Pridaj z JSON-LD
+    if jsonld_data.get("phone"):
+        p = jsonld_data["phone"].strip()
+        norm_key = re.sub(r'\D', '', p)
+        if norm_key and norm_key not in seen_phones and is_valid_phone(p):
+            seen_phones.add(norm_key)
+            cisla_out.append({"cislo": p, "kontext": "JSON-LD schema (homepage)"})
+    for entry in candidates["phones"]:
+        p = entry["value"]
+        norm_key = re.sub(r'\D', '', p)
+        if norm_key and norm_key not in seen_phones and is_valid_phone(p):
+            seen_phones.add(norm_key)
+            cisla_out.append({
+                "cislo": p,
+                "kontext": entry.get("context", "").strip(),
+            })
+
+    # --- Poznamka: ktoré podstránky priniesli kontakty ---
+    found_on: List[str] = []
+    if combined_text:
+        # Jednoduché heuristické hľadanie — ak sa URL fragment objavuje v texte vedľa kontaktu
+        for path_hint in [
+            "kontakt", "contact", "o-nas", "o-firme", "obchodne-podmienky",
+            "obchodni-podminky", "gdpr", "ochrana-udajov", "impressum",
+            "tym", "team", "vedenie",
+        ]:
+            # Ak sa aspoň jeden email alebo telefón nachádza blízko tohto kľúčového slova v texte
+            if re.search(re.escape(path_hint), combined_text, re.IGNORECASE):
+                found_on.append(f"/{path_hint}")
+    poznamka = "Nájdené na: " + ", ".join(found_on) if found_on else "Podstránky neboli identifikované"
+
+    return {
+        "firma": firma,
+        "emails": emails_out,
+        "cisla": cisla_out,
+        "poznamka": poznamka,
+    }
