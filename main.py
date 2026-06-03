@@ -921,6 +921,7 @@ _NOT_A_NAME_WORD = {
     "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota", "Nedeľa",
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
     "Wi", "Sk", "Cz", "Eu", "Id", "Ok", "Sr",
+    "Kvatro", "Comp", "Sro", "Ltd", "Inc", "As", "Zs",
 }
 
 def _context(text: str, start: int, end: int, width: int = 150) -> str:
@@ -938,6 +939,7 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     if not text:
         return result
     normalized = text.replace('\xa0', ' ')
+    normalized = re.sub(r'\n+', ' ', normalized)
 
     # === EMAILS ===
     seen_emails = set()
