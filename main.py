@@ -1782,11 +1782,139 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     }
 
 
+def _find_persons_in_text(text: str) -> List[Dict[str, Any]]:
+    """Nájde všetky osoby v texte: role keyword + meno v okolí 400 znakov.
+    Pre každú osobu hľadá email a telefón v rovnakom bloku (±400 znakov od mena).
+    Vracia list: [{"meno": ..., "rola": ..., "email": ..., "cislo": ...}]
+    """
+    if not text:
+        return []
+    normalized = text.replace('\xa0', ' ')
+    normalized = re.sub(r'\n+', ' ', normalized)
+
+    # Rozšírené role patterny — hľadáme "Rola: Meno Priezvisko" alebo "Rola Meno Priezvisko"
+    _ROLE_LABELS = [
+        "zodpovedný vedúci", "zodpovedny veduci", "zodpovedná osoba", "zodpovedna osoba",
+        "konateľ", "konatel", "jednateľ", "jednatel",
+        "majiteľ", "majitel", "majiteľka", "majitelka",
+        "riaditeľ", "riaditel", "riaditeľka", "ředitel", "ředitelka",
+        "prevádzkovateľ", "prevadzkovatel", "provozovatel",
+        "obchodný riaditeľ", "obchodny riaditel", "obchodní ředitel",
+        "vedúci predajne", "veduci predajne", "vedoucí prodejny",
+        "CEO", "CTO", "CFO", "COO",
+        "kontaktná osoba", "kontaktna osoba", "kontaktní osoba",
+    ]
+    # Pattern pre meno: voliteľný titul + Krstné Priezvisko (1-2 slová s veľkým písmenom)
+    _name_after_role = re.compile(
+        rf'(?:Mgr\.|Ing\.|Bc\.|JUDr\.|MUDr\.|PhDr\.|prof\.|doc\.|MVDr\.|RNDr\.)?'
+        rf'[\s:,]*'
+        rf'([{_UPPER}][{_LOWER}]{{2,}}(?:\s+[{_UPPER}][{_LOWER}]{{2,}}){{1,2}})'
+    )
+    # Email a telefón patterny
+    _email_re = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+    _phone_re = re.compile(
+        r'(?:\+\d{3}[\s-]?)?\d[\d\s/-]{6,12}\d'
+    )
+
+    persons: List[Dict[str, Any]] = []
+    seen_names: set = set()
+
+    for role_label in _ROLE_LABELS:
+        for rm in re.finditer(re.escape(role_label), normalized, re.IGNORECASE):
+            # Hľadaj meno v 250 znakoch ZA role kľúčovým slovom
+            name_window = normalized[rm.end():min(len(normalized), rm.end() + 250)]
+            nm = _name_after_role.search(name_window)
+            if not nm:
+                continue
+            name_val = nm.group(1).strip()
+            # Filtruj company name fragmenty — ak posledné slovo je garbage, skús ho odstrihúť
+            tokens = [t for t in name_val.split() if not t.endswith('.')]
+            if len(tokens) < 2:
+                continue
+            if any(t in _NOT_A_NAME_WORD for t in tokens):
+                # Skús odstrihúť posledné slovo (regex je greedy, zachytí aj "Adresa")
+                trimmed = tokens[:-1]
+                if len(trimmed) >= 2 and not any(t in _NOT_A_NAME_WORD for t in trimmed):
+                    name_val = " ".join(trimmed)
+                else:
+                    continue
+            if name_val in seen_names:
+                continue
+            seen_names.add(name_val)
+
+            # Zachyť presný text roly z pôvodného textu
+            actual_role = normalized[rm.start():rm.end()]
+            # Capitalize prvé písmeno
+            actual_role = actual_role[0].upper() + actual_role[1:] if actual_role else role_label
+
+            # Hľadaj email a telefón v bloku ±400 znakov okolo mena
+            abs_name_start = rm.start()
+            abs_name_end = rm.end() + nm.end()
+            block_start = max(0, abs_name_start - 400)
+            block_end = min(len(normalized), abs_name_end + 400)
+            block = normalized[block_start:block_end]
+
+            # Email v bloku — zoradený podľa vzdialenosti od mena (nie od roly)
+            # Emaily ZA menom majú prednosť (typicky "Meno E-mail: x@y.sk")
+            name_end_in_block = abs_name_end - block_start
+            block_email_matches = list(_email_re.finditer(block))
+            # Priorita: emaily za menom dostanú bonus -1000 na vzdialenosť
+            def _email_sort_key(em):
+                dist = abs(em.start() - name_end_in_block)
+                after_name = em.start() >= name_end_in_block
+                return (0 if after_name else 1, dist)
+            block_email_matches.sort(key=_email_sort_key)
+            person_email = None
+            for em in block_email_matches:
+                if not _email_is_ignored(em.group(0), block):
+                    person_email = em.group(0)
+                    break
+
+            # Telefón v bloku (validný SK/CZ)
+            block_phones = _phone_re.findall(block)
+            person_phone = None
+            for ph in block_phones:
+                ph_clean = ph.strip()
+                digits = re.sub(r'\D', '', ph_clean)
+                # Vylúč IČO/DIČ kontextom
+                ph_idx = block.find(ph_clean)
+                if ph_idx >= 0:
+                    ctx_around = block[max(0, ph_idx - 60):ph_idx + len(ph_clean) + 60].lower()
+                    if re.search(r'ičo|ico|dič|dic|iban|vložka|vlozka|oddiel|č\.\s*účtu|cislo uctu', ctx_around):
+                        continue
+                if len(digits) >= 9 and is_valid_phone(ph_clean):
+                    person_phone = ph_clean
+                    break
+
+            persons.append({
+                "meno": name_val,
+                "rola": actual_role,
+                "email": person_email,
+                "cislo": person_phone,
+            })
+
+    return persons
+
+
+def _is_ico_context(context: str) -> bool:
+    """Vráti True ak kontext okolo čísla naznačuje že ide o IČO/DIČ/IBAN, nie telefón."""
+    if not context:
+        return False
+    ctx_lower = context.lower()
+    return bool(re.search(
+        r'ičo|ico|ič dph|ic dph|dič|dic|dič dph'
+        r'|iban|č\.\s*účtu|cislo uctu|číslo účtu'
+        r'|vložka|vlozka|oddiel|obch\.\s*reg|obchodný register|obchodny register'
+        r'|bankové|bankove|banka',
+        ctx_lower
+    ))
+
+
 @app.post("/api/leads/raw-extract")
 async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
     """
-    Vráti všetky nájdené kontakty (emaily + telefóny s kontextom) bez AI tieringu.
-    Určené pre manuálnu kontrolu — človek vidí čo bolo nájdené a kde.
+    Vráti všetky nájdené kontakty (osoby, emaily, telefóny s kontextom, IČO) bez AI tieringu.
+    Osoby = meno+rola+email+číslo napárované cez blízky kontext na stránke.
     """
     base_url = req.url.strip()
     if not base_url.startswith(("http://", "https://")):
@@ -1801,10 +1929,12 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
 
     candidates = extract_all_candidates(combined_text)
 
-    # --- Emaily ---
+    # === OSOBY — nájdi role keyword + meno + prirad email/telefón z bloku ===
+    osoby = _find_persons_in_text(combined_text)
+
+    # === EMAILY ===
     emails_out: List[str] = []
     seen_emails: set = set()
-    # Pridaj z JSON-LD ako prvý (najspoľahlivejší zdroj)
     if jsonld_data.get("email"):
         e = jsonld_data["email"].strip().lower()
         if e and e not in seen_emails:
@@ -1816,10 +1946,10 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_emails.add(key)
             emails_out.append(entry["value"])
 
-    # --- Telefóny s kontextom ---
+    # === TELEFÓNY s kontextom — filtruj IČO ===
     cisla_out: List[Dict[str, str]] = []
+    ico_out: Optional[str] = None
     seen_phones: set = set()
-    # Pridaj z JSON-LD
     if jsonld_data.get("phone"):
         p = jsonld_data["phone"].strip()
         norm_key = re.sub(r'\D', '', p)
@@ -1828,31 +1958,37 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             cisla_out.append({"cislo": p, "kontext": "JSON-LD schema (homepage)"})
     for entry in candidates["phones"]:
         p = entry["value"]
+        ctx = entry.get("context", "")
         norm_key = re.sub(r'\D', '', p)
+        # Ak kontext hovorí o IČO/DIČ/IBAN → presmeruj do ico poľa
+        if _is_ico_context(ctx):
+            if not ico_out and len(norm_key) >= 7:
+                ico_out = p.strip()
+            continue
         if norm_key and norm_key not in seen_phones and is_valid_phone(p):
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
-                "kontext": entry.get("context", "").strip(),
+                "kontext": ctx.strip(),
             })
 
-    # --- Poznamka: ktoré podstránky priniesli kontakty ---
+    # === POZNAMKA ===
     found_on: List[str] = []
     if combined_text:
-        # Jednoduché heuristické hľadanie — ak sa URL fragment objavuje v texte vedľa kontaktu
         for path_hint in [
             "kontakt", "contact", "o-nas", "o-firme", "obchodne-podmienky",
             "obchodni-podminky", "gdpr", "ochrana-udajov", "impressum",
             "tym", "team", "vedenie",
         ]:
-            # Ak sa aspoň jeden email alebo telefón nachádza blízko tohto kľúčového slova v texte
             if re.search(re.escape(path_hint), combined_text, re.IGNORECASE):
                 found_on.append(f"/{path_hint}")
     poznamka = "Nájdené na: " + ", ".join(found_on) if found_on else "Podstránky neboli identifikované"
 
     return {
         "firma": firma,
+        "osoby": osoby,
         "emails": emails_out,
         "cisla": cisla_out,
+        "ico": ico_out,
         "poznamka": poznamka,
     }
