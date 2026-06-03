@@ -998,8 +998,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     seen_names = set()
     for kw in ROLE_KEYWORDS:
         for m in re.finditer(re.escape(kw), normalized, re.IGNORECASE):
-            window_start = max(0, m.start() - 120)
-            window_end = min(len(normalized), m.end() + 120)
+            window_start = max(0, m.start() - 250)
+            window_end = min(len(normalized), m.end() + 250)
             window = normalized[window_start:window_end]
             for nm in _NAME_PATTERN.finditer(window):
                 name_val = nm.group(0).strip()
@@ -1027,8 +1027,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     for email_entry in result["emails"]:
         email_val = email_entry["value"]
         for em in re.finditer(re.escape(email_val), normalized, re.IGNORECASE):
-            window_start = max(0, em.start() - 200)
-            window_end = min(len(normalized), em.end() + 200)
+            window_start = max(0, em.start() - 250)
+            window_end = min(len(normalized), em.end() + 250)
             window = normalized[window_start:window_end]
             for nm in _NAME_PATTERN.finditer(window):
                 name_val = nm.group(0).strip()
