@@ -24,6 +24,7 @@ import cloudscraper
 import chardet
 import ftfy
 from playwright.async_api import async_playwright
+from scrapling.fetchers import StealthyFetcher, AsyncFetcher
 try:
     import whois as _whois_lib  # python-whois
 except Exception:
@@ -484,6 +485,51 @@ def fetch_html_cloudscraper_with_ua(url: str) -> bytes:
             pass
     return b""
 
+def is_garbled_content(text: str) -> bool:
+    """Vráti True ak je text binárny garbage (Cloudflare blokoval request).
+    Prah: viac ako 20% znakov je unicode replacement char \\ufffd alebo non-printable bytes.
+    """
+    if not text:
+        return False
+    total = len(text)
+    if total < 50:
+        return False
+    bad = sum(
+        1 for ch in text
+        if ch == '�' or (ord(ch) < 32 and ch not in '\t\n\r')
+    )
+    return (bad / total) > 0.20
+
+
+async def fetch_html_scrapling(url: str) -> bytes:
+    """Stealth fetch cez ScraplingFetcher (camoufox/patchright backend).
+    Použij ako fallback keď httpx/cloudscraper vrátia garbled binary content
+    (typicky Cloudflare JS challenge).
+    Vracia bytes kompatibilné s extract_text_from_html().
+    """
+    try:
+        print(f"🕵️ Scrapling StealthyFetcher pre {url}")
+        page = await StealthyFetcher.async_fetch(
+            url,
+            headless=True,
+            network_idle=True,
+            timeout=30000,
+        )
+        if page and page.body:
+            return page.body
+    except Exception as e:
+        print(f"⚠️ StealthyFetcher zlyhalo pre {url}: {e}")
+    # Fallback na AsyncFetcher (bez browsera, ale s lepšou hlavičkou ako httpx)
+    try:
+        print(f"🔄 Scrapling AsyncFetcher fallback pre {url}")
+        page = await AsyncFetcher.get(url)
+        if page and page.body:
+            return page.body
+    except Exception as e:
+        print(f"⚠️ AsyncFetcher zlyhalo pre {url}: {e}")
+    return b""
+
+
 def extract_jsonld_contacts(html: bytes) -> Dict[str, Any]:
     """Vytiahne kontaktné info z <script type=\"application/ld+json\">.
     Väčšina e-shopov má Organization / LocalBusiness schema s contactPoint
@@ -722,7 +768,17 @@ async def fetch_text_with_fallback(url: str, browser_ctx=None) -> str:
     print(f"⚠️ cloudscraper zlyhalo, skúšam Playwright pre {url}")
     html = await fetch_html_playwright(url, browser_ctx=browser_ctx)
     if html:
-        return extract_text_from_html(html)
+        text = extract_text_from_html(html)
+        if not is_garbled_content(text):
+            return text
+        print(f"⚠️ Playwright vrátil garbled content pre {url}, skúšam Scrapling")
+
+    print(f"🕵️ Scrapling ako finálny fallback pre {url}")
+    scrapling_bytes = await fetch_html_scrapling(url)
+    if scrapling_bytes:
+        text = extract_text_from_html(scrapling_bytes)
+        if not is_garbled_content(text):
+            return text
 
     print(f"❌ Všetky fetch metódy zlyhali pre {url}")
     return ""
@@ -1334,6 +1390,20 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
         jsonld_data = extract_jsonld_contacts(home_bytes)
 
     home_text = extract_text_from_html(home_bytes) if home_bytes else ""
+
+    # Detekuj Cloudflare garbled content — ak httpx dostal zablokovanú odpoveď
+    if is_garbled_content(home_text):
+        print(f"⚠️ Garbled content na homepage {base_url} — skúšam Scrapling StealthyFetcher")
+        scrapling_bytes = await fetch_html_scrapling(base_url)
+        if scrapling_bytes:
+            scrapling_text = extract_text_from_html(scrapling_bytes)
+            if not is_garbled_content(scrapling_text):
+                print(f"✅ Scrapling vrátil čistý obsah pre {base_url}")
+                home_bytes = scrapling_bytes
+                home_text = scrapling_text
+                jsonld_data = extract_jsonld_contacts(home_bytes)
+            else:
+                print(f"❌ Scrapling tiež vrátil garbled content pre {base_url}")
 
     # Discover actual navigation links from homepage HTML
     nav_links = extract_nav_links(home_bytes, base_url) if home_bytes else []
