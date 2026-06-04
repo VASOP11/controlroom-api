@@ -1400,11 +1400,13 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
     Vracia dict: {'text': str, 'jsonld': dict, 'whois': dict}
     """
     contact_priority_paths = [
-        "kontakt", "contact", "kontakty", "tym", "team",
-        "o-nas", "about-us", "onas", "vedenie", "management",
-        "kontaktne-informacie", "kontaktne-udaje", "kontaktne-info",
         "obchodne-podmienky", "vseobecne-obchodne-podmienky", "vop",
-        "o-spolocnosti", "o-firme", "prevadzka",
+        "obchodni-podminky", "vseobecne-obchodni-podminky",
+        "kontaktne-informacie", "kontaktne-udaje", "kontaktne-info",
+        "kontakt", "contact", "kontakty",
+        "o-nas", "o-firme", "o-spolocnosti", "about-us", "onas",
+        "tym", "team", "vedenie", "management",
+        "impressum", "prevadzka", "organizacna-struktura",
     ]
     other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
     all_paths = contact_priority_paths + other_paths
@@ -1441,13 +1443,29 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
     sem = asyncio.Semaphore(5)  # max 5 concurrent fetches pre Render free tier (0.5 CPU)
 
     async def _fetch_fast(url: str) -> str:
-        """Skúsi httpx, potom cloudscraper. Bez Playwright. Vracia text alebo prázdny string."""
+        """Skúsi httpx, potom cloudscraper, potom retry s trailing slash. Bez Playwright.
+        Garbled/binary obsah (Cloudflare block) sa nezaráta — vracia prázdny string."""
         async with sem:
             loop = asyncio.get_event_loop()
             html = await loop.run_in_executor(None, fetch_html_httpx, url)
             if not html:
                 html = await loop.run_in_executor(None, fetch_html_cloudscraper_with_ua, url)
-            return extract_text_from_html(html) if html else ""
+            if not html and not url.endswith("/"):
+                # Retry s trailing slash — niektoré servery redirectujú /path → /path/
+                url2 = url + "/"
+                html = await loop.run_in_executor(None, fetch_html_httpx, url2)
+                if not html:
+                    html = await loop.run_in_executor(None, fetch_html_cloudscraper_with_ua, url2)
+            text = extract_text_from_html(html) if html else ""
+            # Odfiltruj Cloudflare-zablokovaný garbled obsah
+            if text and is_garbled_content(text):
+                print(f"⚠️ Garbled subpage (Cloudflare?): {url}")
+                text = ""
+            if text and len(text) > 100:
+                print(f"✅ Subpage OK: {url} ({len(text)} znakov)")
+            else:
+                print(f"❌ Subpage prázdna: {url}")
+            return text
 
     # Use discovered nav links first, fall back to hardcoded paths
     if nav_links:
@@ -1457,7 +1475,7 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
         for u in classic_urls:
             if u not in combined_urls:
                 combined_urls.append(u)
-        subpage_urls = combined_urls[:25]  # cap total
+        subpage_urls = combined_urls[:30]  # cap total
     else:
         subpage_urls = [f"{base_url}/{p}" for p in all_paths]
     results = await asyncio.gather(*[_fetch_fast(u) for u in subpage_urls], return_exceptions=True)
@@ -1467,32 +1485,51 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
         if isinstance(r, str) and r:
             sub_texts.append(r)
 
-    combined = (home_text + "\n" + "\n".join(sub_texts)).strip()
+    combined = ("\n".join(sub_texts) + "\n" + home_text).strip()
 
-    # === KROK 3: skip Playwright ak máme dosť kontaktov ===
-    if has_good_contacts(combined):
-        print(f"✅ httpx+cloudscraper stačili pre {base_url} (Playwright preskočený)")
+    # === KROK 3: skip Playwright ak máme dosť kontaktov A role keyword v texte ===
+    # Samotný email+telefón nestačí — ak text neobsahuje role keyword (zodpovedný vedúci,
+    # konateľ…), kontaktne-informacie je pravdepodobne JS-rendered → Playwright nutný.
+    _ROLE_KW_RE = re.compile(
+        r'zodpovedn|konateľ|konatel|jednateľ|jednatel|majiteľ|majitel|'
+        r'prevádzkovateľ|prevadzkovatel|riaditeľ|riaditel|\bCEO\b|\bowner\b|\bfounder\b',
+        re.IGNORECASE
+    )
+    has_role_kw = bool(_ROLE_KW_RE.search(combined))
+    if has_good_contacts(combined) and has_role_kw:
+        print(f"✅ httpx+cloudscraper stačili pre {base_url} (email+tel+role keyword nájdené, Playwright preskočený)")
         return {"text": combined, "jsonld": jsonld_data, "whois": whois_data}
 
     # === KROK 4: Playwright — len max 3 stránky ===
-    print(f"⚡ httpx/cloudscraper nedali dosť kontaktov, spúšťam Playwright (max 3 stránky)")
+    reason = "nedali dosť kontaktov" if not has_good_contacts(combined) else "chýba role keyword (zodpovedný vedúci / konateľ)"
+    print(f"⚡ httpx/cloudscraper {reason}, spúšťam Playwright (max 3 stránky)")
     pw_urls = [base_url]
-    # Use discovered nav links for contact/about pages instead of hardcoded paths
-    contact_keywords = ["kontakt", "contact", "o-nas", "o firme", "about", "napiste", "napíšte"]
+    # Prioritizuj kontaktne-informacie, obchodne-podmienky, kontakt z nav_links
+    pw_priority_kw = [
+        "kontaktne-informacie", "kontaktne-udaje", "kontaktne-info",
+        "obchodne-podmienky", "vop",
+        "kontakt", "contact", "o-nas", "o firme", "about", "napiste",
+    ]
     for url in nav_links:
-        if any(kw in url.lower() for kw in contact_keywords):
-            pw_urls.append(url)
+        url_lower = url.lower()
+        if any(kw in url_lower for kw in pw_priority_kw):
+            if url not in pw_urls:
+                pw_urls.append(url)
         if len(pw_urls) >= 3:
             break
     # Fallback to hardcoded paths if nav discovery found nothing useful
     if len(pw_urls) < 2:
-        for p in ["kontakt", "contact", "kontakty"]:
-            pw_urls.append(f"{base_url}/{p}")
-            break
+        for p in ["kontaktne-informacie", "kontakt", "contact", "kontakty"]:
+            candidate = f"{base_url}/{p}"
+            if candidate not in pw_urls:
+                pw_urls.append(candidate)
+                break
     if len(pw_urls) < 3:
-        for p in ["o-nas", "about-us", "tym", "team"]:
-            pw_urls.append(f"{base_url}/{p}")
-            break
+        for p in ["obchodne-podmienky", "o-nas", "about-us", "tym", "team"]:
+            candidate = f"{base_url}/{p}"
+            if candidate not in pw_urls:
+                pw_urls.append(candidate)
+                break
     pw_urls = pw_urls[:3]
 
     pw_instance = None
