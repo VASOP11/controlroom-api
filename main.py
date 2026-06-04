@@ -407,7 +407,10 @@ async def generate_email_draft(lead_id: int, req: EmailDraftRequest, user=Depend
 # ---------- SCRAPING S SCRAPINGBEE A FALLBACKMI ----------
 SUBPAGE_PATHS = [
     "kontakt", "contact", "kontakty", "tym", "team", "o-nas", "about-us", "onas",
-    "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky"
+    "impressum", "vedenie", "management", "organizacna-struktura", "obchodne-podmienky",
+    "kontaktne-informacie", "kontaktne-udaje", "kontaktne-info",
+    "vseobecne-obchodne-podmienky", "vop",
+    "o-spolocnosti", "o-firme", "prevadzka",
 ]
 
 _USER_AGENTS = [
@@ -1906,14 +1909,16 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
         if not norm_key:
             continue
 
-        # Nájdi telefón v norm_text pre 800-znakový kontext
+        # Nájdi telefón v norm_text pre kontext
         idx = norm_text.find(p)
         if idx >= 0:
             ctx_400 = norm_text[max(0, idx - 400):idx + len(p) + 400].strip()
+            ctx_1500 = norm_text[max(0, idx - 1500):idx + len(p) + 1500].strip()
             before_phone = norm_text[max(0, idx - 80):idx]
         else:
             # Fallback na starý ±150-znakový kontext z candidates
             ctx_400 = entry.get("context", "").strip()
+            ctx_1500 = ctx_400
             before_phone = ctx_400[:80]
 
         # IČO kontrola: len text PRED číslom (IČO/DIČ labely vždy predchádzajú číslu)
@@ -1927,7 +1932,7 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             cisla_out.append({
                 "cislo": p,
                 "kontext": ctx_400,
-                "klucove_slova": _extract_klucove_slova(ctx_400),
+                "klucove_slova": _extract_klucove_slova(ctx_1500),
             })
 
     # === POZNAMKA ===
