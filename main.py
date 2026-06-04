@@ -4,6 +4,7 @@ import datetime
 import re
 import json
 import asyncio
+import unicodedata
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -924,7 +925,27 @@ _NOT_A_NAME_WORD = {
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
     "Wi", "Sk", "Cz", "Eu", "Id", "Ok", "Sr",
     "Kvatro", "Comp", "Sro", "Ltd", "Inc", "As", "Zs",
+    # E-shop navigácia, UI elementy, kategórie — nesmú byť meno osoby
+    "Prihlásenie", "Hľadať", "Darčeky", "Darček", "Nákupný", "Košík",
+    "Novinky", "Zákaznícka", "Zákaznícky", "Podpora", "Doprava", "Platba",
+    "Reklamácia", "Vrátenie", "Podmienky", "Ochrana", "Údajov",
+    "Program", "Veľkoobchodný", "Informácie", "Kontaktné",
+    "Horúce", "Prázdny", "Tovar", "Zľavy", "Akcia", "Nový", "Výpredaj",
+    "Kategória", "Produkt", "Objednávka", "Dopravné", "Platobné",
+    "Faktúra", "Doklad", "Záručný", "Servis", "Technická",
+    "Slovensko", "Česko", "Praha", "Bratislava", "Žilina", "Košice",
+    "Január", "Február", "Marec", "Apríl", "Máj", "Jún", "Júl", "August",
+    "September", "Október", "November", "December",
+    "Registrácia", "Odhlásenie", "Nastavenia", "Profil",
 }
+
+def _de_accent(s: str) -> str:
+    """Odstráni diakritiku — 'Nákupný' → 'Nakupny'. Umožní porovnanie blacklistu
+    aj s textom ktorý prišiel bez diakritiky (terminál, niektoré web-stránky)."""
+    return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+
+# Pre-normalizovaný (bez diakritiky, lowercase) blacklist pre rýchle porovnanie.
+_NOT_A_NAME_WORD_PLAIN: frozenset = frozenset(_de_accent(w).lower() for w in _NOT_A_NAME_WORD)
 
 def _context(text: str, start: int, end: int, width: int = 150) -> str:
     """Vráti text okolo [start:end] s ±width znakov."""
@@ -1815,37 +1836,60 @@ _RAW_KW_PATTERNS: List[tuple] = [
     (re.compile(r'\bobchod(?:ný|ny|ní|ni)?\b', re.IGNORECASE), None),
     (re.compile(r'\bpredaj\b|\bsales\b', re.IGNORECASE), None),
 ]
-# Pattern pre meno osoby (2 veľké slová)
+# Pattern pre meno osoby (2 veľké slová, každé min 4 znaky = 1 veľké + 3 malé)
 _RAW_NAME_PAT = re.compile(
     rf'(?:Mgr\.|Ing\.|Bc\.|JUDr\.|MUDr\.|PhDr\.|prof\.|doc\.|MVDr\.|RNDr\.)?\s*'
-    rf'([{_UPPER}][{_LOWER}]{{2,}}\s+[{_UPPER}][{_LOWER}]{{2,}})'
+    rf'([{_UPPER}][{_LOWER}]{{3,}}\s+[{_UPPER}][{_LOWER}]{{3,}})'
 )
 
 
 def _extract_klucove_slova(context: str) -> List[str]:
-    """Vráti zoznam kľúčových slov a mien nájdených v kontexte telefónneho čísla."""
+    """Vráti zoznam kľúčových slov a mien nájdených v kontexte telefónneho čísla.
+
+    Pravidlá:
+    - Mená hľadá LEN v ±200-znakovom okruhu okolo nájdeného role keyword.
+    - Ak kontext neobsahuje žiadny role keyword → žiadne mená (ochrana pred navigáciou).
+    - Meno match ktorý sa PREKRÝVA so samotným role keyword spanom je preskočený
+      (zabraňuje 'Prihlasenie Zodpovedny' keď 'Zodpovedny' je súčasť role keywordu).
+    - Blacklist sa porovnáva BEZ diakritiky: 'Nakupny' == 'Nákupný'.
+    """
     found: List[str] = []
     seen_lower: set = set()
 
-    # Rola keywords — pridaj presný text ako nájdený v kontexte
+    # Rola keywords — zbieraj aj ich pozície pre hľadanie mien
+    role_spans: List[tuple] = []
     for pat, _ in _RAW_KW_PATTERNS:
         for m in pat.finditer(context):
             val = m.group(0).strip()
             if val.lower() not in seen_lower:
                 seen_lower.add(val.lower())
                 found.append(val)
+            role_spans.append((m.start(), m.end()))
 
-    # Mená osôb
-    for m in _RAW_NAME_PAT.finditer(context):
-        name = m.group(1).strip()
-        tokens = name.split()
-        if len(tokens) < 2:
-            continue
-        if any(t in _NOT_A_NAME_WORD for t in tokens):
-            continue
-        if name.lower() not in seen_lower:
-            seen_lower.add(name.lower())
-            found.append(name)
+    # Mená osôb — iba v ±200-znakovom okruhu okolo každého role keyword
+    if not role_spans:
+        return found  # žiadny role keyword → žiadne mená
+
+    for (rs, re_end) in role_spans:
+        win_s = max(0, rs - 200)
+        win_e = min(len(context), re_end + 200)
+        window = context[win_s:win_e]
+        for nm in _RAW_NAME_PAT.finditer(window):
+            # Preskočiť match ktorý sa prekrýva so samotným role keyword spanom
+            abs_nm_start = win_s + nm.start()
+            abs_nm_end = win_s + nm.end()
+            if abs_nm_start < re_end and abs_nm_end > rs:
+                continue
+            name = nm.group(1).strip()
+            tokens = name.split()
+            if len(tokens) < 2:
+                continue
+            # Blacklist porovnanie bez diakritiky (Nakupny == Nákupný)
+            if any(_de_accent(t).lower() in _NOT_A_NAME_WORD_PLAIN for t in tokens):
+                continue
+            if name.lower() not in seen_lower:
+                seen_lower.add(name.lower())
+                found.append(name)
 
     return found
 
