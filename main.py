@@ -786,11 +786,10 @@ async def fetch_text_with_fallback(url: str, browser_ctx=None) -> str:
     print(f"❌ Všetky fetch metódy zlyhali pre {url}")
     return ""
 
-# --- Boilerplate filter (cookies, GDPR, obchodné podmienky atď.) ---
+# --- Boilerplate filter (len cookie/GDPR clutter, NIE obchodné podmienky kde sú kontakty) ---
 BOILERPLATE_KEYWORDS = [
     "cookies", "cookie", "súhlasím", "suhlasim", "prehliadač", "prehliadac",
-    "gdpr", "obchodné podmienky", "obchodne podmienky", "vseobecne podmienky",
-    "všeobecné podmienky", "reklamačný poriadok", "reklamacny poriadok",
+    "gdpr",
     "ochrana osobných údajov", "ochrana osobnych udajov", "spracovanie osobných údajov",
     "spracovanie osobnych udajov",
 ]
@@ -1381,7 +1380,10 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
     """
     contact_priority_paths = [
         "kontakt", "contact", "kontakty", "tym", "team",
-        "o-nas", "about-us", "onas", "vedenie", "management"
+        "o-nas", "about-us", "onas", "vedenie", "management",
+        "kontaktne-informacie", "kontaktne-udaje", "kontaktne-info",
+        "obchodne-podmienky", "vseobecne-obchodne-podmienky", "vop",
+        "o-spolocnosti", "o-firme", "prevadzka",
     ]
     other_paths = [p for p in SUBPAGE_PATHS if p not in contact_priority_paths]
     all_paths = contact_priority_paths + other_paths
