@@ -813,6 +813,9 @@ def is_valid_phone(num: str) -> bool:
     """
     if not num:
         return False
+    # Odmietni produktové kódy a čísla s písmenami (napr. 26051717BX)
+    if re.search(r'[A-Za-z]', re.sub(r'^\+', '', num)):
+        return False
     digits = re.sub(r'\D', '', num)
     if not digits:
         return False
@@ -984,6 +987,13 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     # Normalizuj ďalšie Unicode medzery ktoré \xa0 replace nezachytí
     for _sp in [' ', ' ', ' ', ' ', '­']:
         normalized = normalized.replace(_sp, ' ')
+    # Odstráň tel:/phone:/mobil:/telephone: prefixes aby regex zachytil číslo za nimi
+    # (napr. "tel:+421948028999" → "+421948028999")
+    stripped_for_phones = normalized
+    stripped_for_phones = re.sub(r'\btel:\s*', '', stripped_for_phones, flags=re.IGNORECASE)
+    stripped_for_phones = re.sub(r'\bphone:\s*', '', stripped_for_phones, flags=re.IGNORECASE)
+    stripped_for_phones = re.sub(r'\bmobil:\s*', '', stripped_for_phones, flags=re.IGNORECASE)
+    stripped_for_phones = re.sub(r'\btelephone:\s*', '', stripped_for_phones, flags=re.IGNORECASE)
     phone_pattern = re.compile(
         r'(?:'
         # International prefix (+421, +420, 00421, 00420)
@@ -1006,7 +1016,7 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         r')'
     )
     seen_phones = set()
-    for m in phone_pattern.finditer(normalized):
+    for m in phone_pattern.finditer(stripped_for_phones):
         raw = m.group(0).strip()
         norm = re.sub(r'\D', '', raw)
         if norm in seen_phones:
@@ -1014,9 +1024,15 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         if not is_valid_phone(raw):
             continue
         seen_phones.add(norm)
+        # Kontext ber z pôvodného norm_text (pred odstránením tel: prefixov)
+        orig_idx = normalized.find(raw)
+        if orig_idx >= 0:
+            ctx_start, ctx_end = orig_idx, orig_idx + len(raw)
+        else:
+            ctx_start, ctx_end = m.start(), m.end()
         result["phones"].append({
             "value": raw,
-            "context": _context(normalized, m.start(), m.end())
+            "context": _context(normalized, ctx_start, ctx_end)
         })
 
     # === NAMES === blízko role kľúčových slov
@@ -1872,6 +1888,10 @@ _RAW_KW_PATTERNS: List[tuple] = [
     (re.compile(r'obchodn[eéí]\s+oddeleni[ee]|obchodní\s+oddělení', re.IGNORECASE), None),
     (re.compile(r'\bobchod(?:ný|ny|ní|ni)?\b', re.IGNORECASE), None),
     (re.compile(r'\bpredaj\b|\bsales\b', re.IGNORECASE), None),
+    (re.compile(r'odpovědn[aá]\s+osoba|odpovedna\s+osoba|odpovědná\s+osoba', re.IGNORECASE), None),
+    (re.compile(r'zodpovedn[áa]\s+osoba|zodpovědná\s+osoba', re.IGNORECASE), None),
+    (re.compile(r'zodpovedn[yý]\s+zástupca|zodpovedny\s+zastupca', re.IGNORECASE), None),
+    (re.compile(r'kontaktn[eé]\s+údaje|kontaktne\s+udaje', re.IGNORECASE), None),
 ]
 # Pattern pre meno osoby (2 veľké slová, každé min 4 znaky = 1 veľké + 3 malé)
 _RAW_NAME_PAT = re.compile(
@@ -1982,7 +2002,8 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
-                "kontext": "JSON-LD schema (homepage)",
+                "snippet": "JSON-LD schema (homepage)",
+                "siroky_kontext": "JSON-LD schema (homepage)",
                 "klucove_slova": [],
             })
 
@@ -1995,14 +2016,17 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
         # Nájdi telefón v norm_text pre kontext
         idx = norm_text.find(p)
         if idx >= 0:
-            ctx_400 = norm_text[max(0, idx - 400):idx + len(p) + 400].strip()
-            ctx_1500 = norm_text[max(0, idx - 1500):idx + len(p) + 1500].strip()
+            snippet    = norm_text[max(0, idx - 50):idx + len(p) + 50].strip()
+            siroky     = norm_text[max(0, idx - 400):idx + len(p) + 400].strip()
+            ctx_1500   = norm_text[max(0, idx - 1500):idx + len(p) + 1500].strip()
             before_phone = norm_text[max(0, idx - 80):idx]
         else:
-            # Fallback na starý ±150-znakový kontext z candidates
-            ctx_400 = entry.get("context", "").strip()
-            ctx_1500 = ctx_400
-            before_phone = ctx_400[:80]
+            # Fallback na ±150-znakový kontext z candidates
+            fallback_ctx = entry.get("context", "").strip()
+            snippet      = fallback_ctx[:100]
+            siroky       = fallback_ctx
+            ctx_1500     = fallback_ctx
+            before_phone = fallback_ctx[:80]
 
         # IČO kontrola: len text PRED číslom (IČO/DIČ labely vždy predchádzajú číslu)
         if _is_ico_context(before_phone):
@@ -2014,7 +2038,8 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
-                "kontext": ctx_400,
+                "snippet": snippet,
+                "siroky_kontext": siroky,
                 "klucove_slova": _extract_klucove_slova(ctx_1500),
             })
 
