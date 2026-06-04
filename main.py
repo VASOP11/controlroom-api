@@ -1507,8 +1507,8 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
     # Samotný email+telefón nestačí — ak text neobsahuje role keyword (zodpovedný vedúci,
     # konateľ…), kontaktne-informacie je pravdepodobne JS-rendered → Playwright nutný.
     _ROLE_KW_RE = re.compile(
-        r'zodpovedn|konateľ|konatel|jednateľ|jednatel|majiteľ|majitel|'
-        r'prevádzkovateľ|prevadzkovatel|riaditeľ|riaditel|\bCEO\b|\bowner\b|\bfounder\b',
+        r'zodpoved|konateľ|konatel|majiteľ|majitel|prevadzkov|prevádzkov|'
+        r'jednateľ|jednatel|riaditeľ|riaditel|odpoved|\bceo\b|\bowner\b|\bfounder\b',
         re.IGNORECASE
     )
     has_role_kw = bool(_ROLE_KW_RE.search(combined))
@@ -2002,8 +2002,7 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
-                "snippet": "JSON-LD schema (homepage)",
-                "siroky_kontext": "JSON-LD schema (homepage)",
+                "kontext": "JSON-LD schema (homepage)",
                 "klucove_slova": [],
             })
 
@@ -2016,15 +2015,13 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
         # Nájdi telefón v norm_text pre kontext
         idx = norm_text.find(p)
         if idx >= 0:
-            snippet    = norm_text[max(0, idx - 50):idx + len(p) + 50].strip()
-            siroky     = norm_text[max(0, idx - 400):idx + len(p) + 400].strip()
+            ctx_400    = norm_text[max(0, idx - 400):idx + len(p) + 400].strip()
             ctx_1500   = norm_text[max(0, idx - 1500):idx + len(p) + 1500].strip()
             before_phone = norm_text[max(0, idx - 80):idx]
         else:
             # Fallback na ±150-znakový kontext z candidates
             fallback_ctx = entry.get("context", "").strip()
-            snippet      = fallback_ctx[:100]
-            siroky       = fallback_ctx
+            ctx_400      = fallback_ctx
             ctx_1500     = fallback_ctx
             before_phone = fallback_ctx[:80]
 
@@ -2038,8 +2035,7 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
-                "snippet": snippet,
-                "siroky_kontext": siroky,
+                "kontext": ctx_400,
                 "klucove_slova": _extract_klucove_slova(ctx_1500),
             })
 
