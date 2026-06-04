@@ -966,8 +966,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         # International prefix (+421, +420, 00421, 00420)
         r'(?:00421|00420|\+421|\+420)\s?(?:\d[\s\-]?){8}\d'
         r'|'
-        # SK landline 0X / XXXX XXXX — predvoľba + separator (aj "02 / 1234 5678") + číslo
-        r'0[1-9][\s\/\-]{1,3}\d{3,4}[\s\/\-]?\d{3,4}'
+        # SK landline 0X / XXXX XXXX — predvoľba + separator (aj "02 / 1234 5678", "02/58272 172") + číslo
+        r'0[1-9][\s\/\-]{1,3}\d{3,5}[\s\/\-]?\d{3,4}'
         r'|'
         # SK mobile 09XX XXX XXX (10 číslic)
         r'0[689]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
@@ -1946,26 +1946,29 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_emails.add(key)
             emails_out.append(entry["value"])
 
-    # === TELEFÓNY s kontextom — filtruj IČO ===
+    # === TELEFÓNY s kontextom — raw_extract zobrazí VŠETKY, len dedup ===
+    # is_valid_phone() sa neaplikuje — endpoint je pre manuálnu kontrolu, filtruje sám používateľ
     cisla_out: List[Dict[str, str]] = []
     ico_out: Optional[str] = None
     seen_phones: set = set()
     if jsonld_data.get("phone"):
         p = jsonld_data["phone"].strip()
         norm_key = re.sub(r'\D', '', p)
-        if norm_key and norm_key not in seen_phones and is_valid_phone(p):
+        if norm_key and norm_key not in seen_phones:
             seen_phones.add(norm_key)
             cisla_out.append({"cislo": p, "kontext": "JSON-LD schema (homepage)"})
     for entry in candidates["phones"]:
         p = entry["value"]
         ctx = entry.get("context", "")
         norm_key = re.sub(r'\D', '', p)
-        # Ak kontext hovorí o IČO/DIČ/IBAN → presmeruj do ico poľa
+        if not norm_key:
+            continue
+        # Ak kontext hovorí o IČO/DIČ/IBAN → presmeruj do ico poľa (stále dedup)
         if _is_ico_context(ctx):
             if not ico_out and len(norm_key) >= 7:
                 ico_out = p.strip()
             continue
-        if norm_key and norm_key not in seen_phones and is_valid_phone(p):
+        if norm_key not in seen_phones:
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
