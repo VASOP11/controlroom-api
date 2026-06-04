@@ -1866,7 +1866,10 @@ def _find_persons_in_text(text: str) -> List[Dict[str, Any]]:
             block_email_matches.sort(key=_email_sort_key)
             person_email = None
             for em in block_email_matches:
-                if not _email_is_ignored(em.group(0), block):
+                # Len doménový filter — žiadny kontextový filter.
+                # Kontext okolo emailu môže obsahovať "SOI" / "DPD" z inej časti stránky
+                # a falošne by zahodil emaile samotnej osoby (napr. podpora@indarceky.sk).
+                if not _email_is_ignored(em.group(0)):
                     person_email = em.group(0)
                     break
 
@@ -1963,8 +1966,12 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
         norm_key = re.sub(r'\D', '', p)
         if not norm_key:
             continue
-        # Ak kontext hovorí o IČO/DIČ/IBAN → presmeruj do ico poľa (stále dedup)
-        if _is_ico_context(ctx):
+        # IČO kontrola: použi len text PRED číslom (max 80 znakov).
+        # IČO/DIČ labely ("IČO:", "DIČ:", "vložka") VŽDY predchádzajú číslu.
+        # Ak "ICO:" leží 80+ znakov ZA číslom, patrí inému číslu, nie tomuto.
+        idx = ctx.find(p)
+        before_phone = ctx[max(0, idx - 80):idx] if idx >= 0 else ctx[:80]
+        if _is_ico_context(before_phone):
             if not ico_out and len(norm_key) >= 7:
                 ico_out = p.strip()
             continue
