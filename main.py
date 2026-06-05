@@ -684,7 +684,11 @@ def extract_text_from_html(html: bytes) -> str:
     text = filter_boilerplate(text)
     prefix = ' '.join(contact_hints) + ' ' if contact_hints else ''
     # Limit 25 000 znakov – telefón na fgym.sk/kontakt je na pozícii ~21 800
-    return (prefix + text)[:25000]
+    full = prefix + text
+    if len(full) <= 25000:
+        return full
+    # Ber prvých 10k (JSON-LD, kontakty v hlavičke) + posledných 15k (podmienky, footer)
+    return full[:10000] + " ... " + full[-15000:]
 
 async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
     """Headless Chromium cez Playwright — spustí JS, počká na sieťový idle.
