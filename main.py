@@ -1503,50 +1503,59 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
 
     combined = ("\n".join(sub_texts) + "\n" + home_text).strip()
 
-    # === KROK 3: skip Playwright ak máme dosť kontaktov A role keyword v texte ===
-    # Samotný email+telefón nestačí — ak text neobsahuje role keyword (zodpovedný vedúci,
-    # konateľ…), kontaktne-informacie je pravdepodobne JS-rendered → Playwright nutný.
+    # === KROK 3: Podmienky/kontaktne-inf stránky fetchuj cez Playwright VŽDY ===
+    # Tieto stránky obsahujú zodpovedný vedúci / konateľ ale httpx ich nedostane
+    # (JS-rendered alebo Cloudflare) — preto ich fetchujeme bez ohľadu na has_good_contacts.
+    _ALWAYS_PW_KW = [
+        "podmienk", "podminky", "vop", "kontaktne-inf",
+        "kontaktne-ud", "o-firme", "o-spolocnosti", "impressum",
+    ]
+    always_pw_urls: List[str] = []
+    for nav_url in nav_links:
+        if any(kw in nav_url.lower() for kw in _ALWAYS_PW_KW):
+            if nav_url not in always_pw_urls:
+                always_pw_urls.append(nav_url)
+        if len(always_pw_urls) >= 3:
+            break
+    # Fallback na hardcoded ak nav_links neobsahuje žiadnu podmienky/kontaktne-inf URL
+    if not always_pw_urls:
+        for p in ["obchodne-podmienky", "vseobecne-obchodne-podmienky", "vop", "kontaktne-informacie"]:
+            always_pw_urls.append(f"{base_url}/{p}")
+    always_pw_urls = always_pw_urls[:3]
+
+    # === KROK 4: has_good_contacts + role keyword — určuje či fetchujeme AJ general stránky ===
     _ROLE_KW_RE = re.compile(
         r'zodpoved|konateľ|konatel|majiteľ|majitel|prevadzkov|prevádzkov|'
         r'jednateľ|jednatel|riaditeľ|riaditel|odpoved|\bceo\b|\bowner\b|\bfounder\b',
         re.IGNORECASE
     )
     has_role_kw = bool(_ROLE_KW_RE.search(combined))
-    if has_good_contacts(combined) and has_role_kw:
-        print(f"✅ httpx+cloudscraper stačili pre {base_url} (email+tel+role keyword nájdené, Playwright preskočený)")
-        return {"text": combined, "jsonld": jsonld_data, "whois": whois_data}
+    need_general_pw = not (has_good_contacts(combined) and has_role_kw)
 
-    # === KROK 4: Playwright — len max 3 stránky ===
-    reason = "nedali dosť kontaktov" if not has_good_contacts(combined) else "chýba role keyword (zodpovedný vedúci / konateľ)"
-    print(f"⚡ httpx/cloudscraper {reason}, spúšťam Playwright (max 3 stránky)")
-    pw_urls = [base_url]
-    # Prioritizuj kontaktne-informacie, obchodne-podmienky, kontakt z nav_links
-    pw_priority_kw = [
-        "kontaktne-informacie", "kontaktne-udaje", "kontaktne-info",
-        "obchodne-podmienky", "vop",
-        "kontakt", "contact", "o-nas", "o firme", "about", "napiste",
-    ]
-    for url in nav_links:
-        url_lower = url.lower()
-        if any(kw in url_lower for kw in pw_priority_kw):
-            if url not in pw_urls:
-                pw_urls.append(url)
-        if len(pw_urls) >= 3:
-            break
-    # Fallback to hardcoded paths if nav discovery found nothing useful
-    if len(pw_urls) < 2:
-        for p in ["kontaktne-informacie", "kontakt", "contact", "kontakty"]:
-            candidate = f"{base_url}/{p}"
-            if candidate not in pw_urls:
-                pw_urls.append(candidate)
+    if need_general_pw:
+        reason = "nedali dosť kontaktov" if not has_good_contacts(combined) else "chýba role keyword"
+        print(f"⚡ {reason} — Playwright pre podmienky + general stránky")
+        pw_urls = [base_url] + [u for u in always_pw_urls]
+        # Pridaj ďalšie kontaktné stránky z nav_links
+        pw_general_kw = ["kontakt", "contact", "o-nas", "about", "napiste"]
+        for nav_url in nav_links:
+            if any(kw in nav_url.lower() for kw in pw_general_kw):
+                if nav_url not in pw_urls:
+                    pw_urls.append(nav_url)
+            if len(pw_urls) >= 5:
                 break
-    if len(pw_urls) < 3:
-        for p in ["obchodne-podmienky", "o-nas", "about-us", "tym", "team"]:
-            candidate = f"{base_url}/{p}"
-            if candidate not in pw_urls:
-                pw_urls.append(candidate)
-                break
-    pw_urls = pw_urls[:3]
+        # Hardcoded fallback
+        if len(pw_urls) < 2:
+            for p in ["kontakt", "contact", "kontakty"]:
+                c = f"{base_url}/{p}"
+                if c not in pw_urls:
+                    pw_urls.append(c)
+                    break
+    else:
+        print(f"✅ httpx stačili (email+tel+role). Playwright len pre podmienky: {always_pw_urls}")
+        pw_urls = list(always_pw_urls)
+
+    pw_urls = pw_urls[:5]
 
     pw_instance = None
     pw_browser = None
