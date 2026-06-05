@@ -688,7 +688,7 @@ def extract_text_from_html(html: bytes) -> str:
     if len(full) <= 25000:
         return full
     # Ber prvých 10k (JSON-LD, kontakty v hlavičke) + posledných 15k (podmienky, footer)
-    return full[:10000] + " ... " + full[-15000:]
+    return full[:15000] + " ... " + full[-35000:]
 
 async def fetch_html_playwright(url: str, browser_ctx=None) -> bytes:
     """Headless Chromium cez Playwright — spustí JS, počká na sieťový idle.
@@ -1596,7 +1596,7 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
                     _tag.decompose()
                 _full_text = _soup.get_text(separator=' ', strip=True)
                 _full_text = _full_text.replace('\xa0', ' ')
-                page_text = _full_text[-30000:] if len(_full_text) > 30000 else _full_text
+                page_text = _full_text[-50000:] if len(_full_text) > 50000 else _full_text
                 pw_texts.append(page_text)
             # Memory cleanup po každej stránke
             try:
@@ -2039,14 +2039,14 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
         # Nájdi telefón v norm_text pre kontext
         idx = norm_text.find(p)
         if idx >= 0:
-            ctx_400    = norm_text[max(0, idx - 400):idx + len(p) + 400].strip()
-            ctx_1500   = norm_text[max(0, idx - 1500):idx + len(p) + 1500].strip()
+            ctx_600    = norm_text[max(0, idx - 600):idx + len(p) + 600].strip()
+            ctx_2000   = norm_text[max(0, idx - 2000):idx + len(p) + 2000].strip()
             before_phone = norm_text[max(0, idx - 80):idx]
         else:
             # Fallback na ±150-znakový kontext z candidates
             fallback_ctx = entry.get("context", "").strip()
-            ctx_400      = fallback_ctx
-            ctx_1500     = fallback_ctx
+            ctx_600      = fallback_ctx
+            ctx_2000     = fallback_ctx
             before_phone = fallback_ctx[:80]
 
         # IČO kontrola: len text PRED číslom (IČO/DIČ labely vždy predchádzajú číslu)
@@ -2059,8 +2059,8 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
             seen_phones.add(norm_key)
             cisla_out.append({
                 "cislo": p,
-                "kontext": ctx_400,
-                "klucove_slova": _extract_klucove_slova(ctx_1500),
+                "kontext": ctx_600,
+                "klucove_slova": _extract_klucove_slova(ctx_2000),
             })
 
     # === POZNAMKA ===
