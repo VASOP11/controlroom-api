@@ -1434,15 +1434,22 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
     jsonld_data: Dict[str, Any] = {}
     whois_data: Dict[str, Any] = {}
 
+    # FORCE_PLAYWRIGHT=1 → preskočí httpx/cloudscraper a vynúti Playwright vetvu.
+    # Použiť lokálne na simuláciu produkčného Cloudflare blokovania:
+    #   FORCE_PLAYWRIGHT=1 python -c "import asyncio; from main import _scrape_all_pages; ..."
+    force_playwright = os.getenv("FORCE_PLAYWRIGHT") == "1"
+    if force_playwright:
+        print(f"⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre {base_url}")
+
     # === KROK 1: homepage cez httpx + JSON-LD ===
-    home_bytes = fetch_html_httpx(base_url)
+    home_bytes = b"" if force_playwright else fetch_html_httpx(base_url)
     if home_bytes:
         jsonld_data = extract_jsonld_contacts(home_bytes)
 
     home_text = extract_text_from_html(home_bytes) if home_bytes else ""
 
     # Detekuj Cloudflare garbled content — ak httpx dostal zablokovanú odpoveď
-    if is_garbled_content(home_text):
+    if force_playwright or is_garbled_content(home_text):
         print(f"⚠️ Garbled content na homepage {base_url} — skúšam Scrapling StealthyFetcher")
         scrapling_bytes = await fetch_html_scrapling(base_url)
         if scrapling_bytes:
@@ -1464,7 +1471,11 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
 
     async def _fetch_fast(url: str) -> str:
         """Skúsi httpx, potom cloudscraper, potom retry s trailing slash. Bez Playwright.
-        Garbled/binary obsah (Cloudflare block) sa nezaráta — vracia prázdny string."""
+        Garbled/binary obsah (Cloudflare block) sa nezaráta — vracia prázdny string.
+        FORCE_PLAYWRIGHT=1: okamžite vráti prázdny string (vynúti Playwright vetvu)."""
+        if force_playwright:
+            print(f"⚡ FORCE_PLAYWRIGHT: skip httpx pre {url}")
+            return ""
         async with sem:
             loop = asyncio.get_event_loop()
             html = await loop.run_in_executor(None, fetch_html_httpx, url)
@@ -2006,6 +2017,14 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
 
     candidates = extract_all_candidates(combined_text)
 
+    # === OSOBY — mená nájdené pri role keywords v combined_text ===
+    print(f"🔎 OSOBY INPUT: len={len(combined_text)}, has_Martin={'Martin Zachar' in combined_text}", flush=True)
+    osoby = [
+        {"meno": n["value"], "rola": n.get("near_role", ""), "context": n.get("context", "")}
+        for n in candidates.get("names", [])
+    ]
+    print(f"🔎 OSOBY OUTPUT: {len(osoby)} osôb: {[o.get('meno') for o in osoby]}", flush=True)
+
     # === EMAILY ===
     emails_out: List[str] = []
     seen_emails: set = set()
@@ -2087,5 +2106,6 @@ async def raw_extract(req: ScrapeRequest, user=Depends(verify_jwt)):
         "emails": emails_out,
         "cisla": cisla_out,
         "ico": ico_out,
+        "osoby": osoby,
         "poznamka": poznamka,
     }
