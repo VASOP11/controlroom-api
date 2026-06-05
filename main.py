@@ -1586,7 +1586,18 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
                 # Vytiahni JSON-LD ak sme ho ešte nemali
                 if not jsonld_data:
                     jsonld_data = extract_jsonld_contacts(html)
-                pw_texts.append(extract_text_from_html(html))
+                # Vlastný extract pre Playwright stránky — obíde 25k limit extract_text_from_html.
+                # Odstraňujeme nav/header (boilerplate) a berieme posledných 30k znakov
+                # kde sú obchodné podmienky a kontaktné info (Martin Zachar, zodpovedný vedúci).
+                _html_str = html.decode('utf-8', errors='replace')
+                _html_str = ftfy.fix_text(_html_str)
+                _soup = BeautifulSoup(_html_str, 'html.parser')
+                for _tag in _soup(["script", "style", "nav", "header"]):
+                    _tag.decompose()
+                _full_text = _soup.get_text(separator=' ', strip=True)
+                _full_text = _full_text.replace('\xa0', ' ')
+                page_text = _full_text[-30000:] if len(_full_text) > 30000 else _full_text
+                pw_texts.append(page_text)
             # Memory cleanup po každej stránke
             try:
                 await browser_ctx.clear_cookies()
