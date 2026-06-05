@@ -1619,12 +1619,19 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
                 pass
         gc.collect()
 
+    print(f"🔎 PRED PW MERGE: combined={len(combined)}, pw_texts_count={len(pw_texts)}, "
+          f"pw_total_chars={sum(len(t) for t in pw_texts)}")
     combined = (combined + "\n" + "\n".join(pw_texts)).strip()
+    print(f"🔎 PO PW MERGE: combined={len(combined)}, has_Martin={'Martin' in combined}")
 
     # === KROK 5: WHOIS ako absolútny fallback ===
     if not has_good_contacts(combined) and not jsonld_data.get("email"):
         whois_data = whois_contacts(base_url)
 
+    print(f"🔎 _scrape_all_pages RETURN: combined={len(combined)} znakov, "
+          f"pw_texts_count={len(pw_texts)}, "
+          f"has_Martin={'Martin' in combined}, "
+          f"has_zodpoved={'zodpoved' in combined.lower()}")
     return {"text": combined, "jsonld": jsonld_data, "whois": whois_data}
 
 
