@@ -60,3 +60,4 @@ curl_cffi
 chardet
 ftfy==6.3.1
 python-whois==0.9.5
+pdfplumber
