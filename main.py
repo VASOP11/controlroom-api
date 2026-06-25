@@ -3045,14 +3045,13 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
             "jur_extra": "\n".join(jur_texts)}
 
 
-@app.post("/api/leads/scrape")
-async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
+async def _do_scrape(base_url: str) -> dict:
+    """Core scrape logic. Called by scrape_lead and source_auto."""
+    base_url = base_url.strip()
+    if not base_url.startswith(("http://", "https://")):
+        base_url = "https://" + base_url
+    base_url = base_url.rstrip('/')
     try:
-        base_url = req.url.strip()
-        if not base_url.startswith(("http://", "https://")):
-            base_url = "https://" + base_url
-        base_url = base_url.rstrip('/')
-
         scrape_out = await _scrape_all_pages(base_url)
         combined_text = scrape_out["text"]
         jsonld_data = scrape_out.get("jsonld", {})
@@ -3232,11 +3231,22 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
             print(f"⚠️ DB chyba pri uložení lead, ale scraping OK: {db_err}")
             return {**_build_response("scrape_only", None),
                     "warning": f"DB nedostupná: {str(db_err)}"}
+
+
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
         import traceback
         error_detail = f"Scraping error: {str(e)}\n{traceback.format_exc()}"
         print(error_detail.encode('ascii', errors='replace').decode('ascii'))
         raise HTTPException(status_code=500, detail=error_detail)
+
+
+@app.post("/api/leads/scrape")
+async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
+    return await _do_scrape(req.url)
+
+
 @app.post("/api/debug/scrape")
 async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     """
@@ -4432,6 +4442,14 @@ AGENCY_BLOCKLIST: frozenset = frozenset({
     "workforce", "lugera", "head hunt", "headhunt", "mcbride",
     "merit", "atlas group", "work service", "antal", "kienbaum",
     "staffing", "executive search", "jobsider", "profesia services",
+    # extended
+    "proplusco", "start people", "kelly services", "express people",
+    "advantage consulting", "mcroy", "talentpro",
+    "personálne", "personalne", "personalna", "personalny",
+    "práca pre vás", "praca pre vas", "agentúra práce", "agentura prace",
+    "sprostredkovanie", "job agency", "human resources",
+    "personal agency", "hr partner", "hr solutions",
+    "pracovná agentúra", "pracovna agentura",
 })
 
 MARKET_BLOCKLIST: frozenset = frozenset({
@@ -4450,6 +4468,37 @@ def _is_agency(name: str) -> bool:
     return any(a in n for a in AGENCY_BLOCKLIST)
 
 
+def _filter_agencies(jobs: list) -> tuple:
+    """Returns (unique_company_jobs, agency_names). Filters by blocklist + 5+ unique job titles heuristic."""
+    company_positions: dict = {}
+    for j in jobs:
+        comp = j["company_name"].lower().strip()
+        company_positions.setdefault(comp, set()).add(j["job_title"].lower().strip())
+
+    agency_keys: set = set()
+    for comp, positions in company_positions.items():
+        if any(a in comp for a in AGENCY_BLOCKLIST):
+            agency_keys.add(comp)
+        elif len(positions) >= 5:
+            # ponytail: staffing agencies post many different roles; 5+ unique titles = agency
+            agency_keys.add(comp)
+
+    filtered, agencies = [], []
+    seen_companies: set = set()
+    for j in jobs:
+        comp_key = j["company_name"].lower().strip()
+        if comp_key in agency_keys:
+            if j["company_name"] not in agencies:
+                agencies.append(j["company_name"])
+            continue
+        if comp_key in seen_companies:
+            continue
+        seen_companies.add(comp_key)
+        filtered.append(j)
+
+    return filtered, agencies
+
+
 def _is_market(name: str, url: str = "") -> bool:
     n, u = name.lower(), url.lower()
     return any(m in n or m in u for m in MARKET_BLOCKLIST)
@@ -4461,90 +4510,82 @@ class ProfesiaSourceRequest(BaseModel):
     max_results: int = 20
 
 
-class HeurekaSourceRequest(BaseModel):
-    category_url: str
-    max_results: int = 50
+async def _scrape_profesia_pages(keyword: str, max_results: int) -> list:
+    """Fetch all profesia pages up to max_results raw job entries (not yet deduped/filtered)."""
+    encoded = urllib.parse.quote_plus(keyword)
+    all_jobs: list = []
+    max_pages = max(2, (max_results // 20) + 2)
+
+    for page in range(1, max_pages + 1):
+        if len(all_jobs) >= max_results * 3:  # fetch 3x so filter has headroom
+            break
+        url = (f"https://www.profesia.sk/praca/?count_days=30"
+               f"&search_anywhere={encoded}&sort_by=relevance&page_num={page}")
+        html_bytes = await _fetch_source_html(url)
+        if not html_bytes:
+            break
+        html = ftfy.fix_text(html_bytes.decode("utf-8", errors="replace"))
+        soup = BeautifulSoup(html, "html.parser")
+        rows = soup.select("li.list-row")
+        if not rows:
+            break
+        for li in rows:
+            job_link = li.select_one("h2 a")
+            if not job_link or not job_link.get("href"):
+                continue
+            job_href = job_link["href"].split("?")[0]
+            job_url_full = f"https://www.profesia.sk{job_href}" if job_href.startswith("/") else job_href
+            title_el = li.select_one("span.title")
+            job_title = (title_el or job_link).get_text(strip=True)
+            employer_el = li.select_one("span.employer")
+            company_name = employer_el.get_text(strip=True) if employer_el else ""
+            if not company_name:
+                continue
+            slug_m = re.search(r"/praca/([^/]+)/O\d+", job_url_full)
+            company_slug = slug_m.group(1) if slug_m else None
+            company_url = f"https://www.{company_slug}.sk" if company_slug else None
+            loc_el = li.select_one("span.job-location")
+            location_str = (loc_el.get("title") or loc_el.get_text(strip=True)) if loc_el else None
+            all_jobs.append({
+                "company_name": company_name,
+                "company_url": company_url,
+                "url_confidence": "derived" if company_url else None,
+                "job_title": job_title,
+                "job_url": job_url_full,
+                "location": location_str,
+                "source_signal": "hiring_sales_rep",
+            })
+
+    return all_jobs
 
 
 @app.post("/api/leads/source/profesia")
 async def source_profesia(req: ProfesiaSourceRequest, user=Depends(verify_jwt)):
-    """Nájde firmy inzerujúce na profesia.sk pre daný keyword a vráti ich URL na scrape."""
+    """Nájde firmy inzeujúce na profesia.sk (všetky stránky) a vráti ich URL na scrape."""
     keyword = req.keyword.strip()
+
+    # Page 1 also gives total_found count
     encoded = urllib.parse.quote_plus(keyword)
-    search_url = f"https://www.profesia.sk/praca/?search_anywhere={encoded}&count_days=30&sort_by=relevance"
-
-    html_bytes = fetch_html_httpx(search_url)
-    if not html_bytes:
-        html_bytes = fetch_html_cloudscraper_with_ua(search_url)
-    if not html_bytes:
-        raise HTTPException(status_code=503, detail="Profesia.sk nedostupné")
-
-    html = ftfy.fix_text(html_bytes.decode("utf-8", errors="replace"))
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Total count — profesia shows e.g. "Zobrazujem 1 - 20 z 347 ponúk"
+    first_html = await _fetch_source_html(
+        f"https://www.profesia.sk/praca/?count_days=30&search_anywhere={encoded}&sort_by=relevance&page_num=1"
+    )
     total_found = 0
-    for el in soup.find_all(string=re.compile(r'z\s+\d+\s+ponúk', re.IGNORECASE)):
-        m = re.search(r'z\s+(\d[\d\s]*)\s+pon', el, re.IGNORECASE)
-        if m:
-            total_found = int(re.sub(r'\D', '', m.group(1)))
-            break
+    if first_html:
+        soup0 = BeautifulSoup(first_html.decode("utf-8", errors="replace"), "html.parser")
+        for el in soup0.find_all(string=re.compile(r'z\s+\d+\s+pon', re.IGNORECASE)):
+            m = re.search(r'z\s+(\d[\d\s]*)\s+pon', el, re.IGNORECASE)
+            if m:
+                total_found = int(re.sub(r'\D', '', m.group(1)))
+                break
 
-    results: List[Dict] = []
-    seen_companies: set = set()
-    filtered_agencies: List[str] = []
-
-    for li in soup.select("li.list-row"):
-        if len(results) >= req.max_results:
-            break
-
-        job_link = li.select_one("h2 a")
-        if not job_link or not job_link.get("href"):
-            continue
-
-        job_href = job_link["href"].split("?")[0]  # strip search_id
-        job_url_full = f"https://www.profesia.sk{job_href}" if job_href.startswith("/") else job_href
-
-        title_el = li.select_one("span.title")
-        job_title = (title_el or job_link).get_text(strip=True)
-
-        employer_el = li.select_one("span.employer")
-        company_name = employer_el.get_text(strip=True) if employer_el else ""
-        if not company_name:
-            continue
-
-        if _is_agency(company_name):
-            if company_name not in filtered_agencies:
-                filtered_agencies.append(company_name)
-            continue
-
-        key = re.sub(r"\s+", " ", company_name.lower().strip())
-        if key in seen_companies:
-            continue
-        seen_companies.add(key)
-
-        # Derive company URL from profesia slug: /praca/alica-family/O5301140 → alica-family.sk
-        slug_m = re.search(r"/praca/([^/]+)/O\d+", job_url_full)
-        company_slug = slug_m.group(1) if slug_m else None
-        company_url = f"https://www.{company_slug}.sk" if company_slug else None
-
-        loc_el = li.select_one("span.job-location")
-        location = (loc_el.get("title") or loc_el.get_text(strip=True)) if loc_el else None
-
-        results.append({
-            "company_name": company_name,
-            "company_url": company_url,
-            "url_confidence": "derived" if company_url else None,
-            "job_title": job_title,
-            "job_url": job_url_full,
-            "location": location,
-            "source_signal": "hiring_sales_rep",
-        })
+    all_jobs = await _scrape_profesia_pages(keyword, req.max_results)
+    results, filtered_agencies = _filter_agencies(all_jobs)
+    results = results[:req.max_results]
 
     if not total_found:
         total_found = len(results)
 
-    print(f"[profesia] keyword={keyword!r} → {len(results)} firiem, {len(filtered_agencies)} agentúr odfiltrovaných")
+    print(f"[profesia] keyword={keyword!r} pages={len(all_jobs)//20+1} → {len(results)} firiem, {len(filtered_agencies)} agentúr odfiltrovaných")
     return {
         "source": "profesia.sk",
         "keyword": keyword,
@@ -4554,6 +4595,11 @@ async def source_profesia(req: ProfesiaSourceRequest, user=Depends(verify_jwt)):
         "returned": len(results),
         "filtered_agencies": filtered_agencies,
     }
+
+
+class HeurekaSourceRequest(BaseModel):
+    category_url: str
+    max_results: int = 50
 
 
 @app.post("/api/leads/source/heureka")
@@ -4939,4 +4985,101 @@ async def source_orsr_new(req: OrsrNewSourceRequest, user=Depends(verify_jwt)):
         "results": [],
         "total_found": 0,
         "returned": 0,
+    }
+
+
+# ======================================================================
+# SOURCE AUTO -- orchestrator: source channel -> scrape -> sorted leads
+# ======================================================================
+
+class SourceAutoRequest(BaseModel):
+    channel: str           # "profesia" | "eshops" | "maps"
+    keyword: str = ""
+    location: str = ""
+    category: str = ""
+    sources: List[str] = []
+    max_results: int = 10
+
+
+@app.post("/api/leads/source/auto")
+async def source_auto(req: SourceAutoRequest, user=Depends(verify_jwt)):
+    """Find companies via channel, scrape each, return scored leads sorted by score DESC."""
+    t0 = datetime.datetime.utcnow()
+
+    # 1. Discover companies
+    found: list = []
+    filtered_agencies: list = []
+
+    if req.channel == "profesia":
+        if not req.keyword:
+            raise HTTPException(400, "keyword je povinny pre profesia kanal")
+        all_jobs = await _scrape_profesia_pages(req.keyword, req.max_results)
+        found, filtered_agencies = _filter_agencies(all_jobs)
+        found = found[:req.max_results]
+
+    elif req.channel == "eshops":
+        if not req.category:
+            raise HTTPException(400, "category je povinna pre eshops kanal")
+        sources = req.sources or ["pricemania", "ecommerce_sk"]
+        cat_slug = re.sub(r'[^a-z0-9]', '-', req.category.lower().strip()).strip('-')
+        items: list = []
+        if "pricemania" in sources:
+            html = await _fetch_source_html(f"https://www.pricemania.sk/obchod-detail/{cat_slug}/")
+            items += _parse_pricemania(html, req.max_results)
+        if "ecommerce_sk" in sources:
+            html = await _fetch_source_html("https://www.ecommerceslovakia.sk/katalog-eshopov/")
+            items += await _parse_ecommerce_sk(html, req.max_results)
+        found = [{"company_name": it.get("shop_name", ""), "company_url": it.get("shop_url"),
+                   "source_signal": it.get("source_signal")} for it in items][:req.max_results]
+
+    elif req.channel == "maps":
+        if not req.keyword:
+            raise HTTPException(400, "keyword je povinny pre maps kanal")
+        api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+        if not api_key:
+            raise HTTPException(503, "GOOGLE_PLACES_API_KEY nie je nastaveny")
+        query = f"{req.keyword} {req.location}".strip()
+        with httpx.Client(timeout=10) as client:
+            resp = client.get(
+                f"https://maps.googleapis.com/maps/api/place/textsearch/json"
+                f"?query={urllib.parse.quote_plus(query)}&key={api_key}&language=sk&region=sk"
+            )
+        data = resp.json()
+        for place in data.get("results", [])[:req.max_results]:
+            found.append({"company_name": place.get("name", ""),
+                           "company_url": place.get("website"),
+                           "source_signal": "local_business"})
+
+    else:
+        raise HTTPException(400, f"Nezname kanaly: {req.channel}")
+
+    # 2. Scrape each company sequentially
+    leads: list = []
+    skipped: list = []
+    for company in found:
+        url = company.get("company_url") or ""
+        if not url:
+            skipped.append({"company": company.get("company_name"), "reason": "ziadna URL"})
+            continue
+        try:
+            lead = await _do_scrape(url)
+            lead["source_signal"] = company.get("source_signal")
+            lead["source_channel"] = req.channel
+            leads.append(lead)
+        except Exception as e:
+            skipped.append({"company": company.get("company_name"), "url": url, "reason": str(e)[:120]})
+
+    # 3. Sort by score DESC
+    leads.sort(key=lambda x: x.get("score", 0), reverse=True)
+
+    elapsed = (datetime.datetime.utcnow() - t0).total_seconds()
+    print(f"[source_auto] channel={req.channel!r} found={len(found)} scraped={len(leads)} skipped={len(skipped)} elapsed={elapsed:.0f}s")
+    return {
+        "channel": req.channel,
+        "found_companies": len(found),
+        "scraped_leads": len(leads),
+        "skipped": skipped,
+        "filtered_agencies": filtered_agencies,
+        "elapsed_seconds": round(elapsed),
+        "leads": leads,
     }
