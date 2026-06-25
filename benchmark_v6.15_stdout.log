@@ -1,0 +1,1014 @@
+ENCODING FIX v3 loaded (ftfy mojibake repair)
+Načítaných 140 riadkov z ground_truth.csv
+Výstup: benchmark_v6.15_results.csv
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.zeniqo.sk/
+⚠️ Garbled content na homepage https://www.zeniqo.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.zeniqo.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.zeniqo.sk/
+📦 JSON-LD extrahované: ['name', 'email']
+🔗 Nav links objavené: 20 — ['https://www.zeniqo.sk/kontakty', 'https://www.zeniqo.sk//kontakty', 'https://www.zeniqo.sk//kosik', 'https://www.zeniqo.sk//solarne-kamery', 'https://www.zeniqo.sk//solarne-kamerove-sety']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk/kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kosik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//solarne-kamery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//solarne-kamerove-sety
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//samostatne-solarne-kamery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//4g-solarne-kamery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//bateriove-kamery-pripravene-na-solar
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//solarne-panely-ku-kameram
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//klasicke-kamerove-systemy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//poe-kamerove-sety
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kombinovane-bezpecnostne-sety
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kamerove-sety-od-vyrobcu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//vonkajsie-ip-kamery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//vnutorne-ip-kamery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//nvr-rekordery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//pevne-disky-pre-zaznam
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//videozvonceky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//solarne-videozvonceky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//bateriove-a-kablove-videozvonceky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.zeniqo.sk//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.zeniqo.sk/ (166227 znakov)
+✅ Playwright (shared ctx) OK pre https://www.zeniqo.sk//obchodne-podmienky (107311 znakov)
+✅ Playwright (shared ctx) OK pre https://www.zeniqo.sk//vseobecne-obchodne-podmienky (107355 znakov)
+✅ Playwright (shared ctx) OK pre https://www.zeniqo.sk//vop (107251 znakov)
+✅ Playwright (shared ctx) OK pre https://www.zeniqo.sk/kontakty (107706 znakov)
+🔎 PRED PW MERGE: combined=3557, pw_texts_count=5, pw_total_chars=16147
+🔎 PO PW MERGE: combined=19709, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=19709 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=False
+[1/140] zeniqo.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.citycomp.sk/
+⚠️ Garbled content na homepage https://www.citycomp.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.citycomp.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.citycomp.sk/
+🔗 Nav links objavené: 20 — ['https://www.citycomp.sk//o-nas_d17587.html', 'https://www.citycomp.sk//kontakty_d46410.html', 'https://www.citycomp.sk//', 'https://www.citycomp.sk//kto-je-citycomp_d46408.html', 'https://www.citycomp.sk//obchodne-podmienky_d46409.html']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//o-nas_d17587.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//kontakty_d46410.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//kto-je-citycomp_d46408.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//obchodne-podmienky_d46409.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//reklamacny-poriadok_d48349.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//gdpr_d48348.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?show=cookieinfo
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=catalog&xsl=xsearch&u_mode=sti&catalog=scategorytype&catalog=scategory&catalog=producttype&catalog=stoitemstatus&catalog=store&catalog=presenttree&strtype=0&strsort=%25&nodocsselect=1
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=spresenttrees&strtype=0
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=spresenttrees&strtype=1
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=spresenttrees&strtype=1&xsl=xstrdownload
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=stoitems&status=3
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=stoitems&status=1
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=stoitems&status=2
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//ceny-a-moznosti-dopravy_d46411.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//moznosti-platby_d46412.html
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=catalog&xsl=xcompany&catalogs=forcompany
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp?cls=login&newpswd=1
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//default.asp
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.citycomp.sk//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+[2/140] citycomp.sk ... ERROR (TIMEOUT)
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.stavbaeu.cz/
+⚠️ Garbled content na homepage https://www.stavbaeu.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.stavbaeu.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.stavbaeu.cz/
+🔗 Nav links objavené: 17 — ['https://www.stavbaeu.cz/kontakty', 'https://www.stavbaeu.cz', 'https://www.stavbaeu.cz//nejcastejsi-dotazy', 'https://www.stavbaeu.cz/login', 'https://www.stavbaeu.cz/register']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//nejcastejsi-dotazy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/login
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/register
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/doprava
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/ochrana-osobnich-udaju
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/platebni-metody
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/formular-pro-odstoupeni-od-kupni-smlouvy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/elektronicka-evidence-trzeb
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/sitemap
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/manufacturer
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/account
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/index.php?route=account/order
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/wishlist
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz/index.php?route=account/newsletter
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.stavbaeu.cz//o-firme
+WARNING: 0 candidates found — možný JS-only render alebo blokácia
+WARNING: 0 candidates found — možný JS-only render alebo blokácia
+⚡ nedali dosť kontaktov — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.stavbaeu.cz/ (292161 znakov)
+✅ Playwright (shared ctx) OK pre https://www.stavbaeu.cz/obchodni-podminky (298228 znakov)
+✅ Playwright (shared ctx) OK pre https://www.stavbaeu.cz/kontakty (277230 znakov)
+🔎 PRED PW MERGE: combined=22564, pw_texts_count=3, pw_total_chars=74200
+🔎 PO PW MERGE: combined=96767, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=96767 znakov, pw_texts_count=3, has_Martin=False, has_zodpoved=False
+[3/140] stavbaeu.cz ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.esvit.cz/
+⚠️ Garbled content na homepage https://www.esvit.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.esvit.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.esvit.cz/
+🔗 Nav links objavené: 20 — ['https://www.esvit.cz//svitidla', 'https://www.esvit.cz//svetelne-zdroje-2', 'https://www.esvit.cz//rozvadece-jisteni', 'https://www.esvit.cz//elektroinstalacni-material', 'https://www.esvit.cz//kabely-vodice']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svetelne-zdroje-2
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//rozvadece-jisteni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//elektroinstalacni-material
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//kabely-vodice
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//elektricke-vytapeni-a-ohrev-vody
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//zasuvky-a-vypinace
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//germicidni-zarice-proti-koronaviru-covid-19
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//osvetleni-podle-umisteni-praha
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//osvetleni-nad-bar
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//vanocni-osvetleni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//osvetleni-kancelare
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//osvetleni-skolni-ucebny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svitidla-interierova
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svitidlo-na-stolek
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//stojaci-lampy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//lampicky-na-pracovni-stul
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svitidla-nastenna-do-interieru
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svitidlo-do-listoveho-systemu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//svitidla-do-listoveho-systemu-ga69
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.esvit.cz//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.esvit.cz/ (356202 znakov)
+✅ Playwright (shared ctx) OK pre https://www.esvit.cz//obchodne-podmienky (298929 znakov)
+✅ Playwright (shared ctx) OK pre https://www.esvit.cz//vseobecne-obchodne-podmienky (299027 znakov)
+✅ Playwright (shared ctx) OK pre https://www.esvit.cz//vop (298790 znakov)
+🔎 PRED PW MERGE: combined=14575, pw_texts_count=4, pw_total_chars=28593
+🔎 PO PW MERGE: combined=43172, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=43172 znakov, pw_texts_count=4, has_Martin=False, has_zodpoved=False
+[4/140] esvit.cz ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.domoss.sk/
+⚠️ Garbled content na homepage https://www.domoss.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.domoss.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.domoss.sk/
+📦 JSON-LD extrahované: ['name', 'phone']
+🔗 Nav links objavené: 20 — ['https://www.domoss.sk//page/194/o-firme', 'https://www.domoss.sk//page/114/kontakt', 'https://www.domoss.sk/ucet', 'https://www.domoss.sk', 'https://www.domoss.sk//page/72/najcastejsie-otazky']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/194/o-firme
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/114/kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/ucet
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/72/najcastejsie-otazky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/71/reklamacny-formular
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//module/campaigns/view
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/245/kupelna
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/4/elektro-domoss-euronics-piestany
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/286/nakupte-na-sezonu-vyhodne
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/166/doprava-a-sluzby
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//module/comparator/view
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/objednavka
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/113/nase-predajne
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/content/1-dodacie-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/content/2-reklamacne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/content/3-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/content/6-ochrana-osobnych-udajov
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk/mapa-obchodu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//page/103/ako-nakupovat
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.domoss.sk//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.domoss.sk/ (177803 znakov)
+✅ Playwright (shared ctx) OK pre https://www.domoss.sk//page/194/o-firme (129718 znakov)
+✅ Playwright (shared ctx) OK pre https://www.domoss.sk/content/1-dodacie-podmienky (135817 znakov)
+✅ Playwright (shared ctx) OK pre https://www.domoss.sk/content/2-reklamacne-podmienky (144541 znakov)
+✅ Playwright (shared ctx) OK pre https://www.domoss.sk//page/114/kontakt (129714 znakov)
+🔎 PRED PW MERGE: combined=15509, pw_texts_count=5, pw_total_chars=54895
+🔎 PO PW MERGE: combined=70409, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=70409 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=True
+[5/140] domoss.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.pomocnik.sk/
+⚠️ Garbled content na homepage https://www.pomocnik.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.pomocnik.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.pomocnik.sk/
+📦 JSON-LD extrahované: ['name']
+🔗 Nav links objavené: 20 — ['https://www.pomocnik.sk/kontakt', 'https://www.pomocnik.sk/kontakt#predajne', 'https://www.pomocnik.sk/o-nas', 'https://www.pomocnik.sk//kontakt', 'https://www.pomocnik.sk/blog-s1']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/kontakt#predajne
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/blog-s1
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/akciove-produkty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//vyhladavanie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/registracia
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//porovnavanie-produktov
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//nakupny-kosik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/oblubene-produkty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//akciove-produkty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk/vyrobcovia
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//cistenie-a-upratovanie-c757
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//rucne-elektricke-naradie-c758
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//rucne-naradie-c753
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//cerpadla-pumpy-a-zavlazovanie-c52
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//elektrocentraly-c221
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//kompresory-a-pneumaticke-naradie-c391
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pomocnik.sk//kontakty
+✅ httpx stačili (email+tel+role). Playwright len pre podmienky: ['https://www.pomocnik.sk//obchodne-podmienky', 'https://www.pomocnik.sk//vseobecne-obchodne-podmienky', 'https://www.pomocnik.sk//vop']
+✅ Playwright (shared ctx) OK pre https://www.pomocnik.sk//obchodne-podmienky (688339 znakov)
+✅ Playwright (shared ctx) OK pre https://www.pomocnik.sk//vseobecne-obchodne-podmienky (688444 znakov)
+✅ Playwright (shared ctx) OK pre https://www.pomocnik.sk//vop (688371 znakov)
+🔎 PRED PW MERGE: combined=44186, pw_texts_count=3, pw_total_chars=35232
+🔎 PO PW MERGE: combined=79421, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=79421 znakov, pw_texts_count=3, has_Martin=False, has_zodpoved=False
+[6/140] pomocnik.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://vsetkonaradie.sk/
+⚠️ Garbled content na homepage https://vsetkonaradie.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://vsetkonaradie.sk/
+✅ Scrapling vrátil čistý obsah pre https://vsetkonaradie.sk/
+🔗 Nav links objavené: 20 — ['https://vsetkonaradie.sk//o-nas/m657', 'https://vsetkonaradie.sk//kontakt/m215', 'https://vsetkonaradie.sk//cart', 'https://vsetkonaradie.sk//login', 'https://vsetkonaradie.sk//eshop/login.php']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//o-nas/m657
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//kontakt/m215
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//cart
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//login
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//eshop/login.php
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//eshop/user.php
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//eshop/order_history.php
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//zakaznicka-sekcia/ochrana-osobnych-udajov/m3
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//zakaznicka-sekcia/obchodne-podmienky/m4
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//zakaznicka-sekcia/reklamacie/m8
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//zakaznicka-sekcia/odstupenie-od-zmluvy/m2
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//vyrobcovia/m648
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//blog/m649
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//makita/m5
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//moznosti-dopravy/m6
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//top-akcie/c406
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//novinky/c395
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//aku-naradie/c202
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//aku-naradie/aku-furiky/c438
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//aku-naradie/aku-furiky/prislusenstvo/c487
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://vsetkonaradie.sk//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://vsetkonaradie.sk/ (78674 znakov)
+✅ Playwright (shared ctx) OK pre https://vsetkonaradie.sk//zakaznicka-sekcia/obchodne-podmienky/m4 (72372 znakov)
+✅ Playwright (shared ctx) OK pre https://vsetkonaradie.sk//o-nas/m657 (62173 znakov)
+✅ Playwright (shared ctx) OK pre https://vsetkonaradie.sk//kontakt/m215 (64561 znakov)
+🔎 PRED PW MERGE: combined=8150, pw_texts_count=4, pw_total_chars=15694
+🔎 PO PW MERGE: combined=23848, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=23848 znakov, pw_texts_count=4, has_Martin=False, has_zodpoved=True
+[7/140] vsetkonaradie.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.velkykosik.cz/
+⚠️ Garbled content na homepage https://www.velkykosik.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.velkykosik.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.velkykosik.cz/
+📦 JSON-LD extrahované: ['name', 'email', 'phone']
+🔗 Nav links objavené: 20 — ['https://www.velkykosik.cz//clanky/o-nas', 'https://www.velkykosik.cz//clanky/kontakty', 'https://www.velkykosik.cz//kosik', 'https://www.velkykosik.cz//bydleni-a-doplnky', 'https://www.velkykosik.cz//dekorace-4']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//clanky/o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//clanky/kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//kosik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//bydleni-a-doplnky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//dekorace-4
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//hodiny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//koule-a-kupole
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//nastenne-dekorace
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//samolepky-na-zed
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//vazy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//zahrada
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//pitka-a-krmitka-pro-ptaky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//umele-kvetiny-a-vence
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//umele-kvetiny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//susene-kvetiny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//vence
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//svetelne-dekorace
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//led-stromky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//lucerny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//svetelne-retezy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.velkykosik.cz//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.velkykosik.cz/ (666696 znakov)
+✅ Playwright (shared ctx) OK pre https://www.velkykosik.cz//obchodne-podmienky (317538 znakov)
+✅ Playwright (shared ctx) OK pre https://www.velkykosik.cz//vseobecne-obchodne-podmienky (317598 znakov)
+✅ Playwright (shared ctx) OK pre https://www.velkykosik.cz//vop (317448 znakov)
+✅ Playwright (shared ctx) OK pre https://www.velkykosik.cz//clanky/o-nas (330780 znakov)
+🔎 PRED PW MERGE: combined=19064, pw_texts_count=5, pw_total_chars=21847
+🔎 PO PW MERGE: combined=40916, has_Martin=True
+🔎 _scrape_all_pages RETURN: combined=40916 znakov, pw_texts_count=5, has_Martin=True, has_zodpoved=False
+[8/140] velkykosik.cz ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://goodio.sk/
+⚠️ Garbled content na homepage https://goodio.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://goodio.sk/
+✅ Scrapling vrátil čistý obsah pre https://goodio.sk/
+🔗 Nav links objavené: 20 — ['https://goodio.sk//kontaktujte-nas', 'https://goodio.sk//kategorie-1092/halloweenske-dekoracie-kostymy-a-party-doplnky', 'https://goodio.sk//kategorie-195/hry-na-povolania-pre-deti-kostymy-a-doplnky', 'https://goodio.sk//kategorie-141/domacnost-vybavenie-dekoracie-kuchyna-a-upratovanie', 'https://goodio.sk//kategorie-150/kuchyna-riad-spotrebice-a-pomocky']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kontaktujte-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-1092/halloweenske-dekoracie-kostymy-a-party-doplnky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-195/hry-na-povolania-pre-deti-kostymy-a-doplnky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-141/domacnost-vybavenie-dekoracie-kuchyna-a-upratovanie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-150/kuchyna-riad-spotrebice-a-pomocky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-695/kuchynske-pomocky-a-naradie-na-kazdodenne-varenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-689/organizacia-kuchyne-organizery-a-ulozne-boxy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-688/kuchynske-spotrebice-pre-moderne-varenie-a-usporu-casu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-690/kuchynsky-riad-hrnceky-pohare-misy-a-sety
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-692/pecenie-formy-plechy-pekace-a-cukrarske-pomocky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-209/domov-dekoracie-osvetlenie-vone-a-smart-doplnky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-717/difuzery-a-vone-do-bytu-aromaterapia-a-prevonanie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-205/osvetlenie-do-domova-lampy-led-a-dizajnove-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-708/ukladanie-a-organizacia-bielizne-kose-boxy-vrecka
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-727/kvety-a-doplnky-umele-kvety-vazy-kvetinace
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-726/ochrana-a-bezpecnost-domova-alarmy-kamery-senzory
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-208/upratovanie-cistiace-prostriedky-pomocky-a-organizacia
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-714/upratovanie-podlah-a-kobercov-mopy-cistice-a-pripravky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-712/odpadkove-kose-pre-domacnost-a-triedenie-odpadu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kategorie-711/cistiace-pomocky-do-domacnosti-hubky-stierky-kefy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://goodio.sk//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://goodio.sk/ (628773 znakov)
+✅ Playwright (shared ctx) OK pre https://goodio.sk//obchodne-podmienky (135835 znakov)
+✅ Playwright (shared ctx) OK pre https://goodio.sk//vseobecne-obchodne-podmienky (135835 znakov)
+✅ Playwright (shared ctx) OK pre https://goodio.sk//vop (135835 znakov)
+✅ Playwright (shared ctx) OK pre https://goodio.sk//kontaktujte-nas (135835 znakov)
+🔎 PRED PW MERGE: combined=14402, pw_texts_count=5, pw_total_chars=16183
+🔎 PO PW MERGE: combined=30590, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=30590 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=False
+[9/140] goodio.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.kokiskashop.cz/
+⚠️ Garbled content na homepage https://www.kokiskashop.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.kokiskashop.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.kokiskashop.cz/
+🔗 Nav links objavené: 20 — ['https://www.kokiskashop.cz/cz/kontakt', 'https://www.kokiskashop.cz/cz/nejcastejsi-otazky-a-odpovedi', 'https://www.kokiskashop.cz/cz/blog', 'https://www.kokiskashop.cz/cz/volna-mista', 'https://www.kokiskashop.cz/cz/prihlaseni']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/nejcastejsi-otazky-a-odpovedi
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/blog
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/volna-mista
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/prihlaseni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/registrace
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/kosik/produkty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada-C67
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/zahradni-nabytek-C104
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/pristresky-na-popelnice-C24599
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/grily-a-krby-C100
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/bazeny-a-virivky-C1113
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/kasny-C89
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/foliovniky-C99
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/skleniky-C2430
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/dlazdice-mozaiky-C249
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/markyzy-a-stinici-zasteny-C448
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/slunecniky-C127
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz/cz/zahrada/zahradni-party-stany-C113
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.kokiskashop.cz//contact
+✅ httpx stačili (email+tel+role). Playwright len pre podmienky: ['https://www.kokiskashop.cz//obchodne-podmienky', 'https://www.kokiskashop.cz//vseobecne-obchodne-podmienky', 'https://www.kokiskashop.cz//vop']
+✅ Playwright (shared ctx) OK pre https://www.kokiskashop.cz//obchodne-podmienky (488524 znakov)
+✅ Playwright (shared ctx) OK pre https://www.kokiskashop.cz//vseobecne-obchodne-podmienky (488793 znakov)
+✅ Playwright (shared ctx) OK pre https://www.kokiskashop.cz//vop (488890 znakov)
+🔎 PRED PW MERGE: combined=50005, pw_texts_count=3, pw_total_chars=127197
+🔎 PO PW MERGE: combined=177205, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=177205 znakov, pw_texts_count=3, has_Martin=False, has_zodpoved=False
+[10/140] kokiskashop.cz ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://eshop.globo-lighting.sk/
+⚠️ Garbled content na homepage https://eshop.globo-lighting.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://eshop.globo-lighting.sk/
+✅ Scrapling vrátil čistý obsah pre https://eshop.globo-lighting.sk/
+🔗 Nav links objavené: 20 — ['https://eshop.globo-lighting.sk/content/6-kontaktne_udaje', 'https://eshop.globo-lighting.sk/content/5-doprava-a-platba', 'https://eshop.globo-lighting.sk/order', 'https://eshop.globo-lighting.sk', 'https://eshop.globo-lighting.sk/878-svietidla-podla-typu']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/content/6-kontaktne_udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/content/5-doprava-a-platba
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/order
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/878-svietidla-podla-typu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/882-stropne_svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/885-lustre-a-zavesne-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/884-nastenne_svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/886-stojanove_lampy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/887-stolove_lampy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/888-klasicke
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/889-lustre
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/890-kristalove-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/894-solarne-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/892-dekorativne-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/893-vonkajsie-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/895-ventilatory
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/896-ziarovky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/897-ostatne
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk/898-samostatne_tienidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://eshop.globo-lighting.sk//contact
+⚡ nedali dosť kontaktov — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://eshop.globo-lighting.sk/ (713888 znakov)
+✅ Playwright (shared ctx) OK pre https://eshop.globo-lighting.sk//obchodne-podmienky (230603 znakov)
+✅ Playwright (shared ctx) OK pre https://eshop.globo-lighting.sk//vseobecne-obchodne-podmienky (230603 znakov)
+✅ Playwright (shared ctx) OK pre https://eshop.globo-lighting.sk//vop (230608 znakov)
+✅ Playwright (shared ctx) OK pre https://eshop.globo-lighting.sk/content/6-kontaktne_udaje (232505 znakov)
+🔎 PRED PW MERGE: combined=15296, pw_texts_count=5, pw_total_chars=76258
+🔎 PO PW MERGE: combined=91559, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=91559 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=True
+[11/140] eshop.globo-lighting.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.profiledziarovky.sk/
+⚠️ Garbled content na homepage https://www.profiledziarovky.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.profiledziarovky.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.profiledziarovky.sk/
+🔗 Nav links objavené: 20 — ['https://www.profiledziarovky.sk/index.php?route=information/contact', 'https://www.profiledziarovky.sk//index.php?route=information/contact', 'https://www.profiledziarovky.sk/index.php?route=account/login', 'https://www.profiledziarovky.sk/index.php?route=account/register', 'https://www.profiledziarovky.sk/index.php?route=checkout/checkout']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=information/contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//index.php?route=information/contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=account/login
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=account/register
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=checkout/checkout
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//platba-a-dodanie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/vianocne-osvetlenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_188
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_263
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_267
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_149
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_147
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_145
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_246
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_150
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_264
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_148
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_152
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_151
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk/index.php?route=product/category&path=133_235
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.profiledziarovky.sk//contact
+WARNING: 0 candidates found — možný JS-only render alebo blokácia
+WARNING: 0 candidates found — možný JS-only render alebo blokácia
+⚡ nedali dosť kontaktov — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.profiledziarovky.sk/ (135836 znakov)
+✅ Playwright (shared ctx) OK pre https://www.profiledziarovky.sk//obchodne-podmienky (119287 znakov)
+✅ Playwright (shared ctx) OK pre https://www.profiledziarovky.sk//vseobecne-obchodne-podmienky (155557 znakov)
+✅ Playwright (shared ctx) OK pre https://www.profiledziarovky.sk//vop (155556 znakov)
+✅ Playwright (shared ctx) OK pre https://www.profiledziarovky.sk/index.php?route=information/contact (82817 znakov)
+🔎 PRED PW MERGE: combined=7813, pw_texts_count=5, pw_total_chars=64513
+🔎 PO PW MERGE: combined=72331, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=72331 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=True
+[12/140] profiledziarovky.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.svet-svitidel.cz/
+⚠️ Garbled content na homepage https://www.svet-svitidel.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.svet-svitidel.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.svet-svitidel.cz/
+🔗 Nav links objavené: 20 — ['https://www.svet-svitidel.cz//kontakt-svitidla-blansko', 'https://www.svet-svitidel.cz//zapomenute-heslo', 'https://www.svet-svitidel.cz//clanky-zasady-ochrany-osobnich-udaju', 'https://www.svet-svitidel.cz//svitidla-2422', 'https://www.svet-svitidel.cz//koupelna']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//kontakt-svitidla-blansko
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//zapomenute-heslo
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//clanky-zasady-ochrany-osobnich-udaju
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//svitidla-2422
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//koupelna
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//nabytek-3
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//dum-a-zahrada
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//elektromaterial
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//pro-deti
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//ventilatory-a-klimatizace
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//blog
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//slevove-akce-sveta-svitidel
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//nove-zlevneno
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//diskont-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//darkove-poukazy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//top-bodova-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//top-chytre-osvetleni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//top-koupelnova-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//top-kuchynska-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//top-lampy-a-lampicky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.svet-svitidel.cz//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.svet-svitidel.cz/ (134591 znakov)
+[13/140] svet-svitidel.cz ... ERROR (TIMEOUT)
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.pohodlne-nakupy.sk/
+⚠️ Garbled content na homepage https://www.pohodlne-nakupy.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.pohodlne-nakupy.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.pohodlne-nakupy.sk/
+📦 JSON-LD extrahované: ['name', 'email', 'phone', 'role']
+🔗 Nav links objavené: 20 — ['https://www.pohodlne-nakupy.sk//kontakty', 'https://www.pohodlne-nakupy.sk//o-nas', 'https://www.pohodlne-nakupy.sk//vsetko-o-nakupe', 'https://www.pohodlne-nakupy.sk//obchodne-podmienky', 'https://www.pohodlne-nakupy.sk//vratenie-tovaru']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//vsetko-o-nakupe
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//vratenie-tovaru
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//reklamacia
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//osobne-udaje-informacna-povinnost
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//fotogaleria
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//1322119665/e-login
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//1322119665/e-login-psw
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//1322119665/e-register
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//1322119665/e-login-social?provider=MojeId
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//1322119665/e-basket
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//baterie-a-nabijacky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//baterie-foto-video
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//baterie-video-originalne
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//baterie-video-neoriginalne
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//spotrebne-baterie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//primarne-baterie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//9v/6f22
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.pohodlne-nakupy.sk//o-firme
+✅ httpx stačili (email+tel+role). Playwright len pre podmienky: ['https://www.pohodlne-nakupy.sk//obchodne-podmienky']
+✅ Playwright (shared ctx) OK pre https://www.pohodlne-nakupy.sk//obchodne-podmienky (164 znakov)
+🔎 PRED PW MERGE: combined=15932, pw_texts_count=1, pw_total_chars=53
+🔎 PO PW MERGE: combined=15986, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=15986 znakov, pw_texts_count=1, has_Martin=False, has_zodpoved=True
+[14/140] pohodlne-nakupy.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.megaknihy.sk/
+⚠️ Garbled content na homepage https://www.megaknihy.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.megaknihy.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.megaknihy.sk/
+🔗 Nav links objavené: 20 — ['https://www.megaknihy.sk/content/4-kontakt', 'https://www.megaknihy.sk', 'https://www.megaknihy.sk/rychla-objednavka', 'https://www.megaknihy.sk//bestsellery', 'https://www.megaknihy.sk//nove-produkty']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/content/4-kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/rychla-objednavka
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//bestsellery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//nove-produkty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//cudzojazycne-knihy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/content/1-doprava-a-platba
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//profil
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/14022-mega-vypredaj
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/vse-do-4-99-eur
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/vyborne-ceny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/2057-pre-deti
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/1502-romany-beletria
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/1534-detektivky-krimi
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/2056-young-adult
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/1535-fantasy-scifi
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/1624-odborna-naucna
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/1555-kucharky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/2030-komiksy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk/kategoria/5058-motivacia-aosobnostny-rozvoj
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.megaknihy.sk//contact
+⚡ nedali dosť kontaktov — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.megaknihy.sk/ (330521 znakov)
+✅ Playwright (shared ctx) OK pre https://www.megaknihy.sk//obchodne-podmienky (207887 znakov)
+✅ Playwright (shared ctx) OK pre https://www.megaknihy.sk//vseobecne-obchodne-podmienky (207887 znakov)
+✅ Playwright (shared ctx) OK pre https://www.megaknihy.sk//vop (207887 znakov)
+✅ Playwright (shared ctx) OK pre https://www.megaknihy.sk/content/4-kontakt (208890 znakov)
+🔎 PRED PW MERGE: combined=7189, pw_texts_count=5, pw_total_chars=55509
+🔎 PO PW MERGE: combined=62703, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=62703 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=False
+[15/140] megaknihy.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.indarceky.sk/
+⚠️ Garbled content na homepage https://www.indarceky.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.indarceky.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.indarceky.sk/
+📦 JSON-LD extrahované: ['name', 'email', 'phone']
+🔗 Nav links objavené: 20 — ['https://www.indarceky.sk//kontaktne-informacie', 'https://www.indarceky.sk//kontaktny-formular', 'https://www.indarceky.sk//karnevalove-kostymy', 'https://www.indarceky.sk//kosik', 'https://www.indarceky.sk//horuce-novinky']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kontaktny-formular
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//karnevalove-kostymy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kosik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//horuce-novinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//novy-tovar
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//darcek-pre-koho
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-deti
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-najmensie-deti
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-chlapcov
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-dievcata--male-paradnice
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-slecnu
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-muzov
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-manzela--priatela--milenca
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-otca
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-brata
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-dedka
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-kamarata
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-sefa
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//pre-zeny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.indarceky.sk//kontakty
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.indarceky.sk/ (876777 znakov)
+✅ Playwright (shared ctx) OK pre https://www.indarceky.sk//kontaktne-informacie (257868 znakov)
+✅ Playwright (shared ctx) OK pre https://www.indarceky.sk//kontaktny-formular (257053 znakov)
+🔎 PRED PW MERGE: combined=24339, pw_texts_count=3, pw_total_chars=22311
+🔎 PO PW MERGE: combined=46653, has_Martin=True
+🔎 _scrape_all_pages RETURN: combined=46653 znakov, pw_texts_count=3, has_Martin=True, has_zodpoved=True
+[16/140] indarceky.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.margaretkashop.sk/
+⚠️ Garbled content na homepage https://www.margaretkashop.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.margaretkashop.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.margaretkashop.sk/
+📦 JSON-LD extrahované: ['name', 'email', 'phone', 'role']
+🔗 Nav links objavené: 20 — ['https://www.margaretkashop.sk//Kostymy-a-make-up-c28_574_2.htm', 'https://www.margaretkashop.sk//kontakty', 'https://www.margaretkashop.sk//AKO-NAKUPOVAT-a4_0.htm', 'https://www.margaretkashop.sk//blog', 'https://www.margaretkashop.sk//Darceky-g1490.htm']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Kostymy-a-make-up-c28_574_2.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//AKO-NAKUPOVAT-a4_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//blog
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Darceky-g1490.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Moda-a-krasa-g1491.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Domacnost-a-zahrada-g1492.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Sporty-a-zaluby-g1493.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Cestovanie-g1494.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//ako-nakupovat/postup
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//ako-nakupovat/cennik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Tabulka-velkosti-rukavic-a4_9.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//DOPRAVA-A-PLATBA-a6_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//obchodne-podmienky/podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//obchodne-podmienky/ochrana-osobnych-udajov
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//Alternativne-riesenie-sporov-a3_8.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//informacie-o-pouzivani-umelej
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//reklamacie-a-vratenie-tovaru
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//fotogaleria
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.margaretkashop.sk//o-nas
+✅ httpx stačili (email+tel+role). Playwright len pre podmienky: ['https://www.margaretkashop.sk//obchodne-podmienky', 'https://www.margaretkashop.sk//obchodne-podmienky/podmienky', 'https://www.margaretkashop.sk//obchodne-podmienky/ochrana-osobnych-udajov']
+✅ Playwright (shared ctx) OK pre https://www.margaretkashop.sk//obchodne-podmienky (164 znakov)
+✅ Playwright (shared ctx) OK pre https://www.margaretkashop.sk//obchodne-podmienky/podmienky (164 znakov)
+✅ Playwright (shared ctx) OK pre https://www.margaretkashop.sk//obchodne-podmienky/ochrana-osobnych-udajov (164 znakov)
+🔎 PRED PW MERGE: combined=17022, pw_texts_count=3, pw_total_chars=159
+🔎 PO PW MERGE: combined=17184, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=17184 znakov, pw_texts_count=3, has_Martin=False, has_zodpoved=True
+[17/140] margaretkashop.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.florasystem.sk/
+⚠️ Garbled content na homepage https://www.florasystem.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.florasystem.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.florasystem.sk/
+🔗 Nav links objavené: 6 — ['https://www.florasystem.sk//Kontakt', 'https://www.florasystem.sk//oNas', 'https://www.florasystem.sk//EuFondy', 'https://www.florasystem.sk//Kariera', 'https://www.florasystem.sk//e-shop/T1027-Darcekove-poukazky']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//Kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//oNas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//EuFondy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//Kariera
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//e-shop/T1027-Darcekove-poukazky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//Registracia
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//o-firme
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//o-spolocnosti
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//about-us
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//onas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//tym
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//team
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//vedenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//management
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//impressum
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//prevadzka
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.florasystem.sk//organizacna-struktura
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.florasystem.sk/ (328768 znakov)
+✅ Playwright (shared ctx) OK pre https://www.florasystem.sk//obchodne-podmienky (39 znakov)
+✅ Playwright (shared ctx) OK pre https://www.florasystem.sk//vseobecne-obchodne-podmienky (39 znakov)
+✅ Playwright (shared ctx) OK pre https://www.florasystem.sk//vop (39 znakov)
+✅ Playwright (shared ctx) OK pre https://www.florasystem.sk//Kontakt (133624 znakov)
+🔎 PRED PW MERGE: combined=18048, pw_texts_count=5, pw_total_chars=31653
+🔎 PO PW MERGE: combined=49706, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=49706 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=False
+[18/140] florasystem.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.mpm-time.cz/
+⚠️ Garbled content na homepage https://www.mpm-time.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.mpm-time.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.mpm-time.cz/
+🔗 Nav links objavené: 20 — ['https://www.mpm-time.cz//informace/kontakt', 'https://www.mpm-time.cz//informace/o-nas', 'https://www.mpm-time.cz//?lang=sk&do=changeLang', 'https://www.mpm-time.cz//?lang=pl&do=changeLang', 'https://www.mpm-time.cz//?lang=hu&do=changeLang']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//informace/kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//informace/o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//?lang=sk&do=changeLang
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//?lang=pl&do=changeLang
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//?lang=hu&do=changeLang
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//?lang=en&do=changeLang
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//prihlaseni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//product/comparison
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//objednavka/kosik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//informace/zakazkova-vyroba
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//informace/katalogy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/panske-hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/panske-sportovni-hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/klasicke-panske-hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/panske-modni-hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/damske-hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/damske-klasicke-hodinky-mpm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kategorie/klasicke-damske-hodinky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.mpm-time.cz//contact
+WARNING: 0 candidates found — možný JS-only render alebo blokácia
+WARNING: 0 candidates found — možný JS-only render alebo blokácia
+⚡ nedali dosť kontaktov — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.mpm-time.cz/ (237867 znakov)
+✅ Playwright (shared ctx) OK pre https://www.mpm-time.cz//obchodne-podmienky (175977 znakov)
+✅ Playwright (shared ctx) OK pre https://www.mpm-time.cz//vseobecne-obchodne-podmienky (175977 znakov)
+✅ Playwright (shared ctx) OK pre https://www.mpm-time.cz//vop (3321 znakov)
+✅ Playwright (shared ctx) OK pre https://www.mpm-time.cz//informace/kontakt (184983 znakov)
+🔎 PRED PW MERGE: combined=5124, pw_texts_count=5, pw_total_chars=10430
+🔎 PO PW MERGE: combined=15559, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=15559 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=False
+[19/140] mpm-time.cz ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.hodiny-na-stenu.sk/
+⚠️ Garbled content na homepage https://www.hodiny-na-stenu.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.hodiny-na-stenu.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.hodiny-na-stenu.sk/
+🔗 Nav links objavené: 20 — ['https://www.hodiny-na-stenu.sk/kontakt', 'https://www.hodiny-na-stenu.sk/o-nas', 'https://www.hodiny-na-stenu.sk/index.php?route=information/contact', 'https://www.hodiny-na-stenu.sk/index.php?route=account/account', 'https://www.hodiny-na-stenu.sk/index.php?route=account/register']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=information/contact
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=account/account
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=account/register
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=account/login
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=account/wishlist
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=checkout/cart
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=checkout/checkout
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk/index.php?route=common/home
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//budiky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//nalepovacie-hodiny-rucicky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//kuchynske-a-ine
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//hodiny-ako-obraz
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//kyvadlove-hodiny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//detske-nastenne-hodiny
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//hodiny-jvd
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//hodiny-mpm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//incantesimodesign
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//karlsson
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.hodiny-na-stenu.sk//contact
+⚡ nedali dosť kontaktov — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.hodiny-na-stenu.sk/ (127137 znakov)
+✅ Playwright (shared ctx) OK pre https://www.hodiny-na-stenu.sk//obchodne-podmienky (139443 znakov)
+✅ Playwright (shared ctx) OK pre https://www.hodiny-na-stenu.sk//vseobecne-obchodne-podmienky (99902 znakov)
+✅ Playwright (shared ctx) OK pre https://www.hodiny-na-stenu.sk//vop (99879 znakov)
+✅ Playwright (shared ctx) OK pre https://www.hodiny-na-stenu.sk/kontakt (101411 znakov)
+🔎 PRED PW MERGE: combined=2773, pw_texts_count=5, pw_total_chars=48516
+🔎 PO PW MERGE: combined=51294, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=51294 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=True
+[20/140] hodiny-na-stenu.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.fgym.sk/
+⚠️ Garbled content na homepage https://www.fgym.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.fgym.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.fgym.sk/
+🔗 Nav links objavené: 20 — ['https://www.fgym.sk//Kontakty-a2_0.htm', 'https://www.fgym.sk//O-Nas-a1_0.htm', 'https://www.fgym.sk//www-webareal-sk-fgym-sk/e-login', 'https://www.fgym.sk//www-webareal-sk-fgym-sk/e-register', 'https://www.fgym.sk///www.fgym.sk']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//Kontakty-a2_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//O-Nas-a1_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//www-webareal-sk-fgym-sk/e-login
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//www-webareal-sk-fgym-sk/e-register
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk///www.fgym.sk
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//Reklamni-partneri-a1_36.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//INFORM-a1_39.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//MILLENNIUM-FITNESS-a1_38.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//SANK-a1_37.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//FGYM-CLUB-a1_42.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//Obchodne-podmienky-a9_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//Zlavovy-bodovy-system-a11_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//Nakup-na-splatky-a13_0.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//www-webareal-sk-fgym-sk/e-basket
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk/Esencialne-Vonne-oleje-DoTerra-c421_1625_2.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk/search-engine.htm?slovo=bushido&search_submit=&hledatjak=2
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk/TRAMPOLINY-c118_0_1.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk/Odrazadla-Bicykle-c121_237_2.htm#system_params%5Bskladem%5D=1&min_price_filter=11&max_price_filter=128&show_centerpage_params_filter=0&selected_centerpage_param_filter=0&sort=3
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk/search-engine.htm?slovo=hms&search_submit=&hledatjak=2
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//BAZENY-VODNE-SPORTY-c101_0_1.htm
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.fgym.sk//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.fgym.sk/ (519713 znakov)
+✅ Playwright (shared ctx) OK pre https://www.fgym.sk//Obchodne-podmienky-a9_0.htm (270509 znakov)
+✅ Playwright (shared ctx) OK pre https://www.fgym.sk//Kontakty-a2_0.htm (270483 znakov)
+✅ Playwright (shared ctx) OK pre https://www.fgym.sk//O-Nas-a1_0.htm (270483 znakov)
+🔎 PRED PW MERGE: combined=43992, pw_texts_count=4, pw_total_chars=102480
+🔎 PO PW MERGE: combined=146476, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=146476 znakov, pw_texts_count=4, has_Martin=False, has_zodpoved=False
+[21/140] fgym.sk ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.sterix.cz/
+⚠️ Garbled content na homepage https://www.sterix.cz/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.sterix.cz/
+✅ Scrapling vrátil čistý obsah pre https://www.sterix.cz/
+🔗 Nav links objavené: 20 — ['https://www.sterix.cz//o-nas', 'https://www.sterix.cz//kontakty', 'https://www.sterix.cz//baterie-do-naslouchadel', 'https://www.sterix.cz//kosik', 'https://www.sterix.cz//svitidla']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//o-nas
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//baterie-do-naslouchadel
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//kosik
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//interierova-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//detska-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//led-panely
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//nabytkove-osvetleni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//nastenna-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//nocni-orientacni-osvetleni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//nouzove-osvetleni
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//stojaci-lampy
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//stolni-lampicky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//stropni-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//zapustna-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//zavesna-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//venkovni-svitidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//venkovni-lampy-a-lampicky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//venkovni-led-reflektory
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.sterix.cz//contact
+⚡ chýba role keyword — Playwright pre podmienky + general stránky
+✅ Playwright (shared ctx) OK pre https://www.sterix.cz/ (346525 znakov)
+✅ Playwright (shared ctx) OK pre https://www.sterix.cz//obchodne-podmienky (208850 znakov)
+✅ Playwright (shared ctx) OK pre https://www.sterix.cz//vseobecne-obchodne-podmienky (209016 znakov)
+✅ Playwright (shared ctx) OK pre https://www.sterix.cz//vop (208941 znakov)
+✅ Playwright (shared ctx) OK pre https://www.sterix.cz//o-nas (215187 znakov)
+🔎 PRED PW MERGE: combined=5537, pw_texts_count=5, pw_total_chars=15343
+🔎 PO PW MERGE: combined=20885, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=20885 znakov, pw_texts_count=5, has_Martin=False, has_zodpoved=False
+[22/140] sterix.cz ... OK
+⚡ FORCE_PLAYWRIGHT=1: preskakujem httpx/cloudscraper pre https://www.feim.sk/
+⚠️ Garbled content na homepage https://www.feim.sk/ — skúšam Scrapling StealthyFetcher
+🕵️ Scrapling StealthyFetcher pre https://www.feim.sk/
+✅ Scrapling vrátil čistý obsah pre https://www.feim.sk/
+🔗 Nav links objavené: 20 — ['https://www.feim.sk/o-spolocnosti', 'https://www.feim.sk/kontakty', 'https://www.feim.sk//customer/registration', 'https://www.feim.sk//cart', 'https://www.feim.sk/svietidla-vo-vypredaji']
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/o-spolocnosti
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/kontakty
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//customer/registration
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//cart
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/svietidla-vo-vypredaji
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/inteligentne-svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/philips-hue-inteligentne-osvetlenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/immax-neo-inteligentne-osvetlenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/lutec-inteligentne-osvetlenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/inteligentne-osvetlenie-wiz-connected
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/inteligentne-osvetlenie-tuya-smart
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/emos-gosmart
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/svietidla
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/ziarovky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/prislusenstvo-1
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/domace-spotrebice
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/ip-kamery
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/videozvonceky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/vianocne-osvetlenie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk/termostaty-a-termostaticke-hlavice
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//vseobecne-obchodne-podmienky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//vop
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//vseobecne-obchodni-podminky
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//kontaktne-informacie
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//kontaktne-udaje
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//kontaktne-info
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//kontakt
+⚡ FORCE_PLAYWRIGHT: skip httpx pre https://www.feim.sk//contact
+✅ httpx stačili (email+tel+role). Playwright len pre podmienky: ['https://www.feim.sk/o-spolocnosti']
+✅ Playwright (shared ctx) OK pre https://www.feim.sk/o-spolocnosti (406605 znakov)
+🔎 PRED PW MERGE: combined=21284, pw_texts_count=1, pw_total_chars=7194
+🔎 PO PW MERGE: combined=28479, has_Martin=False
+🔎 _scrape_all_pages RETURN: combined=28479 znakov, pw_texts_count=1, has_Martin=False, has_zodpoved=True
+[23/140] feim.sk ... OK

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="sk"><head><meta charset="utf-8">
+<title>Wector v6.16 — UI Preview</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;padding:24px;color:#333}
+.hdr{background:#1e293b;color:#fff;padding:28px 32px;border-radius:10px;margin-bottom:28px}
+.hdr h1{font-size:26px;margin-bottom:4px}
+.hdr p{color:#94a3b8;font-size:13px}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px}
+.stat{background:#fff;border-radius:8px;padding:16px 22px;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:130px;text-align:center}
+.stat .v{font-size:28px;font-weight:700}
+.stat .l{font-size:12px;color:#64748b;margin-top:2px}
+.stat.green .v{color:#16a34a}
+.stat.blue .v{color:#2563eb}
+.stat.orange .v{color:#ea580c}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:22px}
+.card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.card-head{background:#1e293b;color:#fff;padding:14px 20px;font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.dur{font-size:11px;color:#94a3b8;font-weight:400}
+.section{padding:14px 20px;border-bottom:1px solid #f1f5f9}
+.section:last-child{border-bottom:none}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;color:#475569}
+.sec-green{background:#f0fdf4;border-left:4px solid #22c55e}
+.sec-blue{background:#eff6ff;border-left:4px solid #3b82f6}
+.sec-orange{background:#fff7ed;border-left:4px solid #f97316}
+.sec-gray{background:#f8fafc;border-left:4px solid #94a3b8}
+.item{background:#fff;padding:10px 12px;margin-bottom:8px;border-radius:6px;border:1px solid #e2e8f0}
+.item-green{border-left:3px solid #22c55e}
+.item-title{font-weight:600;color:#1e293b;font-size:14px}
+.item-sub{margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.bg-green{background:#dcfce7;color:#166534}
+.bg-blue{background:#dbeafe;color:#1e40af}
+.bg-orange{background:#ffedd5;color:#9a3412}
+.bg-red{background:#fee2e2;color:#991b1b}
+.bg-gray{background:#f1f5f9;color:#475569}
+.near-name{font-size:11px;color:#7c3aed}
+.page-hint{font-size:10px;color:#94a3b8}
+.ico{font-size:10px;color:#64748b}
+.conf{font-size:10px;color:#94a3b8}
+.ctx{background:#f8fafc;padding:5px 8px;border-radius:4px;font-size:11px;color:#64748b;margin-top:6px;max-height:36px;overflow:hidden}
+.empty{color:#94a3b8;font-size:12px;font-style:italic;padding:4px 0}
+</style></head><body>
+<div class="hdr">
+<h1>Wector v6.16 &mdash; UI Preview Report</h1>
+<p>Ako budu vyzerat data v UI: Registry | Telefony | Emaily | Triedenie &bull; 15.06.2026 22:11:26</p>
+</div>
+<div class="stats">
+<div class="stat green"><div class="v">11/12</div><div class="l">Uspesne</div></div>
+<div class="stat blue"><div class="v">9</div><div class="l">S registrom</div></div>
+<div class="stat orange"><div class="v">43</div><div class="l">Telefony spolu</div></div>
+<div class="stat"><div class="v">16</div><div class="l">Emaily spolu</div></div>
+</div>
+<div class="grid">
+<div class="card">
+            <div class="card-head">www.minilove.sk
+                <span class="dur">22.6s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Juraj Blízik</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 51747391</span>
+                    </div>
+                </div><div class="item item-green">
+                    <div class="item-title">Erika Blíziková</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 51747391</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (4 zobrazených &mdash; 1 filtrovanych (prepravca))</div>
+            <div class="item">
+                <div class="item-title">+421918852036</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                    <span class="near-name">&#128100; Erika Blíziková</span> 
+                </div>
+                <div class="ctx">&ldquo;Email: info@minilove.sk Telefón: ... Ak používate software na blokovanie rekl&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">51747391</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Erika Blíziková</span> 
+                </div>
+                <div class="ctx">&ldquo; MAXVOLT s.r.o. Čeľadice 428, 951 03 Čeľadice IČO: ... DIČ: 2120817303 IČ DPH: SK2120817303 KOR&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+421903928140</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                    <span class="near-name">&#128100; Erika Blíziková</span> 
+                </div>
+                <div class="ctx">&ldquo; Vytvoril Shoptet Email: info@minilove.sk Telefón: ... Ak používate software na blokovanie rekl&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0308908888</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Erika Blíziková</span> 
+                </div>
+                <div class="ctx">&ldquo;edmokráska €13,90 €29,90 (–53 %) Skladom Detail 59 ... 2 S menom Kojenecké body – jednofarebné &rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">info@minilove.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.lavanda.sk
+                <span class="dur">27.9s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Beata Štrbová</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 48288713</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (7 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">+421 903 715 099</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> <span class="page-hint">/kontakt</span>
+                </div>
+                <div class="ctx">&ldquo;A DECOR s.r.o. Roľnícka 128 831 07 Bratislava tel: ... lavanda@lavanda.sk Sme tu pre Vás v prac&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+421 903 715 094</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> <span class="page-hint">/kontakt</span>
+                </div>
+                <div class="ctx">&ldquo;telefónnom čísle v pracovné dni od 8:00 do 15:00): ... E-Mail: lavanda@lavanda.sk Bankové spoje&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0962812/201</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> 
+                </div>
+                <div class="ctx">&ldquo;ovaru bankovým prevodom alebo vkladom na účet: 210 ... 0, Fio banka, a.s. V potvrdení objednávk&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">48288713</div>
+                <div class="item-sub">
+                    <span class="badge bg-green">Osobny</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> 
+                </div>
+                <div class="ctx">&ldquo;a Decor s.r.o Roľnícka 128, 831 07 Bratislava IČO: ... Register: Obchodný register Okresného sú&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">28090403</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> 
+                </div>
+                <div class="ctx">&ldquo;47/85, 37001 České Budějovice, identifikačé číslo: ... , zapísaná v obchodnom registri vedenom &rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">35 834 498</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> 
+                </div>
+                <div class="ctx">&ldquo;ká 7, 821 04 Bratislava, Slovenská republika, IČO: ... , zapísaná v Obchodnom registri Okresnéh&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">37218166</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Beata Štrbová</span> 
+                </div>
+                <div class="ctx">&ldquo;om 85107 Bratislava-Petržalka, Krásnohorská 8, IČO ... , zapísaná v živnostenskom registri Okre&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">lavanda@lavanda.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-green">Osobny</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">elmishop.sk
+                <span class="dur">38.3s</span>
+            </div>
+            
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (3 zobrazených &mdash; 1 filtrovanych (prepravca))</div>
+            <div class="item">
+                <div class="item-title">+421 907 581 791</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;, recycle ! ♻️ Radi vám poradíme! info@elmishop.sk ... Novinky na e-shope: Body bez rukávov, 2-&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0907 581 791</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;, 851 06 Bratislava – Petržalka; info@elmishop.sk; ... ; Týmto oznamujem/oznamujeme (*), že ods&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">55498787</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;va, Číslo živnostenského registra: 110-347653 IČO: ... DIČ: 1084000544 Bankový účet: IBAN: SK15&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">info@elmishop.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            <div class="section sec-gray">
+                    <div class="sec-title">KANDIDATI MENO (alternativa k registru)</div>
+                    <div class="item">
+                    <div class="item-title">Erika Matulová</div>
+                    <div class="item-sub">
+                        <span class="badge bg-gray">neznama</span>
+                        <span class="badge bg-blue">scrape_association</span>
+                        <span class="conf">Dovera: 40%</span>
+                    </div>
+                    <div class='ctx'>&ldquo;tiahnutie nájdete nižšie na tejto stránke) (vyplňte a zašlite tento formulár len&rdquo;</div>
+                </div>
+                </div>
+        </div>
+<div class="card">
+            <div class="card-head">www.isexshop.sk
+                <span class="dur">19.5s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Roman Melíšek</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 46168931</span>
+                    </div>
+                </div><div class="item item-green">
+                    <div class="item-title">Katarína Bačíková</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 46168931</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (1 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">0944393713</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                    <span class="near-name">&#128100; Roman Melíšek</span> <span class="page-hint">/kontakt</span>
+                </div>
+                <div class="ctx">&ldquo;v . ZAREGISTROVAŤ SA Máte už svoje konto? Telefón: ... Email: info@isexshop.sk Kontaktné inform&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">info@isexshop.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/kontakt</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.sedooz.sk
+                <span class="dur">20.5s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Šimon Ďurák</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 46359338</span>
+                    </div>
+                </div><div class="item item-green">
+                    <div class="item-title">Peter Ďurák</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">konateľ</span>
+                        <span class="badge bg-blue">ORSR</span>
+                        <span class='ico'>ICO: 46359338</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (6 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">+421904530656</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Peter Ďurák</span> 
+                </div>
+                <div class="ctx">&ldquo;Email: sedooz@sedooz.sk Telefón: ... Ak používate software na blokovanie rekl&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+420737096601</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Peter Ďurák</span> 
+                </div>
+                <div class="ctx">&ldquo;y práva vyhradené. Telefón: +421904530656 Telefón: ... ‬ Email: sedooz@sedooz.sk Email: sedooz@&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">46 359 338</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Peter Ďurák</span> 
+                </div>
+                <div class="ctx">&ldquo;atislava III, oddiel: Sro, vložka č.: 75896/B IČO: ... DIČ: 2023345148 IČ DPH: SK2023345148 Oso&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">02/ 58272 172</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Peter Ďurák</span> 
+                </div>
+                <div class="ctx">&ldquo; 5, 820 07 Bratislava odbor výkonu dozoru tel. č.: ... , 02/58272 104 http://www.soi.sk http://&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">02/58272 104</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Peter Ďurák</span> 
+                </div>
+                <div class="ctx">&ldquo;islava odbor výkonu dozoru tel. č.: 02/ 58272 172, ... http://www.soi.sk http://www.soi.sk/sk/P&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">36064220</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                    <span class="near-name">&#128100; Peter Ďurák</span> <span class="page-hint">/kontakt</span>
+                </div>
+                <div class="ctx">&ldquo;2, 820 07, Bratislava 27, Slovenská republika IČO: ... email: statny.dozor@pdp.gov.sk (právo po&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (2 najdenych)</div>
+            <div class="item">
+                <div class="item-title">sedooz@sedooz.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-green">Osobny</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div><div class="item">
+                <div class="item-title">statny.dozor@pdp.gov.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-green">Osobny</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.eros.sk
+                <span class="dur">31.2s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Tomáš Koubík</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">jednatel</span>
+                        <span class="badge bg-blue">ARES</span>
+                        <span class='ico'>ICO: 26004909</span>
+                    </div>
+                </div><div class="item item-green">
+                    <div class="item-title">Tomáš Hervert</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">jednatel</span>
+                        <span class="badge bg-blue">ARES</span>
+                        <span class='ico'>ICO: 26004909</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (5 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">+420495532839</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;Telefón: ... Telefón: +420495532839 Email: obchod@ero&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0476018849</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;antázie so značkou Fleshlight. Objednávací kód: 81 ... 85,99 € 71,59 € Skladom 3 ks Pridať do m&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0476010997</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo; análikom známej pornohviezdy. Objednávací kód: 81 ... 42,97 € 40,68 € Skladom 2 ks Pridať do m&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0476014421</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;vou vnútornou textúrou Indulge Objednávací kód: 81 ... 74,11 € 52,43 € Skladom 1 ks Pridať do m&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">800 100 629</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo; odpovědět co nejdříve! Hoří to? Radši nám zavolej ... . Odesláním formuláře souhlasíte s podmí&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">obchod@eros.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.kondomshop.sk
+                <span class="dur">44.8s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Adam Durčák</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">jednatel</span>
+                        <span class="badge bg-blue">ARES</span>
+                        <span class='ico'>ICO: 28642317</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (4 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">+421 222 205 868</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> 
+                </div>
+                <div class="ctx">&ldquo;Telefón: ... Telefón: +421 222 205 868 Obchodné podmi&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+421 902 394 374</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;m na [email protected] alebo zavolajte na +421 902 ... 394 374. Čo robiť, ak tovar nefunguje (r&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">28642317</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> 
+                </div>
+                <div class="ctx">&ldquo;oločnosti Růžový slon s.r.o., identifikačné číslo: ... , so sídlom v Ostrave - Moravská Ostrava&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">44 900 104</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> 
+                </div>
+                <div class="ctx">&ldquo;novská 5, 010 08 Žilina, Slovenská republika, IČO: ... , zapísaná v Obchodnom registri Okresnéh&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">pomoc@kondomshop.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-green">Osobny</span>
+                    <span class="page-hint">/kontakt</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.ruzovyslon.cz
+                <span class="dur">24.5s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Adam Durčák</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">jednatel</span>
+                        <span class="badge bg-blue">ARES</span>
+                        <span class='ico'>ICO: 28642317</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (4 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">596 810 697</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> 
+                </div>
+                <div class="ctx">&ldquo;Telefón: ... Telefón: 596 810 697 Email: ahoj@ruzovys&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+420 596 810 697</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> 
+                </div>
+                <div class="ctx">&ldquo;šte nám e-mail na ahoj@ ruzovyslon.cz nebo volejte ... . Co dělat, když zboží nefunguje (reklam&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">28642317</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> 
+                </div>
+                <div class="ctx">&ldquo;olečnosti Růžový slon s.r.o., identifikační číslo: ... , zapsané v obchodním rejstříku vedeném &rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+421 277 270 005</div>
+                <div class="item-sub">
+                    <span class="badge bg-blue">Info</span>
+                    <span class="near-name">&#128100; Adam Durčák</span> <span class="page-hint">/kontakt</span>
+                </div>
+                <div class="ctx">&ldquo; kontakt Kontaktní telefon +420 596 810 697 (CZ) a ... (SK), k dispozici v Po-Pá 8–19 hod., v S&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">ahoj@ruzovyslon.cz</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.flagranti.sk
+                <span class="dur">13.9s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Adam Durčák</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">jednatel</span>
+                        <span class="badge bg-blue">ARES</span>
+                        <span class='ico'>ICO: 28642317</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (5 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">222 205 496</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     <span class="page-hint">/kontakt</span>
+                </div>
+                <div class="ctx">&ldquo; odpovieme na v�etky Va�e dotazy! Z�kaznick� linka ... Sme tu pre V�s Po - P� 7:30 - 15:30 hod &rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">28642317</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;00 Ostrava � Moravsk� Ostrava, Czech Republic I�O: ... DI�: 4120163036 I� pre DPH: SK4120163036&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">0975000000</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo; SK4120163036 ��slo ��tu: 4026867778/7500 IBAN: SK ... 004026867778 SWIFT: CEKOSKBX Doru�ovacia&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">24 222 205</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;IS PUMP Strana 1 z 10 Nasleduj�ci Posledn� �al��ch ... 496 po - p� 7:30-15:30 hod. Viac inform�&rdquo;</div>
+            </div><div class="item">
+                <div class="item-title">+421 222 205 496</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;n�vku nasleduj�cimi sp�sobmi: telefonicky na linke ... ; elektronickou po�tou na adrese flagran&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (4 najdenych)</div>
+            <div class="item">
+                <div class="item-title">ahoj@flagranti.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div><div class="item">
+                <div class="item-title">flagranti@flagranti.sk</div>
+                <div class="item-sub">
+                    <span class="badge bg-green">Osobny</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div><div class="item">
+                <div class="item-title">marketing@flagranti.cz</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div><div class="item">
+                <div class="item-title">info@tongabv.com</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+<div class="card">
+            <div class="card-head">www.mhsexshop.com
+                <span class="dur">37.1s</span>
+            </div>
+            
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (1 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">+420608926623</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;Email: obchod@mhsexshop.com Telefón: ... Telefón: +420608926623 Email: obchod@mhs&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (1 najdenych)</div>
+            <div class="item">
+                <div class="item-title">obchod@mhsexshop.com</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            <div class="section sec-gray">
+                    <div class="sec-title">KANDIDATI MENO (alternativa k registru)</div>
+                    <div class="item">
+                    <div class="item-title">Martin Hrubý</div>
+                    <div class="item-sub">
+                        <span class="badge bg-gray">Zakladatelem</span>
+                        <span class="badge bg-blue">scrape_association</span>
+                        <span class="conf">Dovera: 50%</span>
+                    </div>
+                    <div class='ctx'>&ldquo;z +420 608 926 623 obchod@mhsexshop.com Rychlý kontakt Kontaktní informace - log&rdquo;</div>
+                </div><div class="item">
+                    <div class="item-title">Martin Hruby</div>
+                    <div class="item-sub">
+                        <span class="badge bg-gray">Majitel</span>
+                        <span class="badge bg-blue">scrape_association</span>
+                        <span class="conf">Dovera: 30%</span>
+                    </div>
+                    <div class='ctx'>&ldquo;IBAN: CZ68 2010 0000 0025 0326 1375 BIC / SWIFT: FIOBCZPPXXX Bank: Fio banka, a.&rdquo;</div>
+                </div>
+                </div>
+        </div>
+<div class="card">
+            <div class="card-head">www.sexshop-erotic.cz
+                <span class="dur">22.2s</span>
+            </div>
+            <div class="section sec-green">
+                <div class="sec-title">Z REGISTRA (autoritativne)</div>
+                <div class="item item-green">
+                    <div class="item-title">Roman Zažírej</div>
+                    <div class="item-sub">
+                        <span class="badge bg-green">jednatel</span>
+                        <span class="badge bg-blue">ARES</span>
+                        <span class='ico'>ICO: 09828010</span>
+                    </div>
+                </div>
+            </div>
+            <div class="section sec-blue">
+            <div class="sec-title">TELEFONY (1 zobrazených)</div>
+            <div class="item">
+                <div class="item-title">+420 774 305 098</div>
+                <div class="item-sub">
+                    <span class="badge bg-gray">Nezaradeny</span>
+                     
+                </div>
+                <div class="ctx">&ldquo;brazení levého menu. neznámý Uložit nastavení tel: ... Po-Pá 9:00 - 16:30 Přihlášení Nová regis&rdquo;</div>
+            </div>
+        </div>
+            <div class="section sec-orange">
+            <div class="sec-title">EMAILY (2 najdenych)</div>
+            <div class="item">
+                <div class="item-title">info@sexshop-erotic.cz</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div><div class="item">
+                <div class="item-title">reklamace@sexshop-erotic.cz</div>
+                <div class="item-sub">
+                    <span class="badge bg-orange">Genericky (info@)</span>
+                    <span class="page-hint">/</span>
+                </div>
+            </div>
+        </div>
+            
+        </div>
+
+</div>
+</body></html>

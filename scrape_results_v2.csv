@@ -1,0 +1,11 @@
+﻿url;primary_identifier;contact_name;role;email;phone;contact_points;direct_personal_email;reasoning
+https://www.indarceky.sk/;HTTP 502;;;;;;;
+https://www.stylin.sk/;stylin.sk;;;info@stylin.sk;+420777592979;10;False;Neexistuje žiadna menovaná osoba ani konkrétna rola, preto je kontakt generický. Email je v správnom formáte, ale neexistuje žiadne meno, ktoré by sa dalo priradiť.
+https://www.zeniqo.sk/;zeniqo.sk;Nezáleží Wi;Obchodné oddelenie;eshop@zeniqo.sk;+421908761091;40;False;Kontakt bol vybraný, pretože meno 'Nezáleží Wi' je uvedené v kontexte blízko telefónu a emailu, čo naznačuje, že ide o osobu z obchodného oddelenia. Email má formát generického emailu, ale je spojený s konkrétnym menom.
+https://www.domoss.sk/;ERROR: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None));;;;;;;
+https://eshop.globo-lighting.sk/;TIMEOUT;;;;;;;
+https://www.velkykosik.cz/;ERROR: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None));;;;;;;
+https://ema-elektro.sk/;HTTP 502;;;;;;;
+https://lomax.sk/;HTTP 503;;;;;;;
+https://www.zuriel.cz/;HTTP 503;;;;;;;
+https://www.fermatshop.sk/;HTTP 503;;;;;;;

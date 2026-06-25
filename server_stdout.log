@@ -1,0 +1,4 @@
+ENCODING FIX v3 loaded (ftfy mojibake repair)
+[WARN] DB init failed (non-fatal for scrape-only endpoints): (ENOTFOUND) tenant/user postgres.sqarzrcborlxtrgbydkb not found
+[eshops] ecommerce_sk: 5 shopov
+INFO:     127.0.0.1:52049 - "POST /api/leads/source/eshops HTTP/1.1" 200 OK

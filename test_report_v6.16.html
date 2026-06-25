@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Wector v6.16 Test Report</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f8f9fa; color: #333; }
+h1 { margin-bottom: 5px; }
+.meta { color: #666; margin-bottom: 20px; }
+.summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.card { background: white; border-radius: 8px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.1); min-width: 120px; }
+.card .num { font-size: 28px; font-weight: 700; }
+.card .label { font-size: 13px; color: #666; }
+.card.green .num { color: #16a34a; }
+.card.red .num { color: #dc2626; }
+.card.blue .num { color: #2563eb; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.1); font-size: 13px; }
+th { background: #1e293b; color: white; padding: 10px 8px; text-align: left; font-weight: 600; white-space: nowrap; }
+td { padding: 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+tr:hover { background: #f1f5f9; }
+.url { font-family: monospace; font-size: 12px; white-space: nowrap; }
+.row-error { background: #fef2f2; }
+.row-registry { background: #f0fdf4; }
+.st-ok { color: #16a34a; font-weight: 600; }
+.st-err { color: #dc2626; font-weight: 600; }
+.st-timeout { color: #d97706; font-weight: 600; }
+</style></head><body>
+<h1>Wector v6.16 &mdash; Test Report</h1>
+<div class="meta">Generated: 2026-06-15 21:09:06 | 37 shops | avg 29.5s/shop</div>
+
+<div class="summary">
+<div class="card green"><div class="num">36/37</div><div class="label">OK</div></div>
+<div class="card red"><div class="num">1</div><div class="label">Errors</div></div>
+<div class="card blue"><div class="num">8</div><div class="label">Registry found</div></div>
+<div class="card green"><div class="num">29</div><div class="label">Improved vs v6.15</div></div>
+<div class="card"><div class="num">346</div><div class="label">Total phones</div></div>
+<div class="card"><div class="num">55</div><div class="label">Total emails</div></div>
+</div>
+
+<table>
+<thead><tr>
+<th>Shop</th><th>Status</th><th>Time</th><th>ICO</th><th>Registry</th><th>Konatelia</th><th>Ph</th><th>Em</th><th>v6.16 Best</th><th>v6.15</th><th>Blocked FP</th>
+</tr></thead>
+<tbody>
+<tr class="">
+<td class="url">www.candyloco.sk</td>
+<td class="st-ok">OK</td>
+<td>30.0s</td>
+<td>46815082</td>
+<td>orsr</td>
+<td></td>
+<td>3</td>
+<td>1</td>
+<td><b></b><br><small>0905563489</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.floraobal.sk</td>
+<td class="st-ok">OK</td>
+<td>68.7s</td>
+<td>52803244</td>
+<td>orsr</td>
+<td></td>
+<td>1</td>
+<td>1</td>
+<td><b></b><br><small>52 803 244</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.lavanda.sk</td>
+<td class="st-ok">OK</td>
+<td>28.6s</td>
+<td>48288713</td>
+<td>orsr</td>
+<td></td>
+<td>8</td>
+<td>1</td>
+<td><b>Beata Štrbová</b><br><small>+421 903 715 099</small></td>
+<td>Beata Strbova<br><small>+421 903 715 099</small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">capkov.cz</td>
+<td class="st-ok">OK</td>
+<td>50.5s</td>
+<td></td>
+<td></td>
+<td></td>
+<td>1</td>
+<td>1</td>
+<td><b></b><br><small>+420775942933</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.inspio.sk</td>
+<td class="st-ok">OK</td>
+<td>27.6s</td>
+<td>51869535</td>
+<td>orsr</td>
+<td></td>
+<td>32</td>
+<td>2</td>
+<td><b></b><br><small>+421232179940</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.mojsvet.eu</td>
+<td class="st-ok">OK</td>
+<td>28.9s</td>
+<td>46489592</td>
+<td>orsr</td>
+<td></td>
+<td>11</td>
+<td>2</td>
+<td><b>Nové Mesto</b><br><small>+421905405756</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.tuli.sk</td>
+<td class="st-ok">OK</td>
+<td>28.5s</td>
+<td>45248451</td>
+<td>orsr</td>
+<td></td>
+<td>12</td>
+<td>1</td>
+<td><b></b><br><small>45 248 451</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.dajlabku.sk</td>
+<td class="st-ok">OK</td>
+<td>18.0s</td>
+<td>50413139</td>
+<td>orsr</td>
+<td></td>
+<td>11</td>
+<td>2</td>
+<td><b>Liptovskej Porúbky</b><br><small>+421911900009</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.medaren.sk</td>
+<td class="st-ok">OK</td>
+<td>22.5s</td>
+<td>44219482</td>
+<td>orsr</td>
+<td></td>
+<td>8</td>
+<td>1</td>
+<td><b></b><br><small>+421905856753</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.minilove.sk</td>
+<td class="st-ok">OK</td>
+<td>21.2s</td>
+<td>51747391</td>
+<td>orsr</td>
+<td></td>
+<td>131</td>
+<td>1</td>
+<td><b>Erika Blíziková</b><br><small>+421918852036</small></td>
+<td>Erika Blizikova<br><small>+421 903 928 140</small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.rozkos.sk</td>
+<td class="st-ok">OK</td>
+<td>48.4s</td>
+<td></td>
+<td></td>
+<td></td>
+<td>1</td>
+<td>0</td>
+<td><b></b><br><small>0905 560 148</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">elmishop.sk</td>
+<td class="st-ok">OK</td>
+<td>37.6s</td>
+<td>55498787</td>
+<td>orsr</td>
+<td></td>
+<td>5</td>
+<td>1</td>
+<td><b>Erika Matulová</b><br><small>+421 907 581 791</small></td>
+<td>Erika Matulova<br><small>0907 581 791</small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.ruzovyslon.cz</td>
+<td class="st-ok">OK</td>
+<td>25.3s</td>
+<td>28642317</td>
+<td>ares</td>
+<td>Adam Durčák</td>
+<td>4</td>
+<td>1</td>
+<td><b>Adam Durčák</b><br><small>596 810 697</small></td>
+<td>Adam Durcak<br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.isexshop.sk</td>
+<td class="st-ok">OK</td>
+<td>19.1s</td>
+<td>46168931</td>
+<td>orsr</td>
+<td></td>
+<td>2</td>
+<td>1</td>
+<td><b>Roman Melíšek</b><br><small>0944393713</small></td>
+<td>Roman Melisek<br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">sexshopbratislava.sk</td>
+<td class="st-ok">OK</td>
+<td>12.8s</td>
+<td>45723991</td>
+<td>orsr</td>
+<td></td>
+<td>5</td>
+<td>2</td>
+<td><b></b><br><small>0907 670 733</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.sexiveci.sk</td>
+<td class="st-ok">OK</td>
+<td>16.6s</td>
+<td>47186780</td>
+<td>orsr</td>
+<td></td>
+<td>3</td>
+<td>2</td>
+<td><b></b><br><small>+421 905 717573</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-error">
+<td class="url">www.erotickaplaneta.sk</td>
+<td class="st-err">HTTP 400</td>
+<td>34.3s</td>
+<td></td>
+<td></td>
+<td></td>
+<td>0</td>
+<td>0</td>
+<td><b></b><br><small></small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.ebabo.sk</td>
+<td class="st-ok">OK</td>
+<td>21.2s</td>
+<td>48276863</td>
+<td>orsr</td>
+<td></td>
+<td>4</td>
+<td>1</td>
+<td><b></b><br><small>+421918632966</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.kondomshop.sk</td>
+<td class="st-ok">OK</td>
+<td>42.3s</td>
+<td>28642317</td>
+<td>ares</td>
+<td>Adam Durčák</td>
+<td>4</td>
+<td>1</td>
+<td><b>Adam Durčák</b><br><small>+421 222 205 868</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">scanquilt.sk</td>
+<td class="st-ok">OK</td>
+<td>53.6s</td>
+<td>36386448</td>
+<td>orsr</td>
+<td></td>
+<td>3</td>
+<td>1</td>
+<td><b></b><br><small>0905879414</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.bala21.cz</td>
+<td class="st-ok">OK</td>
+<td>28.9s</td>
+<td>19514743</td>
+<td>ares</td>
+<td>Hana Krásová</td>
+<td>4</td>
+<td>3</td>
+<td><b>Hana Krásová</b><br><small>+420603223221</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.sedooz.sk</td>
+<td class="st-ok">OK</td>
+<td>18.8s</td>
+<td>46359338</td>
+<td>orsr</td>
+<td></td>
+<td>6</td>
+<td>2</td>
+<td><b>Peter Ďurák</b><br><small>+421904530656</small></td>
+<td>Peter Durak<br><small>+421 904 530 656</small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">kktky.sk</td>
+<td class="st-ok">OK</td>
+<td>44.9s</td>
+<td>55345999</td>
+<td>orsr</td>
+<td></td>
+<td>1</td>
+<td>1</td>
+<td><b></b><br><small>55345999</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.ferex.sk</td>
+<td class="st-ok">OK</td>
+<td>19.2s</td>
+<td>17682258</td>
+<td>orsr</td>
+<td></td>
+<td>6</td>
+<td>2</td>
+<td><b>Ernesta Bielika</b><br><small>+421918222229</small></td>
+<td>Ernesta Bielika<br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">babyknihy.sk</td>
+<td class="st-ok">OK</td>
+<td>36.1s</td>
+<td>46616951</td>
+<td>orsr</td>
+<td></td>
+<td>4</td>
+<td>1</td>
+<td><b></b><br><small>+421948061500</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">superlove.sk</td>
+<td class="st-ok">OK</td>
+<td>19.0s</td>
+<td></td>
+<td></td>
+<td></td>
+<td>0</td>
+<td>0</td>
+<td><b></b><br><small></small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.eroticcity.sk</td>
+<td class="st-ok">OK</td>
+<td>35.7s</td>
+<td>43859551</td>
+<td>orsr</td>
+<td></td>
+<td>5</td>
+<td>2</td>
+<td><b></b><br><small>902999666</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.eros.sk</td>
+<td class="st-ok">OK</td>
+<td>27.1s</td>
+<td>26004909</td>
+<td>ares</td>
+<td>Tomáš Koubík; Tomáš Hervert</td>
+<td>35</td>
+<td>1</td>
+<td><b>Tomáš Koubík</b><br><small>+420495532839</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.69shop.sk</td>
+<td class="st-ok">OK</td>
+<td>20.2s</td>
+<td>51645823</td>
+<td>orsr</td>
+<td></td>
+<td>4</td>
+<td>2</td>
+<td><b>Perfect Fit</b><br><small>00421 915 130 618</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.erosstar.cz</td>
+<td class="st-ok">OK</td>
+<td>28.0s</td>
+<td>05910684</td>
+<td>ares</td>
+<td>Zdeněk Knieradl</td>
+<td>3</td>
+<td>4</td>
+<td><b>Zdeněk Knieradl</b><br><small>+420545578536</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.sexposta.sk</td>
+<td class="st-ok">OK</td>
+<td>16.3s</td>
+<td>29315182</td>
+<td>ares</td>
+<td></td>
+<td>14</td>
+<td>3</td>
+<td><b></b><br><small>0940 719 748</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.slave4master.sk</td>
+<td class="st-ok">OK</td>
+<td>34.2s</td>
+<td>28257308</td>
+<td>ares</td>
+<td>Ondřej Bělohlávek; Adam Ošťádal</td>
+<td>2</td>
+<td>1</td>
+<td><b>Ondřej Bělohlávek</b><br><small>+421 222 205 937</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.eroloveshop.sk</td>
+<td class="st-ok">OK</td>
+<td>19.4s</td>
+<td>50961195</td>
+<td>orsr</td>
+<td></td>
+<td>4</td>
+<td>2</td>
+<td><b>Michal Babenský</b><br><small>50961195</small></td>
+<td>Michal Babensky<br><small></small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.flagranti.sk</td>
+<td class="st-ok">OK</td>
+<td>12.3s</td>
+<td>28642317</td>
+<td>ares</td>
+<td>Adam Durčák</td>
+<td>5</td>
+<td>4</td>
+<td><b>Adam Durčák</b><br><small>222 205 496</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.mhsexshop.com</td>
+<td class="st-ok">OK</td>
+<td>35.0s</td>
+<td>86674510</td>
+<td>ares</td>
+<td></td>
+<td>1</td>
+<td>1</td>
+<td><b>Martin Hrubý</b><br><small>+420608926623</small></td>
+<td>Martin Hruby<br><small>+420 608 926 623</small></td>
+<td></td>
+</tr>
+<tr class="row-registry">
+<td class="url">www.sexshop-erotic.cz</td>
+<td class="st-ok">OK</td>
+<td>20.7s</td>
+<td>09828010</td>
+<td>ares</td>
+<td>Roman Zažírej</td>
+<td>2</td>
+<td>2</td>
+<td><b>Roman Zažírej</b><br><small>+420 774 305 098</small></td>
+<td><br><small>+420774305098</small></td>
+<td></td>
+</tr>
+<tr class="">
+<td class="url">www.eshopemanuela.sk</td>
+<td class="st-ok">OK</td>
+<td>39.8s</td>
+<td></td>
+<td></td>
+<td></td>
+<td>1</td>
+<td>1</td>
+<td><b></b><br><small>+421 905 402 069</small></td>
+<td><br><small></small></td>
+<td></td>
+</tr>
+
+</tbody></table>
+</body></html>

@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wector — Sales Intelligence</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0c0f;
+    --sidebar: #0e0f13;
+    --card: #141519;
+    --card-2: #16171c;
+    --surface: #1a1c22;
+    --border: #23252b;
+    --border-2: #2e3138;
+    --text: #e6e7ea;
+    --muted: #8a8f98;
+    --muted-2: #a8adb8;
+    --accent: #6366f1;
+    --accent-hover: #5457e5;
+    --accent-soft: rgba(99,102,241,.14);
+    --accent-fg: #ffffff;
+    --hot: #ef4444;
+    --warm: #f97316;
+    --cool: #3b82f6;
+    --dead: #6b7280;
+    --green: #22c55e;
+    --purple: #a855f7;
+    --radius: 8px;
+    --shadow: 0 12px 40px -12px rgba(0,0,0,.7);
+  }
+  [data-theme="light"] {
+    --bg: #f7f8fa;
+    --sidebar: #ffffff;
+    --card: #ffffff;
+    --card-2: #f4f5f7;
+    --surface: #f0f1f4;
+    --border: #e5e7eb;
+    --border-2: #d3d6dc;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --muted-2: #4b5563;
+    --accent-soft: rgba(99,102,241,.1);
+    --shadow: 0 12px 40px -12px rgba(0,0,0,.18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    transition: background .2s ease, color .2s ease;
+  }
+  ::selection { background: var(--accent-soft); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, select, textarea { font-family: inherit; font-size: 13.5px; }
+  [data-lucide] { stroke-width: 2; vertical-align: middle; }
+  .ln-svg { width: 15px; height: 15px; vertical-align: middle; flex-shrink: 0; }
+  .act .ln-svg { width: 16px; height: 16px; }
+  .activity-btns .ab .ln-svg { width: 14px; height: 14px; }
+
+  /* ===== NAVBAR ===== */
+  .navbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 20px;
+    padding: 0 18px; height: 56px;
+    background: var(--sidebar);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+  .logo .mark {
+    width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent); color: #fff;
+  }
+  .logo .mark [data-lucide] { width: 14px; height: 14px; }
+  .nav-stats { display: flex; gap: 18px; align-items: center; }
+  .nav-stat { font-size: 12.5px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .nav-stat .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .nav-stat b { color: var(--text); font-weight: 700; }
+  .nav-spacer { flex: 1; }
+  .nav-right { display: flex; align-items: center; gap: 8px; position: relative; }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 7px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted-2); transition: all .14s ease;
+  }
+  .icon-btn:hover { background: var(--surface); color: var(--text); border-color: var(--border-2); }
+  .icon-btn [data-lucide] { width: 17px; height: 17px; }
+  .lang-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px;
+    border-radius: 7px; border: 1px solid var(--border); color: var(--muted-2);
+    font-size: 12.5px; font-weight: 600; transition: all .14s ease;
+  }
+  .lang-btn:hover { background: var(--surface); color: var(--text); border-color: var(--border-2); }
+  .lang-btn [data-lucide] { width: 14px; height: 14px; }
+
+  /* dropdown menu (lang + more) */
+  .menu {
+    position: absolute; z-index: 80; min-width: 190px;
+    background: var(--card); border: 1px solid var(--border-2);
+    border-radius: 9px; box-shadow: var(--shadow); padding: 5px;
+    animation: fadeUp .12s ease;
+  }
+  .menu button {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    padding: 8px 10px; border-radius: 6px; font-size: 13px; color: var(--text);
+  }
+  .menu button:hover { background: var(--surface); }
+  .menu button.active { color: var(--accent); font-weight: 600; }
+  .menu button.danger { color: var(--hot); }
+  .menu button .flag { font-size: 15px; line-height: 1; }
+  .menu button [data-lucide] { width: 15px; height: 15px; color: var(--muted); }
+  .menu .sep { height: 1px; background: var(--border); margin: 4px 0; }
+  .menu .check { margin-left: auto; color: var(--accent); }
+  .menu .check [data-lucide] { width: 15px; height: 15px; }
+
+  /* ===== APP LAYOUT ===== */
+  .app { display: flex; min-height: calc(100vh - 56px); }
+  .sidebar {
+    width: 230px; flex-shrink: 0; border-right: 1px solid var(--border);
+    background: var(--sidebar); padding: 16px 12px; overflow-y: auto;
+  }
+  .side-group { margin-bottom: 22px; }
+  .side-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 0 8px; margin-bottom: 8px; }
+  .side-item {
+    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+    padding: 7px 8px; border-radius: 6px; font-size: 13px; color: var(--muted-2);
+    transition: all .12s ease;
+  }
+  .side-item:hover { background: var(--surface); color: var(--text); }
+  .side-item.active { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+  .side-item [data-lucide] { width: 16px; height: 16px; }
+  .side-item .side-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .side-item .count { margin-left: auto; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .side-item.active .count { color: var(--muted-2); }
+
+  /* ===== MAIN ===== */
+  .main { flex: 1; padding: 22px 26px; min-width: 0; }
+  .page-head { margin-bottom: 18px; }
+  .page-head h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+  .page-head p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  /* QUICK ADD */
+  .quick-add { display: flex; gap: 9px; margin-bottom: 16px; max-width: 620px; }
+  .input-wrap { position: relative; flex: 1; }
+  .input-wrap [data-lucide] { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
+  .quick-add input {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 13px 10px 36px; border-radius: 7px; outline: none;
+    transition: border-color .15s ease;
+  }
+  .quick-add input:focus { border-color: var(--accent); }
+  .quick-add input::placeholder { color: var(--muted); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 15px; border-radius: 7px; font-weight: 600; font-size: 13px;
+    white-space: nowrap; transition: all .15s ease;
+  }
+  .btn [data-lucide] { width: 15px; height: 15px; }
+  .btn-primary { background: var(--accent); color: var(--accent-fg); }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+  .btn-ghost { background: var(--card-2); border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--border-2); background: var(--surface); }
+  .btn-sm { padding: 7px 11px; font-size: 12.5px; }
+
+  /* ===== TABLE ===== */
+  .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--muted); padding: 11px 14px;
+    border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--card);
+  }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr { transition: background .1s ease; cursor: pointer; }
+  tbody tr:hover { background: var(--card-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  .col-num { color: var(--muted); font-variant-numeric: tabular-nums; width: 34px; }
+  .shop-cell { display: flex; flex-direction: column; gap: 1px; }
+  .shop-cell .domain { font-weight: 600; }
+  .shop-cell .ico { font-size: 11px; color: var(--muted); }
+  .cell-name { font-weight: 500; }
+  .cell-sub { font-size: 11px; color: var(--muted); }
+  .mono { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; color: var(--muted-2); }
+
+  /* score */
+  .score-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; padding: 3px 8px; border-radius: 6px; font-weight: 700;
+    font-variant-numeric: tabular-nums; font-size: 12.5px;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  .score-chip[data-tier="HOT"] { color: var(--hot); }
+  .score-chip[data-tier="WARM"] { color: var(--warm); }
+  .score-chip[data-tier="COOL"] { color: var(--cool); }
+  .score-chip[data-tier="DEAD"] { color: var(--muted); }
+
+  /* tier badge — text only, no emoji */
+  .tier {
+    display: inline-flex; align-items: center; padding: 3px 9px;
+    border-radius: 5px; font-size: 11px; font-weight: 700; letter-spacing: .03em;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .tier-HOT { background: color-mix(in srgb, var(--hot) 16%, transparent); color: var(--hot); }
+  .tier-WARM { background: color-mix(in srgb, var(--warm) 16%, transparent); color: var(--warm); }
+  .tier-COOL { background: color-mix(in srgb, var(--cool) 16%, transparent); color: var(--cool); }
+  .tier-DEAD { background: color-mix(in srgb, var(--dead) 22%, transparent); color: var(--muted-2); }
+
+  /* status select */
+  .status-select {
+    appearance: none; -webkit-appearance: none;
+    padding: 4px 24px 4px 9px; border-radius: 5px; font-size: 11.5px; font-weight: 600;
+    border: 1px solid transparent; outline: none; cursor: pointer; letter-spacing: .02em;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat; background-position: right 7px center;
+    transition: all .15s ease;
+  }
+  .st-novy { background-color: color-mix(in srgb, var(--dead) 22%, transparent); color: var(--muted-2); }
+  .st-kontaktovany { background-color: color-mix(in srgb, var(--cool) 16%, transparent); color: var(--cool); }
+  .st-odpovedal { background-color: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+  .st-bezodpovede { background-color: color-mix(in srgb, var(--hot) 16%, transparent); color: var(--hot); }
+  .st-uzavrety { background-color: color-mix(in srgb, var(--purple) 16%, transparent); color: var(--purple); }
+  .status-select option { background: var(--card); color: var(--text); }
+
+  /* actions */
+  .actions { display: flex; gap: 2px; align-items: center; }
+  .act {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 6px; color: var(--muted); transition: all .12s ease;
+  }
+  .act [data-lucide] { width: 16px; height: 16px; }
+  .act:hover { background: var(--surface); color: var(--text); }
+  .act.call:hover { color: var(--green); }
+  .act.email:hover { color: var(--cool); }
+  .act.linkedin:hover { color: #0a66c2; }
+  .empty-row td { text-align: center; color: var(--muted); padding: 44px; }
+
+  /* ===== OVERLAY / MODAL ===== */
+  .overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+    animation: fadeIn .15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .modal {
+    width: 100%; max-width: 1040px; max-height: 88vh; overflow: auto;
+    background: var(--card); border: 1px solid var(--border-2); border-radius: 14px; box-shadow: var(--shadow);
+    animation: modalIn .2s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 17px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 2;
+  }
+  .modal-head h2 { font-size: 16px; font-weight: 700; }
+  .modal-body { padding: 20px; }
+  .x-btn { width: 32px; height: 32px; border-radius: 7px; color: var(--muted); }
+  .x-btn:hover { background: var(--surface); color: var(--text); }
+  .x-btn [data-lucide] { width: 17px; height: 17px; }
+
+  .cand-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .cand-col { border: 1px solid var(--border); border-radius: 11px; padding: 13px; background: var(--bg); }
+  .cand-col.reg { border-color: color-mix(in srgb, var(--green) 45%, var(--border)); }
+  .cand-col.tel { border-color: color-mix(in srgb, var(--cool) 45%, var(--border)); }
+  .cand-col.eml { border-color: color-mix(in srgb, var(--warm) 45%, var(--border)); }
+  .cand-col h3 { font-size: 12.5px; font-weight: 700; margin-bottom: 11px; }
+  .cand-col.reg h3 { color: var(--green); }
+  .cand-col.tel h3 { color: var(--cool); }
+  .cand-col.eml h3 { color: var(--warm); }
+  .cand-list { display: flex; flex-direction: column; gap: 8px; min-height: 56px; }
+  .pick { border: 1px solid var(--border); border-radius: 8px; padding: 10px 11px; background: var(--card); cursor: pointer; transition: all .14s ease; position: relative; }
+  .pick:hover { border-color: var(--border-2); }
+  .pick.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .pick.sel .pick-check { display: inline-flex; }
+  .pick-check { display: none; position: absolute; top: 9px; right: 10px; color: var(--accent); }
+  .pick-check [data-lucide] { width: 15px; height: 15px; }
+  .pick.disabled { opacity: .45; cursor: not-allowed; }
+  .pick .title { font-weight: 600; }
+  .pick .meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .pick .ctx { font-size: 11.5px; color: var(--muted-2); margin-top: 5px; font-style: italic; }
+  .mini-badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10.5px; font-weight: 700; margin-top: 6px; text-transform: uppercase; letter-spacing: .03em; }
+  .mb-personal { background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green); }
+  .mb-generic { background: color-mix(in srgb, var(--dead) 25%, transparent); color: var(--muted-2); }
+  .mb-info { background: color-mix(in srgb, var(--cool) 18%, transparent); color: var(--cool); }
+  .cand-empty { color: var(--muted); font-size: 12.5px; padding: 14px 4px; text-align: center; }
+
+  .score-preview {
+    margin-top: 16px; border: 1px solid var(--border-2); border-radius: 11px; padding: 17px; background: var(--bg);
+    display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; animation: fadeUp .2s ease;
+  }
+  .sp-num { font-size: 38px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  .sp-break { font-size: 12.5px; color: var(--muted-2); white-space: pre-line; }
+  .sp-tier { margin-top: 7px; }
+  .spinner { width: 15px; height: 15px; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-pad { padding: 40px; text-align: center; color: var(--muted); }
+
+  /* ===== DRAWER ===== */
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 90;
+    width: 410px; max-width: 92vw; background: var(--card);
+    border-left: 1px solid var(--border-2); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; animation: slideIn .25s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  .drawer-head { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .drawer-head .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .drawer-head h2 { font-size: 17px; font-weight: 700; }
+  .drawer-head .role { color: var(--muted); font-size: 12.5px; }
+  .drawer-head .url { font-size: 12px; color: var(--muted-2); margin-top: 11px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .drawer-head .url span { display: inline-flex; align-items: center; gap: 5px; }
+  .drawer-head .url [data-lucide] { width: 13px; height: 13px; color: var(--muted); }
+  .drawer-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+  .section { margin-bottom: 22px; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 10px; }
+  .contact-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .contact-row:last-of-type { border-bottom: none; }
+  .contact-row .ic { color: var(--muted); display: inline-flex; }
+  .contact-row .ic [data-lucide] { width: 16px; height: 16px; }
+  .contact-row .val { flex: 1; font-weight: 500; }
+  .copy-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+  .copy-btn:hover { color: var(--text); border-color: var(--border-2); }
+  .copy-btn [data-lucide] { width: 13px; height: 13px; }
+  .ln-btn { width: 100%; margin-top: 8px; }
+
+  .timeline { display: flex; flex-direction: column; }
+  .tl-item { display: flex; gap: 10px; padding: 8px 0; }
+  .tl-item .dot { width: 24px; height: 24px; border-radius: 6px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--muted-2); }
+  .tl-item .dot [data-lucide] { width: 13px; height: 13px; }
+  .tl-item .tl-text { font-size: 13px; }
+  .tl-item .tl-date { font-size: 11px; color: var(--muted); }
+  .tl-empty { color: var(--muted); font-size: 12.5px; }
+
+  .activity-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-bottom: 9px; }
+  .activity-btns .ab { padding: 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--card-2); font-size: 12.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted-2); }
+  .activity-btns .ab [data-lucide] { width: 14px; height: 14px; }
+  .activity-btns .ab:hover { border-color: var(--border-2); color: var(--text); }
+  .activity-btns .ab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .activity-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 11px; border-radius: 7px; outline: none; margin-bottom: 9px; resize: vertical; min-height: 58px; }
+  .activity-input:focus { border-color: var(--accent); }
+
+  .next-action { border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-soft); border-radius: 9px; padding: 13px; }
+  .next-action .na-text { font-weight: 600; font-size: 13px; margin-bottom: 10px; display: flex; gap: 8px; align-items: flex-start; }
+  .next-action .na-text [data-lucide] { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  .drawer-score { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 9px; font-size: 17px; font-weight: 800; background: var(--surface); border: 1px solid var(--border); flex-shrink: 0; }
+
+  /* toast */
+  .toast-wrap { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toast {
+    background: var(--card); border: 1px solid var(--border-2); color: var(--text);
+    padding: 10px 15px; border-radius: 9px; box-shadow: var(--shadow); font-size: 13px; font-weight: 500;
+    animation: fadeUp .2s ease; display: flex; align-items: center; gap: 9px; max-width: 440px;
+  }
+  .toast [data-lucide] { width: 16px; height: 16px; flex-shrink: 0; }
+  .toast.ok { border-color: color-mix(in srgb, var(--green) 50%, var(--border)); }
+  .toast.ok [data-lucide] { color: var(--green); }
+  .toast.err { border-color: color-mix(in srgb, var(--hot) 50%, var(--border)); }
+  .toast.err [data-lucide] { color: var(--hot); }
+  .toast.warn { border-color: color-mix(in srgb, var(--warm) 50%, var(--border)); }
+  .toast.warn [data-lucide] { color: var(--warm); }
+
+  /* ===== INLINE EDIT ===== */
+  .editable { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; border-radius: 4px; padding: 1px 3px; margin: -1px -3px; }
+  .editable:hover { background: var(--surface); }
+  .editable .edit-icon { opacity: 0; color: var(--muted); transition: opacity .12s; flex-shrink: 0; }
+  .editable .edit-icon [data-lucide] { width: 12px; height: 12px; }
+  .editable:hover .edit-icon { opacity: 1; }
+  .inline-input { background: var(--bg); border: 1px solid var(--accent); color: var(--text); padding: 3px 7px; border-radius: 5px; font-size: 13px; outline: none; width: 100%; min-width: 80px; }
+
+  /* ===== BULK BAR ===== */
+  .bulk-bar {
+    display: flex; align-items: center; gap: 12px; padding: 9px 16px; margin-bottom: 12px;
+    background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+    border-radius: 9px; animation: fadeUp .15s ease;
+  }
+  .bulk-bar .bulk-count { font-weight: 700; font-size: 13px; white-space: nowrap; }
+  .bulk-bar .bulk-sep { width: 1px; height: 22px; background: var(--border-2); }
+  .bulk-bar .btn { font-size: 12px; padding: 6px 10px; }
+  .chk { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 0; flex-shrink: 0; }
+
+  /* ===== BATCH MODAL ===== */
+  .batch-textarea { width: 100%; min-height: 160px; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 11px; border-radius: 8px; font-family: "JetBrains Mono", monospace, monospace; font-size: 12.5px; resize: vertical; outline: none; }
+  .batch-textarea:focus { border-color: var(--accent); }
+  .batch-textarea::placeholder { color: var(--muted); }
+  .batch-progress { margin-top: 14px; }
+  .batch-bar { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .batch-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s ease; }
+  .batch-log { margin-top: 10px; max-height: 200px; overflow-y: auto; font-size: 12px; color: var(--muted-2); }
+  .batch-log .ok { color: var(--green); }
+  .batch-log .fail { color: var(--hot); }
+  .file-label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--muted-2); font-size: 12.5px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px; }
+  .file-label:hover { border-color: var(--border-2); color: var(--text); }
+  .file-label input { display: none; }
+
+  /* ===== PHONE TYPE BADGES ===== */
+  .pt-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px;
+    margin-left: 6px; vertical-align: middle; white-space: nowrap;
+  }
+  .pt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .pt-personal { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
+  .pt-personal .pt-dot { background: var(--green); }
+  .pt-assumed { background: color-mix(in srgb, var(--warm) 14%, transparent); color: var(--warm); }
+  .pt-assumed .pt-dot { background: var(--warm); }
+  .pt-info { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted-2); }
+  .pt-info .pt-dot { background: var(--muted); }
+
+  /* ===== SUB-ROWS (reasoning, other contacts) ===== */
+  .sub-row td { cursor: default; }
+  .sub-row:hover { background: transparent !important; }
+  .reasoning-row td { color: var(--muted); }
+  .other-row td { color: #3b82f6; }
+
+  /* ===== ANALYSIS CARD (drawer) ===== */
+  .analysis-card {
+    background: #0d0d0f; border: 1px solid #222;
+    border-radius: 9px; padding: 13px 15px;
+  }
+  .analysis-score-row { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 10px; }
+  .analysis-score-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 5px; }
+  .analysis-breakdown { font-size: 11.5px; color: var(--muted); line-height: 1.75; }
+  .analysis-breakdown .bd-plus { color: var(--green); }
+  .analysis-breakdown .bd-minus { color: var(--hot); }
+  .analysis-sep { height: 1px; background: #1e1e22; margin: 10px 0; }
+  .analysis-text { font-size: 12px; color: var(--muted-2); line-height: 1.55; }
+  .analysis-meta { font-size: 11px; color: var(--muted); margin-top: 8px; padding-top: 7px; border-top: 1px solid #1e1e22; }
+
+  @media (max-width: 1000px) { .cand-grid { grid-template-columns: 1fr; } .sidebar { display: none; } }
+  @media (max-width: 720px) { .nav-stats { display: none; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo"><span class="mark"><i data-lucide="zap"></i></span> <span id="navTitle">Wector</span></div>
+  <div class="nav-stats" id="navStats"></div>
+  <div class="nav-spacer"></div>
+  <div class="nav-right">
+    <button class="lang-btn" id="langBtn"><span id="langCode">SK</span> <i data-lucide="chevron-down"></i></button>
+    <button class="icon-btn" id="themeToggle" title="Theme"><i data-lucide="moon"></i></button>
+  </div>
+</nav>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <h1 id="pageTitle">Leady</h1>
+      <p id="pageSubtitle">Sales intelligence pre SK/CZ e-commerce</p>
+    </div>
+
+    <div class="quick-add">
+      <div class="input-wrap">
+        <i data-lucide="link"></i>
+        <input id="urlInput" type="text" autocomplete="off" />
+      </div>
+      <button class="btn btn-primary" id="scrapeBtn"><i data-lucide="zap"></i> <span id="scrapeBtnText">Scrape</span></button>
+      <button class="btn btn-ghost" id="batchBtn"><i data-lucide="upload"></i> <span id="batchBtnText">Import / Batch</span></button>
+    </div>
+
+    <div id="bulkBar"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;padding-left:10px"><input type="checkbox" class="chk" id="selectAll"></th>
+            <th class="col-num">#</th>
+            <th data-i18n="col_shop">Shop</th>
+            <th data-i18n="col_konatel">Konateľ</th>
+            <th data-i18n="col_telefon">Telefón</th>
+            <th data-i18n="col_email">Email</th>
+            <th data-i18n="col_score">Skóre</th>
+            <th data-i18n="col_tier">Tier</th>
+            <th data-i18n="col_status">Status</th>
+            <th data-i18n="col_akcie">Akcie</th>
+          </tr>
+        </thead>
+        <tbody id="leadRows"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="drawerRoot"></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   WECTOR — Sales Intelligence UI (Apollo-style, vanilla)
+   ============================================================ */
+const API_BASE = "http://localhost:8000";
+const AUTH = "Bearer test-token";
+const STORE_KEY = "wector_leads_v2";
+
+/* ---------- i18n ---------- */
+const LANGS = [
+  { code: "SK", flag: "🇸🇰", name: "Slovensky" },
+  { code: "CZ", flag: "🇨🇿", name: "Česky" },
+  { code: "PL", flag: "🇵🇱", name: "Polski" },
+  { code: "EN", flag: "🇬🇧", name: "English" },
+];
+const I18N = {
+  SK: {
+    nav_title:"Wector", page_title:"Leady", page_subtitle:"Sales intelligence pre SK/CZ e-commerce",
+    col_shop:"Shop", col_konatel:"Konateľ", col_telefon:"Telefón", col_email:"Email", col_score:"Skóre", col_tier:"Tier", col_status:"Status", col_akcie:"Akcie",
+    scrape_placeholder:"Vložiť URL e-shopu...", scrape_btn:"Scrape", scrape_loading:"Scrapujem…",
+    status_novy:"Nový", status_kontaktovany:"Kontaktovaný", status_odpovedal:"Odpovedal", status_bez:"Bez odpovede", status_uzavrety:"Uzavretý",
+    stat_total:"Spolu", filter_leads:"Leady", filter_all:"Všetky leady", filter_tier:"Tier", filter_status:"Status",
+    toast_backend_down:"Backend nedostupný — spusti server na port 8000", toast_no_contact:"Stránka nenašla kontakt — skús Kandidáti",
+    toast_added:"Pridané", toast_status:"Status", toast_call:"Hovor zalogovaný", toast_email_ready:"Email pripravený", toast_saved:"Lead uložený",
+    toast_activity:"Aktivita uložená", toast_followup:"Follow-up naplánovaný", toast_archived:"Archivované", toast_restored:"Obnovené", toast_deleted:"Zmazané", toast_copied:"Skopírované",
+    enter_url:"Zadaj URL e-shopu", empty_table:"Žiadne leady — pridaj e-shop cez Scrape bar",
+    cand_title:"Kandidáti", cand_loading:"Načítavam kandidátov", cand_reg:"Z registra (autoritatívne)", cand_phones:"Telefóny", cand_emails:"Emaily",
+    cand_reg_empty:"Registry nenájdený", cand_phones_empty:"Žiadne telefóny", cand_emails_empty:"Žiadne emaily",
+    badge_personal:"Osobný", badge_generic:"Generický", badge_info:"Info", badge_delivery:"Doručenie",
+    save_lead:"Uložiť lead", saving:"Ukladám…",
+    dr_contacts:"Kontakty", dr_timeline:"Timeline", dr_add_activity:"Pridať aktivitu", dr_next_action:"Ďalší krok",
+    dr_linkedin:"Hľadať na LinkedIn", dr_copy:"Kopírovať", dr_save_activity:"Uložiť aktivitu", dr_followup:"Naplánovať follow-up", dr_note_ph:"Poznámka k aktivite…",
+    act_call:"Volané", act_email:"Email", act_linkedin:"LinkedIn", act_note:"Poznámka",
+    menu_notes:"Poznámky", menu_archive:"Archivovať", menu_restore:"Obnoviť", menu_delete:"Zmazať",
+    tl_lead_added:"Lead pridaný", tl_cand_confirmed:"Kandidáti potvrdení", tl_email_sent:"Email odoslaný", tl_status_to:"Status →",
+    na_hot:"Volaj DNES — konateľ + osobný kontakt", na_warm:"Zavolaj tento týždeň — teplý lead", na_cool:"Pošli email — nízka priorita", na_dead:"Nízka priorita — over kontakt",
+    email_subject:"Spolupráca", email_greeting:"Dobrý deň", email_open:"Otvoriť v emaili", cancel:"Zrušiť", email_to:"Komu", email_subj:"Predmet", email_msg:"Správa", role_director:"konateľ",
+    bulk_selected:"Vybrané", bulk_status:"Zmeniť status", bulk_delete:"Zmazať", bulk_export:"Export CSV", bulk_confirm_delete:"Zmazať vybrané leady?", bulk_deleted:"Zmazaných",
+    batch_btn:"Import / Batch", batch_title:"Batch Scrape", batch_placeholder:"Vlož URL, každú na nový riadok...", batch_start:"Scrapovať všetky", batch_upload:"Nahrať CSV", batch_progress:"Scrapujem", batch_done:"Hotovo", batch_ok:"úspešných", batch_fail:"zlyhalo",
+    edit_save:"Uložiť", edit_cancel:"Zrušiť",
+  },
+  CZ: {
+    nav_title:"Wector", page_title:"Leady", page_subtitle:"Sales intelligence pro SK/CZ e-commerce",
+    col_shop:"Shop", col_konatel:"Jednatel", col_telefon:"Telefon", col_email:"Email", col_score:"Skóre", col_tier:"Tier", col_status:"Status", col_akcie:"Akce",
+    scrape_placeholder:"Vložit URL e-shopu...", scrape_btn:"Scrape", scrape_loading:"Scrapuji…",
+    status_novy:"Nový", status_kontaktovany:"Kontaktovaný", status_odpovedal:"Odpověděl", status_bez:"Bez odpovědi", status_uzavrety:"Uzavřený",
+    stat_total:"Celkem", filter_leads:"Leady", filter_all:"Všechny leady", filter_tier:"Tier", filter_status:"Status",
+    toast_backend_down:"Backend nedostupný — spusť server na portu 8000", toast_no_contact:"Stránka nenašla kontakt — zkus Kandidáti",
+    toast_added:"Přidáno", toast_status:"Status", toast_call:"Hovor zaznamenán", toast_email_ready:"Email připraven", toast_saved:"Lead uložen",
+    toast_activity:"Aktivita uložena", toast_followup:"Follow-up naplánován", toast_archived:"Archivováno", toast_restored:"Obnoveno", toast_deleted:"Smazáno", toast_copied:"Zkopírováno",
+    enter_url:"Zadej URL e-shopu", empty_table:"Žádné leady — přidej e-shop přes Scrape bar",
+    cand_title:"Kandidáti", cand_loading:"Načítám kandidáty", cand_reg:"Z registru (autoritativní)", cand_phones:"Telefony", cand_emails:"Emaily",
+    cand_reg_empty:"Registr nenalezen", cand_phones_empty:"Žádné telefony", cand_emails_empty:"Žádné emaily",
+    badge_personal:"Osobní", badge_generic:"Obecný", badge_info:"Info", badge_delivery:"Doručení",
+    save_lead:"Uložit lead", saving:"Ukládám…",
+    dr_contacts:"Kontakty", dr_timeline:"Timeline", dr_add_activity:"Přidat aktivitu", dr_next_action:"Další krok",
+    dr_linkedin:"Hledat na LinkedIn", dr_copy:"Kopírovat", dr_save_activity:"Uložit aktivitu", dr_followup:"Naplánovat follow-up", dr_note_ph:"Poznámka k aktivitě…",
+    act_call:"Voláno", act_email:"Email", act_linkedin:"LinkedIn", act_note:"Poznámka",
+    menu_notes:"Poznámky", menu_archive:"Archivovat", menu_restore:"Obnovit", menu_delete:"Smazat",
+    tl_lead_added:"Lead přidán", tl_cand_confirmed:"Kandidáti potvrzeni", tl_email_sent:"Email odeslán", tl_status_to:"Status →",
+    na_hot:"Volej DNES — jednatel + osobní kontakt", na_warm:"Zavolej tento týden — teplý lead", na_cool:"Pošli email — nízká priorita", na_dead:"Nízká priorita — ověř kontakt",
+    email_subject:"Spolupráce", email_greeting:"Dobrý den", email_open:"Otevřít v emailu", cancel:"Zrušit", email_to:"Komu", email_subj:"Předmět", email_msg:"Zpráva", role_director:"jednatel",
+    bulk_selected:"Vybrané", bulk_status:"Změnit status", bulk_delete:"Smazat", bulk_export:"Export CSV", bulk_confirm_delete:"Smazat vybrané leady?", bulk_deleted:"Smazaných",
+    batch_btn:"Import / Batch", batch_title:"Batch Scrape", batch_placeholder:"Vlož URL, každou na nový řádek...", batch_start:"Scrapovat všechny", batch_upload:"Nahrát CSV", batch_progress:"Scrapuji", batch_done:"Hotovo", batch_ok:"úspěšných", batch_fail:"selhalo",
+    edit_save:"Uložit", edit_cancel:"Zrušit",
+  },
+  PL: {
+    nav_title:"Wector", page_title:"Leady", page_subtitle:"Sales intelligence dla e-commerce SK/CZ",
+    col_shop:"Sklep", col_konatel:"Zarządca", col_telefon:"Telefon", col_email:"Email", col_score:"Wynik", col_tier:"Tier", col_status:"Status", col_akcie:"Akcje",
+    scrape_placeholder:"Wklej URL sklepu...", scrape_btn:"Scrape", scrape_loading:"Scrapuję…",
+    status_novy:"Nowy", status_kontaktovany:"Skontaktowany", status_odpovedal:"Odpowiedział", status_bez:"Brak odpowiedzi", status_uzavrety:"Zamknięty",
+    stat_total:"Razem", filter_leads:"Leady", filter_all:"Wszystkie leady", filter_tier:"Tier", filter_status:"Status",
+    toast_backend_down:"Backend niedostępny — uruchom serwer na porcie 8000", toast_no_contact:"Strona nie znalazła kontaktu — spróbuj Kandydaci",
+    toast_added:"Dodano", toast_status:"Status", toast_call:"Połączenie zapisane", toast_email_ready:"Email gotowy", toast_saved:"Lead zapisany",
+    toast_activity:"Aktywność zapisana", toast_followup:"Follow-up zaplanowany", toast_archived:"Zarchiwizowano", toast_restored:"Przywrócono", toast_deleted:"Usunięto", toast_copied:"Skopiowano",
+    enter_url:"Podaj URL sklepu", empty_table:"Brak leadów — dodaj sklep przez pasek Scrape",
+    cand_title:"Kandydaci", cand_loading:"Ładuję kandydatów", cand_reg:"Z rejestru (autorytatywne)", cand_phones:"Telefony", cand_emails:"Emaile",
+    cand_reg_empty:"Rejestr nie znaleziony", cand_phones_empty:"Brak telefonów", cand_emails_empty:"Brak emaili",
+    badge_personal:"Osobisty", badge_generic:"Ogólny", badge_info:"Info", badge_delivery:"Dostawa",
+    save_lead:"Zapisz lead", saving:"Zapisuję…",
+    dr_contacts:"Kontakty", dr_timeline:"Oś czasu", dr_add_activity:"Dodaj aktywność", dr_next_action:"Następny krok",
+    dr_linkedin:"Szukaj na LinkedIn", dr_copy:"Kopiuj", dr_save_activity:"Zapisz aktywność", dr_followup:"Zaplanuj follow-up", dr_note_ph:"Notatka do aktywności…",
+    act_call:"Połączenie", act_email:"Email", act_linkedin:"LinkedIn", act_note:"Notatka",
+    menu_notes:"Notatki", menu_archive:"Archiwizuj", menu_restore:"Przywróć", menu_delete:"Usuń",
+    tl_lead_added:"Lead dodany", tl_cand_confirmed:"Kandydaci potwierdzeni", tl_email_sent:"Email wysłany", tl_status_to:"Status →",
+    na_hot:"Dzwoń DZIŚ — zarządca + kontakt osobisty", na_warm:"Zadzwoń w tym tygodniu — ciepły lead", na_cool:"Wyślij email — niski priorytet", na_dead:"Niski priorytet — zweryfikuj kontakt",
+    email_subject:"Współpraca", email_greeting:"Dzień dobry", email_open:"Otwórz w emailu", cancel:"Anuluj", email_to:"Do", email_subj:"Temat", email_msg:"Wiadomość", role_director:"zarządca",
+    bulk_selected:"Wybrane", bulk_status:"Zmień status", bulk_delete:"Usuń", bulk_export:"Export CSV", bulk_confirm_delete:"Usunąć wybrane leady?", bulk_deleted:"Usuniętych",
+    batch_btn:"Import / Batch", batch_title:"Batch Scrape", batch_placeholder:"Wklej URL, każdy w nowej linii...", batch_start:"Scrapuj wszystkie", batch_upload:"Wgraj CSV", batch_progress:"Scrapuję", batch_done:"Gotowe", batch_ok:"udanych", batch_fail:"nie powiodło się",
+    edit_save:"Zapisz", edit_cancel:"Anuluj",
+  },
+  EN: {
+    nav_title:"Wector", page_title:"Leads", page_subtitle:"Sales intelligence for SK/CZ e-commerce",
+    col_shop:"Shop", col_konatel:"Director", col_telefon:"Phone", col_email:"Email", col_score:"Score", col_tier:"Tier", col_status:"Status", col_akcie:"Actions",
+    scrape_placeholder:"Paste e-shop URL...", scrape_btn:"Scrape", scrape_loading:"Scraping…",
+    status_novy:"New", status_kontaktovany:"Contacted", status_odpovedal:"Replied", status_bez:"No reply", status_uzavrety:"Closed",
+    stat_total:"Total", filter_leads:"Leads", filter_all:"All leads", filter_tier:"Tier", filter_status:"Status",
+    toast_backend_down:"Backend unavailable — start the server on port 8000", toast_no_contact:"No contact found on page — try Candidates",
+    toast_added:"Added", toast_status:"Status", toast_call:"Call logged", toast_email_ready:"Email ready", toast_saved:"Lead saved",
+    toast_activity:"Activity saved", toast_followup:"Follow-up scheduled", toast_archived:"Archived", toast_restored:"Restored", toast_deleted:"Deleted", toast_copied:"Copied",
+    enter_url:"Enter e-shop URL", empty_table:"No leads — add an e-shop via the Scrape bar",
+    cand_title:"Candidates", cand_loading:"Loading candidates", cand_reg:"From registry (authoritative)", cand_phones:"Phones", cand_emails:"Emails",
+    cand_reg_empty:"Registry not found", cand_phones_empty:"No phones", cand_emails_empty:"No emails",
+    badge_personal:"Personal", badge_generic:"Generic", badge_info:"Info", badge_delivery:"Delivery",
+    save_lead:"Save lead", saving:"Saving…",
+    dr_contacts:"Contacts", dr_timeline:"Timeline", dr_add_activity:"Add activity", dr_next_action:"Next action",
+    dr_linkedin:"Find on LinkedIn", dr_copy:"Copy", dr_save_activity:"Save activity", dr_followup:"Schedule follow-up", dr_note_ph:"Activity note…",
+    act_call:"Called", act_email:"Email", act_linkedin:"LinkedIn", act_note:"Note",
+    menu_notes:"Notes", menu_archive:"Archive", menu_restore:"Restore", menu_delete:"Delete",
+    tl_lead_added:"Lead added", tl_cand_confirmed:"Candidates confirmed", tl_email_sent:"Email sent", tl_status_to:"Status →",
+    na_hot:"Call TODAY — director + personal contact", na_warm:"Call this week — warm lead", na_cool:"Send email — low priority", na_dead:"Low priority — verify contact",
+    email_subject:"Partnership", email_greeting:"Hello", email_open:"Open in email", cancel:"Cancel", email_to:"To", email_subj:"Subject", email_msg:"Message", role_director:"director",
+    bulk_selected:"Selected", bulk_status:"Change status", bulk_delete:"Delete", bulk_export:"Export CSV", bulk_confirm_delete:"Delete selected leads?", bulk_deleted:"Deleted",
+    batch_btn:"Import / Batch", batch_title:"Batch Scrape", batch_placeholder:"Paste URLs, one per line...", batch_start:"Scrape all", batch_upload:"Upload CSV", batch_progress:"Scraping", batch_done:"Done", batch_ok:"succeeded", batch_fail:"failed",
+    edit_save:"Save", edit_cancel:"Cancel",
+  },
+};
+let currentLang = localStorage.getItem("wector_lang") || "SK";
+if (!I18N[currentLang]) currentLang = "SK";
+function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.SK[key]) || key; }
+
+/* ---------- Tier / status ---------- */
+const TIERS = ["HOT","WARM","COOL","DEAD"];
+const TIER_VAR = { HOT:"hot", WARM:"warm", COOL:"cool", DEAD:"dead" };
+function tierFromScore(s) { if (s>=80) return "HOT"; if (s>=60) return "WARM"; if (s>=30) return "COOL"; return "DEAD"; }
+
+const STATUSES = [
+  { key:"novy", cls:"st-novy" },
+  { key:"kontaktovany", cls:"st-kontaktovany" },
+  { key:"odpovedal", cls:"st-odpovedal" },
+  { key:"bez", cls:"st-bezodpovede" },
+  { key:"uzavrety", cls:"st-uzavrety" },
+];
+const statusCls = (k) => (STATUSES.find(s => s.key === k) || STATUSES[0]).cls;
+const statusLabel = (k) => t("status_" + (k === "bez" ? "bez" : k));
+const LEGACY_STATUS = { "Nový":"novy","Kontaktovaný":"kontaktovany","Odpovedal":"odpovedal","Bez odpovede":"bez","Uzavretý":"uzavrety" };
+
+/* ---------- Seed ---------- */
+const SEED = [
+  { shop:"minilove.sk", konatel:"Erika Blíziková", telefon:"+421903928140", email:"info@minilove.sk",   score:85, tier:"HOT",  status:"novy",         ico:"51747391" },
+  { shop:"lavanda.sk",  konatel:"Beata Štrbová",   telefon:"+421903715099", email:"lavanda@lavanda.sk", score:95, tier:"HOT",  status:"kontaktovany", ico:"46168931" },
+  { shop:"sedooz.sk",   konatel:"Peter Ďurák",     telefon:"+421904530656", email:"sedooz@sedooz.sk",   score:75, tier:"WARM", status:"odpovedal",    ico:"48288713" },
+  { shop:"elmishop.sk", konatel:"Erika Matulová",  telefon:"+421907581791", email:"info@elmishop.sk",   score:35, tier:"COOL", status:"novy",         ico:"" },
+  { shop:"isexshop.sk", konatel:"Roman Melíšek",   telefon:"0944393713",    email:"info@isexshop.sk",   score:65, tier:"WARM", status:"bez",          ico:"" },
+];
+
+/* ---------- State ---------- */
+let leads = [];
+let uid = 1;
+let filterTier = "ALL";
+let filterStatus = "ALL";
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p) && p.length) leads = p; }
+  } catch (e) {}
+  if (!leads.length) leads = SEED.map((l, i) => hydrate({ ...l, id: i + 1 }));
+  else leads = leads.map(hydrate);
+  uid = leads.reduce((m, l) => Math.max(m, l.id), 0) + 1;
+}
+function hydrate(l) {
+  const status = LEGACY_STATUS[l.status] || l.status || "novy";
+  return {
+    archived: false, notes: "",
+    timeline: l.timeline || [{ type:"lead", date: todaySk(), text: t("tl_lead_added") }],
+    ...l, status,
+    tier: l.tier || tierFromScore(l.score || 0),
+  };
+}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(leads)); } catch (e) {} }
+function getLead(id) { return leads.find(l => l.id === Number(id)); }
+
+/* ---------- Utils ---------- */
+function esc(s) {
+  return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function todaySk() { const d=new Date(); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`; }
+function fmtPhone(p) {
+  if (!p) return "";
+  const c = p.replace(/\s/g, "");
+  let m = c.match(/^\+421(\d{3})(\d{3})(\d{3})$/); if (m) return `+421 ${m[1]} ${m[2]} ${m[3]}`;
+  m = c.match(/^\+420(\d{3})(\d{3})(\d{3})$/); if (m) return `+420 ${m[1]} ${m[2]} ${m[3]}`;
+  m = c.match(/^0(\d{3})(\d{3})(\d{3})$/); if (m) return `0${m[1]} ${m[2]} ${m[3]}`;
+  return p;
+}
+function domainOnly(u) { return String(u||"").replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/.*$/,""); }
+function normUrl(u) { u = String(u||"").trim(); if (!/^https?:\/\//i.test(u)) u = "https://" + u; return u; }
+function isPersonalPhone(p) { return /^(\+421\s?9|09|\+420\s?[67]|0[67])/.test(String(p||"").replace(/\s/g,"")); }
+// Lucide odstránil brand ikonu "linkedin" — vlastný inline SVG fallback (zachová data-lucide pre CSS veľkosti)
+const LINKEDIN_SVG = '<svg class="ln-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.27c-.97 0-1.75-.79-1.75-1.76s.78-1.75 1.75-1.75 1.75.79 1.75 1.75-.78 1.76-1.75 1.76zm13.5 12.27h-3v-5.6c0-3.37-4-3.12-4 0v5.6h-3v-11h3v1.77c1.4-2.59 7-2.78 7 2.47v6.76z"/></svg>';
+function icons() {
+  // nahraď linkedin PRED createIcons, inak Lucide spamuje warning (brand ikona odstránená)
+  document.querySelectorAll('i[data-lucide="linkedin"]').forEach(el => { el.outerHTML = LINKEDIN_SVG; });
+  if (window.lucide) try { lucide.createIcons(); } catch(e){}
+}
+
+function toast(msg, kind="") {
+  const w = document.getElementById("toastWrap");
+  const ic = kind==="ok"?"check-circle":kind==="err"?"alert-triangle":kind==="warn"?"alert-circle":"info";
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.innerHTML = `<i data-lucide="${ic}"></i><span></span>`;
+  el.querySelector("span").textContent = msg;
+  w.appendChild(el); icons();
+  setTimeout(() => { el.style.opacity="0"; el.style.transition="opacity .2s"; setTimeout(()=>el.remove(),220); }, 2800);
+}
+async function copy(text) { try { await navigator.clipboard.writeText(text); toast(t("toast_copied") + ": " + text, "ok"); } catch(e) { toast("—","err"); } }
+function linkedinUrl(name, company) {
+  const q = encodeURIComponent(`${name||""} ${domainOnly(company).split(".")[0]||""}`.trim());
+  return `https://www.linkedin.com/search/results/people/?keywords=${q}`;
+}
+
+/* ---------- API ---------- */
+async function api(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method:"POST", headers:{ "Content-Type":"application/json", "Authorization":AUTH }, body: JSON.stringify(body),
+  });
+  if (!res.ok) { const e = new Error("HTTP " + res.status); e.http = res.status; throw e; }
+  return res.json();
+}
+
+/* ============================================================
+   STATIC i18n
+   ============================================================ */
+function applyStaticI18n() {
+  document.documentElement.lang = currentLang.toLowerCase();
+  document.getElementById("navTitle").textContent = t("nav_title");
+  document.getElementById("pageTitle").textContent = t("page_title");
+  document.getElementById("pageSubtitle").textContent = t("page_subtitle");
+  document.getElementById("urlInput").placeholder = t("scrape_placeholder");
+  document.getElementById("scrapeBtnText").textContent = t("scrape_btn");
+  document.getElementById("batchBtnText").textContent = t("batch_btn");
+  document.getElementById("langCode").textContent = currentLang;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+}
+
+/* ============================================================
+   NAVBAR STATS
+   ============================================================ */
+function renderStats() {
+  const active = leads.filter(l => !l.archived);
+  const hot = active.filter(l => l.tier === "HOT").length;
+  const warm = active.filter(l => l.tier === "WARM").length;
+  document.getElementById("navStats").innerHTML = `
+    <span class="nav-stat"><span class="dot" style="background:var(--hot)"></span><b>${hot}</b> HOT</span>
+    <span class="nav-stat"><span class="dot" style="background:var(--warm)"></span><b>${warm}</b> WARM</span>
+    <span class="nav-stat"><span class="dot" style="background:var(--muted)"></span><b>${active.length}</b> ${esc(t("stat_total"))}</span>
+  `;
+}
+
+/* ============================================================
+   SIDEBAR (filters)
+   ============================================================ */
+function renderSidebar() {
+  const active = leads.filter(l => !l.archived);
+  const tierCount = (tt) => active.filter(l => l.tier === tt).length;
+  const statusCount = (sk) => active.filter(l => l.status === sk).length;
+  document.getElementById("sidebar").innerHTML = `
+    <div class="side-group">
+      <div class="side-label">${esc(t("filter_leads"))}</div>
+      <button class="side-item ${filterTier==="ALL"&&filterStatus==="ALL"?"active":""}" data-f="reset">
+        <i data-lucide="layout-grid"></i> ${esc(t("filter_all"))} <span class="count">${active.length}</span>
+      </button>
+    </div>
+    <div class="side-group">
+      <div class="side-label">${esc(t("filter_tier"))}</div>
+      ${TIERS.map(tt => `
+        <button class="side-item ${filterTier===tt?"active":""}" data-ftier="${tt}">
+          <span class="side-dot" style="background:var(--${TIER_VAR[tt]})"></span> ${tt} <span class="count">${tierCount(tt)}</span>
+        </button>`).join("")}
+    </div>
+    <div class="side-group">
+      <div class="side-label">${esc(t("filter_status"))}</div>
+      ${STATUSES.map(s => `
+        <button class="side-item ${filterStatus===s.key?"active":""}" data-fstatus="${s.key}">
+          <i data-lucide="circle"></i> ${esc(statusLabel(s.key))} <span class="count">${statusCount(s.key)}</span>
+        </button>`).join("")}
+    </div>`;
+  icons();
+}
+document.getElementById("sidebar").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-f],[data-ftier],[data-fstatus]"); if (!b) return;
+  if (b.dataset.f === "reset") { filterTier = "ALL"; filterStatus = "ALL"; }
+  else if (b.dataset.ftier) { filterTier = (filterTier === b.dataset.ftier) ? "ALL" : b.dataset.ftier; }
+  else if (b.dataset.fstatus) { filterStatus = (filterStatus === b.dataset.fstatus) ? "ALL" : b.dataset.fstatus; }
+  renderSidebar(); renderTable();
+});
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+function visibleLeads() {
+  return leads.filter(l => !l.archived)
+    .filter(l => filterTier === "ALL" || l.tier === filterTier)
+    .filter(l => filterStatus === "ALL" || l.status === filterStatus);
+}
+let selectedIds = new Set();
+function renderTable() {
+  const tb = document.getElementById("leadRows");
+  const rows = visibleLeads();
+  if (!rows.length) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="10">${esc(t("empty_table"))}</td></tr>`;
+    renderStats(); renderBulkBar(); return;
+  }
+  function phoneTypeBadge(pt) {
+    if (!pt || pt === "unknown") return "";
+    if (pt === "personal") return `<span class="pt-badge pt-personal"><span class="pt-dot"></span>Osobný</span>`;
+    if (pt === "predpokladaný_osobný") return `<span class="pt-badge pt-assumed"><span class="pt-dot"></span>~Osobný</span>`;
+    if (pt === "info") return `<span class="pt-badge pt-info"><span class="pt-dot"></span>Info</span>`;
+    return "";
+  }
+  tb.innerHTML = rows.map((l, i) => {
+    const otherLine = (l.other_contacts && l.other_contacts.length)
+      ? `<tr class="sub-row other-row" data-id="${l.id}"><td colspan="10" style="padding:1px 16px 6px;font-size:11px;color:#3b82f6;border:none;">Ďalší kontakt: ${l.other_contacts.map(c=>`${esc(c.name)} (${esc(c.role)}) ${esc(c.phone||"")}`).join(" · ")}</td></tr>`
+      : "";
+    const reasoningLine = l.reasoning
+      ? `<tr class="sub-row reasoning-row" data-id="${l.id}"><td colspan="10" style="padding:2px 16px 7px;font-size:11.5px;color:var(--muted);border:none;line-height:1.5;">${esc(l.reasoning)}</td></tr>`
+      : "";
+    return `
+    <tr data-id="${l.id}" class="lead-row">
+      <td style="padding-left:10px"><input type="checkbox" class="chk row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?"checked":""}></td>
+      <td class="col-num">${i+1}</td>
+      <td><div class="shop-cell"><span class="domain">${esc(l.shop)}</span>${l.ico?`<span class="ico">IČO: ${esc(l.ico)}</span>`:``}</div></td>
+      <td><span class="editable" data-edit="konatel" data-id="${l.id}">${l.konatel?`<span class="cell-name">${esc(l.konatel)}</span><span class="edit-icon"><i data-lucide="pencil"></i></span>`:`<span class="cell-sub">—</span><span class="edit-icon"><i data-lucide="pencil"></i></span>`}</span>${l.konatel&&l.rola?`<div class="cell-sub"><span class="editable" data-edit="rola" data-id="${l.id}">${esc(l.rola)}<span class="edit-icon"><i data-lucide="pencil"></i></span></span></div>`:``}</td>
+      <td class="mono"><div><span class="editable" data-edit="telefon" data-id="${l.id}">${l.telefon?esc(fmtPhone(l.telefon)):`<span class="cell-sub">—</span>`}<span class="edit-icon"><i data-lucide="pencil"></i></span></span>${phoneTypeBadge(l.phone_type)}</div></td>
+      <td><span class="editable" data-edit="email" data-id="${l.id}"><span class="truncate" title="${esc(l.email)}">${l.email?esc(l.email):"—"}</span><span class="edit-icon"><i data-lucide="pencil"></i></span></span></td>
+      <td><span class="score-chip" data-tier="${l.tier}">${l.score}</span></td>
+      <td><span class="tier tier-${l.tier}">${l.tier}</span></td>
+      <td>
+        <select class="status-select ${statusCls(l.status)}" data-act="status" data-id="${l.id}">
+          ${STATUSES.map(s => `<option value="${s.key}" ${s.key===l.status?"selected":""}>${esc(statusLabel(s.key))}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <div class="actions">
+          <button class="act" data-act="candidates" data-id="${l.id}" title="${esc(t("cand_title"))}"><i data-lucide="users"></i></button>
+          <button class="act call" data-act="call" data-id="${l.id}" title="${esc(t("act_call"))}"><i data-lucide="phone"></i></button>
+          <button class="act email" data-act="emailcompose" data-id="${l.id}" title="${esc(t("col_email"))}"><i data-lucide="mail"></i></button>
+          <button class="act linkedin" data-act="linkedin" data-id="${l.id}" title="LinkedIn"><i data-lucide="linkedin"></i></button>
+          <button class="act" data-act="more" data-id="${l.id}" title="…"><i data-lucide="more-horizontal"></i></button>
+        </div>
+      </td>
+    </tr>${reasoningLine}${otherLine}`;
+  }).join("");
+  renderStats(); renderBulkBar(); icons();
+  document.getElementById("selectAll").checked = rows.length > 0 && rows.every(l => selectedIds.has(l.id));
+}
+
+document.getElementById("leadRows").addEventListener("click", (e) => {
+  const ed = e.target.closest("[data-edit]");
+  if (ed && !ed.querySelector(".inline-input")) {
+    e.stopPropagation();
+    startInlineEdit(ed);
+    return;
+  }
+  const btn = e.target.closest("[data-act]"); const row = e.target.closest(".lead-row");
+  if (btn) {
+    e.stopPropagation();
+    const l = getLead(btn.dataset.id), act = btn.dataset.act;
+    if (act==="candidates") openCandidatesModal(l);
+    else if (act==="call") logCall(l);
+    else if (act==="emailcompose") openEmailComposer(l);
+    else if (act==="linkedin") window.open(linkedinUrl(l.konatel, l.shop), "_blank");
+    else if (act==="more") openMoreMenu(btn, l);
+    return;
+  }
+  if (row && !e.target.closest(".sub-row")) openDrawer(getLead(row.dataset.id));
+});
+document.getElementById("leadRows").addEventListener("change", (e) => {
+  const sel = e.target.closest('[data-act="status"]'); if (!sel) return;
+  const l = getLead(sel.dataset.id);
+  l.status = sel.value;
+  l.timeline.unshift({ type:"status", date: todaySk(), text: t("tl_status_to") + " " + statusLabel(l.status) });
+  save(); renderSidebar(); renderTable();
+  toast(t("toast_status") + ": " + statusLabel(l.status), "ok");
+});
+
+function logCall(l) {
+  l.timeline.unshift({ type:"call", date: todaySk(), text: t("act_call") });
+  if (l.status === "novy") l.status = "kontaktovany";
+  save(); renderSidebar(); renderTable();
+  toast(t("toast_call") + " — " + fmtPhone(l.telefon), "ok");
+}
+
+function openMoreMenu(anchor, l) {
+  closeMenus();
+  const r = anchor.getBoundingClientRect();
+  const m = document.createElement("div");
+  m.className = "menu";
+  m.style.top = (r.bottom + window.scrollY + 6) + "px";
+  m.style.left = (r.right + window.scrollX - 190) + "px";
+  m.innerHTML = `
+    <button data-m="notes"><i data-lucide="sticky-note"></i> ${esc(t("menu_notes"))}</button>
+    <button data-m="archive"><i data-lucide="archive"></i> ${esc(l.archived?t("menu_restore"):t("menu_archive"))}</button>
+    <div class="sep"></div>
+    <button data-m="delete" class="danger"><i data-lucide="trash-2"></i> ${esc(t("menu_delete"))}</button>`;
+  document.body.appendChild(m); icons();
+  m.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-m]"); if (!b) return;
+    const act = b.dataset.m;
+    if (act==="notes") openDrawer(l);
+    else if (act==="archive") { l.archived = !l.archived; save(); renderSidebar(); renderTable(); toast(l.archived?t("toast_archived"):t("toast_restored"),"ok"); }
+    else if (act==="delete") { if (confirm(t("menu_delete") + ' "' + l.shop + '"?')) { leads = leads.filter(x=>x.id!==l.id); save(); renderSidebar(); renderTable(); toast(t("toast_deleted"),"ok"); } }
+    closeMenus();
+  });
+}
+function closeMenus() { document.querySelectorAll(".menu").forEach(m=>m.remove()); }
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".menu") && !e.target.closest('[data-act="more"]') && !e.target.closest("#langBtn")) closeMenus();
+});
+
+/* ============================================================
+   SCRAPE  (backend returns FLAT object)
+   ============================================================ */
+const scrapeBtn = document.getElementById("scrapeBtn");
+const scrapeBtnText = document.getElementById("scrapeBtnText");
+const urlInput = document.getElementById("urlInput");
+scrapeBtn.addEventListener("click", runScrape);
+urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") runScrape(); });
+
+async function runScrape() {
+  const raw = urlInput.value.trim();
+  if (!raw) { toast(t("enter_url"), "err"); urlInput.focus(); return; }
+  const url = normUrl(raw);
+  scrapeBtn.disabled = true;
+  scrapeBtnText.textContent = t("scrape_loading");
+  try {
+    const d = await api("/api/leads/scrape", { url });
+    const ext = d.extracted || {};
+    const konatel = nn(ext.contact_name) || nn(d.meno) || "";
+    const telefon = nn(ext.phone) || nn(d.telefon) || "";
+    const email = nn(ext.email) || nn(d.email) || "";
+    const score = (typeof d.score === "number") ? d.score : estimateScore(konatel, telefon, email);
+    const tier = d.tier || tierFromScore(score);
+    const lead = hydrate({
+      id: uid++, shop: domainOnly(d.primary_identifier || d.url || url), konatel,
+      rola: nn(ext.contact_role) || nn(d.rola) || "", telefon, email, score, tier, status:"novy",
+      ico: ext.ico || d.ico || "",
+      reasoning: ext.reasoning || d.reasoning || "",
+      phone_type: ext.phone_type || "",
+      phone_confidence: ext.phone_confidence || "",
+      employee_count: ext.employee_count || "",
+      employee_category: ext.employee_category || "",
+      name_found_on_web: ext.name_found_on_web || false,
+      score_breakdown: ext.score_breakdown || [],
+      all_phones: ext.all_phones || [],
+      other_contacts: ext.other_contacts || [],
+      registry_source: ext.registry_source || "",
+    });
+    leads.unshift(lead);
+    save(); renderSidebar(); renderTable();
+    urlInput.value = "";
+    if (!konatel && !telefon && !email) toast(t("toast_no_contact"), "warn");
+    else toast(t("toast_added") + ": " + lead.shop, "ok");
+  } catch (err) {
+    // network failure (TypeError) alebo HTTP chyba => backend nedostupný
+    toast(t("toast_backend_down"), "err");
+    console.error("scrape error:", err);
+  } finally {
+    scrapeBtn.disabled = false;
+    scrapeBtnText.textContent = t("scrape_btn");
+  }
+}
+function estimateScore(k, p, e) { let s=0; if(k)s+=50; if(p)s+=isPersonalPhone(p)?20:10; if(e)s+=5; return s; }
+function nn(v) { return (!v || v === "null" || v === "None" || v === "N/A") ? "" : v; }
+
+function scoreCircle(score, tier) {
+  const r = 17, cx = 22, cy = 22, circ = 2 * Math.PI * r;
+  const dash = (Math.min(100, Math.max(0, score)) / 100 * circ).toFixed(1);
+  const colors = { HOT:"var(--hot)", WARM:"var(--warm)", COOL:"var(--cool)", DEAD:"var(--dead)" };
+  const c = colors[tier] || "var(--muted)";
+  return `<svg width="44" height="44" viewBox="0 0 44 44" style="flex-shrink:0">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3.5"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c}" stroke-width="3.5"
+      stroke-dasharray="${dash} ${circ.toFixed(1)}" stroke-linecap="round"
+      transform="rotate(-90 ${cx} ${cy})"/>
+    <text x="${cx}" y="${cy + 4.5}" text-anchor="middle" fill="${c}"
+      font-size="11.5" font-weight="800" font-family="Inter,system-ui,sans-serif">${score}</text>
+  </svg>`;
+}
+
+/* ============================================================
+   CANDIDATES MODAL
+   ============================================================ */
+let candState = null;
+async function openCandidatesModal(lead) {
+  candState = { lead, reg:null, phone:null, email:null, data:null };
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `
+    <div class="overlay" data-close="overlay">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h2>${esc(t("cand_title"))} — ${esc(lead.shop)}</h2>
+          <button class="x-btn" data-close="x"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" id="candBody">
+          <div class="loading-pad"><span class="spinner"></span> ${esc(t("cand_loading"))} — ${esc(lead.shop)}…</div>
+        </div>
+      </div>
+    </div>`;
+  bindOverlayClose(root, closeModal); icons();
+  let data;
+  try { data = await api("/api/leads/candidates", { url: normUrl(lead.shop) }); }
+  catch (err) { data = mockCandidates(lead); setTimeout(()=>toast(t("toast_backend_down"),"warn"),50); }
+  if (!candState || candState.lead !== lead) return;
+  candState.data = data; renderCandBody();
+}
+function mockCandidates(l) {
+  return {
+    registry:{ source:"orsr", ico:l.ico, konatelia: l.konatel?[{meno:l.konatel, funkcia:l.rola||"konateľ"}]:[] },
+    phones: l.telefon?[{cislo:l.telefon, typ_pravdepodobne:isPersonalPhone(l.telefon)?"personal":"info", blizke_meno:l.konatel, kontext_pred:"", stranka:"/kontakt"}]:[],
+    emails: l.email?[{email:l.email, typ_pravdepodobne:/^(info@|kontakt@|obchod@)/.test(l.email)?"generic":"personal", stranka:"/"}]:[],
+  };
+}
+function renderCandBody() {
+  const d = candState.data || {};
+  const reg = d.registry || {}; const konatelia = reg.konatelia || []; const phones = d.phones || []; const emails = d.emails || [];
+  const regCards = konatelia.length ? konatelia.map((k,i)=>`
+    <div class="pick ${candState.reg===i?"sel":""}" data-pick="reg" data-i="${i}">
+      <span class="pick-check"><i data-lucide="check"></i></span>
+      <div class="title">${esc(k.meno)}</div>
+      <div class="meta">${esc(k.funkcia||t("role_director"))} • ${esc((reg.source||"ORSR").toUpperCase())}</div>
+      ${reg.ico?`<div class="meta">IČO: ${esc(reg.ico)}</div>`:``}
+    </div>`).join("") : `<div class="cand-empty">${esc(t("cand_reg_empty"))}</div>`;
+  const phoneCards = phones.length ? phones.map((p,i)=>{
+    const delivery = /delivery|kurier|kuriér|dorucenie|doručenie/i.test((p.typ_pravdepodobne||"")+" "+(p.kontext_pred||""));
+    const personal = p.typ_pravdepodobne==="personal";
+    const badge = delivery?`<span class="mini-badge mb-generic">${esc(t("badge_delivery"))}</span>`:personal?`<span class="mini-badge mb-personal">${esc(t("badge_personal"))}</span>`:`<span class="mini-badge mb-info">${esc(t("badge_info"))}</span>`;
+    return `<div class="pick ${delivery?"disabled":""} ${candState.phone===i?"sel":""}" data-pick="${delivery?"":"phone"}" data-i="${i}">
+      <span class="pick-check"><i data-lucide="check"></i></span>
+      <div class="title mono">${esc(fmtPhone(p.cislo))}</div><div>${badge}</div>
+      ${p.blizke_meno?`<div class="meta">${esc(p.blizke_meno)}</div>`:``}
+      ${p.kontext_pred?`<div class="ctx">„${esc(p.kontext_pred)}"</div>`:``}
+    </div>`;
+  }).join("") : `<div class="cand-empty">${esc(t("cand_phones_empty"))}</div>`;
+  const emailCards = emails.length ? emails.map((em,i)=>{
+    const generic = em.typ_pravdepodobne==="generic";
+    const badge = generic?`<span class="mini-badge mb-generic">${esc(t("badge_generic"))}</span>`:`<span class="mini-badge mb-personal">${esc(t("badge_personal"))}</span>`;
+    return `<div class="pick ${candState.email===i?"sel":""}" data-pick="email" data-i="${i}">
+      <span class="pick-check"><i data-lucide="check"></i></span>
+      <div class="title">${esc(em.email)}</div><div>${badge}</div>
+      ${em.stranka?`<div class="meta">${esc(em.stranka)}</div>`:``}
+    </div>`;
+  }).join("") : `<div class="cand-empty">${esc(t("cand_emails_empty"))}</div>`;
+
+  document.getElementById("candBody").innerHTML = `
+    <div class="cand-grid">
+      <div class="cand-col reg"><h3>${esc(t("cand_reg"))}</h3><div class="cand-list">${regCards}</div></div>
+      <div class="cand-col tel"><h3>${esc(t("cand_phones"))}</h3><div class="cand-list">${phoneCards}</div></div>
+      <div class="cand-col eml"><h3>${esc(t("cand_emails"))}</h3><div class="cand-list">${emailCards}</div></div>
+    </div>
+    <div id="scorePreview"></div>`;
+  document.getElementById("candBody").querySelectorAll("[data-pick]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const kind = el.dataset.pick; if (!kind) return;
+      const i = Number(el.dataset.i);
+      candState[kind] = (candState[kind]===i) ? null : i;
+      renderCandBody();
+    });
+  });
+  maybeRenderScorePreview(); icons();
+}
+function maybeRenderScorePreview() {
+  const host = document.getElementById("scorePreview"); if (!host) return;
+  const { reg, phone, email, data } = candState;
+  if (reg===null || phone===null) { host.innerHTML = ""; return; }
+  const k = data.registry.konatelia[reg], p = data.phones[phone];
+  const em = (email!==null && data.emails[email]) ? data.emails[email] : null;
+  let score = 0; const lines = [];
+  score+=30; lines.push("+30 Registry konateľ");
+  if (p.typ_pravdepodobne==="personal") { score+=20; lines.push("+20 Personal telefón"); } else { score+=10; lines.push("+10 Info telefón"); }
+  if (em) { if (em.typ_pravdepodobne==="generic") { score+=5; lines.push("+5 Generic email"); } else { score+=15; lines.push("+15 Personal email"); } }
+  score+=20; lines.push("+20 " + (k.funkcia||t("role_director")));
+  const tier = tierFromScore(score);
+  candState._preview = { score, tier, breakdown: lines.join("\n"), k, p, em };
+  host.innerHTML = `
+    <div class="score-preview">
+      <div>
+        <div class="sp-num" id="spNum" style="color:var(--${TIER_VAR[tier]})">0</div>
+        <div class="sp-tier"><span class="tier tier-${tier}">${tier}</span></div>
+      </div>
+      <div class="sp-break">${esc(lines.join("\n"))}</div>
+      <div><button class="btn btn-primary" id="saveLeadBtn"><i data-lucide="save"></i> ${esc(t("save_lead"))}</button></div>
+    </div>`;
+  countUp(document.getElementById("spNum"), score, 600);
+  document.getElementById("saveLeadBtn").addEventListener("click", saveLeadFromCandidates);
+  icons();
+}
+function countUp(el, target, dur) {
+  if (!el) return; const start = performance.now();
+  (function step(now){ const p=Math.min(1,(now-start)/dur); el.textContent=Math.round((1-Math.pow(1-p,3))*target); if(p<1) requestAnimationFrame(step); })(performance.now());
+}
+async function saveLeadFromCandidates() {
+  const pv = candState._preview, lead = candState.lead, reg = candState.data.registry || {};
+  const btn = document.getElementById("saveLeadBtn");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${esc(t("saving"))}`;
+  let finalScore = pv.score, finalTier = pv.tier;
+  try {
+    const sel = await api("/api/leads/select", { url: normUrl(lead.shop), konatel:pv.k, phone:pv.p, email:pv.em||null, ico:reg.ico||lead.ico||"" });
+    if (sel.score && sel.score.total!=null) finalScore = sel.score.total;
+    if (sel.tier && sel.tier.name) finalTier = sel.tier.name;
+    if (typeof sel.score === "number") finalScore = sel.score;
+    if (typeof sel.tier === "string") finalTier = sel.tier;
+  } catch(e) {}
+  lead.konatel = pv.k.meno; lead.rola = pv.k.funkcia || lead.rola; lead.telefon = pv.p.cislo;
+  lead.email = pv.em ? pv.em.email : lead.email; lead.ico = reg.ico || lead.ico || "";
+  lead.score = finalScore; lead.tier = finalTier;
+  lead.timeline.unshift({ type:"lead", date: todaySk(), text: t("tl_cand_confirmed") + " • " + finalScore });
+  save(); closeModal(); renderSidebar(); renderTable();
+  toast(t("toast_saved") + " — " + finalScore + " " + finalTier, "ok");
+}
+function closeModal() { document.getElementById("modalRoot").innerHTML = ""; candState = null; }
+
+/* ============================================================
+   EMAIL COMPOSER
+   ============================================================ */
+function openEmailComposer(l) {
+  const root = document.getElementById("modalRoot");
+  const subject = `${t("email_subject")} — ${l.shop}`;
+  const body = `${t("email_greeting")}${l.konatel?" "+l.konatel.split(" ")[0]:""},\n\n`;
+  root.innerHTML = `
+    <div class="overlay" data-close="overlay">
+      <div class="modal" style="max-width:540px">
+        <div class="modal-head"><h2>${esc(t("col_email"))} — ${esc(l.shop)}</h2><button class="x-btn" data-close="x"><i data-lucide="x"></i></button></div>
+        <div class="modal-body">
+          <div class="section"><p class="section-title">${esc(t("email_to"))}</p><input class="activity-input" id="ecTo" style="min-height:auto" value="${esc(l.email)}" /></div>
+          <div class="section"><p class="section-title">${esc(t("email_subj"))}</p><input class="activity-input" id="ecSubj" style="min-height:auto" value="${esc(subject)}" /></div>
+          <div class="section"><p class="section-title">${esc(t("email_msg"))}</p><textarea class="activity-input" id="ecBody" style="min-height:130px">${esc(body)}</textarea></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-ghost" data-close="x">${esc(t("cancel"))}</button>
+            <button class="btn btn-primary" id="ecSend"><i data-lucide="send"></i> ${esc(t("email_open"))}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  bindOverlayClose(root, closeModal); icons();
+  document.getElementById("ecSend").addEventListener("click", () => {
+    const to=document.getElementById("ecTo").value, subj=document.getElementById("ecSubj").value, bd=document.getElementById("ecBody").value;
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(bd)}`;
+    l.timeline.unshift({ type:"email", date: todaySk(), text: t("tl_email_sent") });
+    if (l.status==="novy") l.status="kontaktovany";
+    save(); renderSidebar(); renderTable(); closeModal(); toast(t("toast_email_ready"),"ok");
+  });
+}
+
+/* ============================================================
+   OUTREACH DRAWER
+   ============================================================ */
+let drawerActivityType = "note";
+function openDrawer(l) {
+  drawerActivityType = "note";
+  const root = document.getElementById("drawerRoot");
+  const na = l.tier==="HOT"?t("na_hot"):l.tier==="WARM"?t("na_warm"):l.tier==="COOL"?t("na_cool"):t("na_dead");
+  root.innerHTML = `
+    <div class="overlay" data-close="overlay" style="justify-content:flex-end;padding:0;background:rgba(0,0,0,.4)">
+      <aside class="drawer">
+        <div class="drawer-head">
+          <div class="top">
+            <div><h2 class="dr-editable" data-drf="konatel">${esc(l.konatel||l.shop)}</h2><div class="role dr-editable" data-drf="rola">${l.konatel?esc(l.rola||t("role_director")):"—"}</div></div>
+            <div class="drawer-score" style="color:var(--${TIER_VAR[l.tier]})">${l.score}</div>
+          </div>
+          <div class="url">
+            <span class="tier tier-${l.tier}">${l.tier}</span>
+            <span><i data-lucide="globe"></i> ${esc(l.shop)}</span>
+            ${l.ico?`<span><i data-lucide="building-2"></i> ${esc(l.ico)}</span>`:``}
+          </div>
+        </div>
+        <div class="drawer-body">
+          <div class="section">
+            <p class="section-title">${esc(t("dr_contacts"))}</p>
+            <div class="contact-row"><span class="ic"><i data-lucide="phone"></i></span><span class="val mono dr-editable" data-drf="telefon">${l.telefon?esc(fmtPhone(l.telefon)):"—"}</span><button class="copy-btn" data-copy="${esc(l.telefon||"")}"><i data-lucide="copy"></i> ${esc(t("dr_copy"))}</button></div>
+            <div class="contact-row"><span class="ic"><i data-lucide="mail"></i></span><span class="val dr-editable" data-drf="email">${l.email?esc(l.email):"—"}</span><button class="copy-btn" data-copy="${esc(l.email||"")}"><i data-lucide="copy"></i> ${esc(t("dr_copy"))}</button></div>
+            <button class="btn btn-ghost btn-sm ln-btn" id="drLinkedin"><i data-lucide="linkedin"></i> ${esc(t("dr_linkedin"))}</button>
+          </div>
+          ${(l.other_contacts && l.other_contacts.length) ? `
+          <div class="section">
+            <p class="section-title">Ďalšie kontakty</p>
+            ${l.other_contacts.map(c => `
+              <div class="contact-row">
+                <span class="ic"><i data-lucide="user"></i></span>
+                <span class="val" style="font-size:12.5px"><b>${esc(c.name)}</b> <span style="color:var(--muted)">(${esc(c.role)})</span>${c.phone?` · ${esc(c.phone)}`:""}</span>
+                ${c.phone?`<button class="copy-btn" data-copy="${esc(c.phone)}"><i data-lucide="copy"></i> Kopírovať</button>`:""}
+              </div>`).join("")}
+          </div>` : ""}
+          ${(l.reasoning || (l.score_breakdown && l.score_breakdown.length)) ? `
+          <div class="section">
+            <p class="section-title">Analýza</p>
+            <div class="analysis-card">
+              <div class="analysis-score-row">
+                ${scoreCircle(l.score || 0, l.tier || "DEAD")}
+                <div style="flex:1;min-width:0">
+                  <div class="analysis-score-label">Skóre</div>
+                  <div class="analysis-breakdown">${(l.score_breakdown && l.score_breakdown.length)
+                    ? l.score_breakdown.map(s => `<div class="${s.startsWith('+') ? 'bd-plus' : s.startsWith('-') ? 'bd-minus' : ''}">${esc(s)}</div>`).join("")
+                    : "<div style='color:var(--muted)'>—</div>"
+                  }</div>
+                </div>
+              </div>
+              ${l.reasoning ? `<div class="analysis-sep"></div><div class="analysis-text">${esc(l.reasoning)}</div>` : ""}
+              ${l.employee_count && l.employee_count !== "unknown" ? `<div class="analysis-meta">Zamestnanci: ${esc(l.employee_count)}${l.employee_category && l.employee_category !== "unknown" ? " · " + esc(l.employee_category) : ""}</div>` : ""}
+            </div>
+          </div>` : ""}
+          <div class="section">
+            <p class="section-title">${esc(t("dr_timeline"))}</p>
+            <div class="timeline" id="drTimeline">${renderTimeline(l)}</div>
+          </div>
+          <div class="section">
+            <p class="section-title">${esc(t("dr_add_activity"))}</p>
+            <div class="activity-btns" id="drActBtns">
+              <button class="ab" data-at="call"><i data-lucide="phone"></i> ${esc(t("act_call"))}</button>
+              <button class="ab" data-at="email"><i data-lucide="mail"></i> ${esc(t("act_email"))}</button>
+              <button class="ab" data-at="linkedin"><i data-lucide="linkedin"></i> ${esc(t("act_linkedin"))}</button>
+              <button class="ab active" data-at="note"><i data-lucide="sticky-note"></i> ${esc(t("act_note"))}</button>
+            </div>
+            <textarea class="activity-input" id="drNote" placeholder="${esc(t("dr_note_ph"))}">${esc(l.notes||"")}</textarea>
+            <button class="btn btn-primary btn-sm" id="drSaveActivity" style="width:100%">${esc(t("dr_save_activity"))}</button>
+          </div>
+          <div class="section" style="margin-bottom:0">
+            <p class="section-title">${esc(t("dr_next_action"))}</p>
+            <div class="next-action">
+              <div class="na-text"><i data-lucide="target"></i> <span>${esc(na)}</span></div>
+              <button class="btn btn-ghost btn-sm" id="drFollowup" style="width:100%"><i data-lucide="calendar-plus"></i> ${esc(t("dr_followup"))}</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>`;
+  bindOverlayClose(root, closeDrawer); icons();
+  root.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click", ()=>copy(b.dataset.copy)));
+  document.getElementById("drLinkedin").addEventListener("click", ()=>window.open(linkedinUrl(l.konatel,l.shop),"_blank"));
+  root.querySelectorAll(".dr-editable").forEach(el => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", (e) => {
+      if (el.querySelector(".inline-input")) return;
+      e.stopPropagation();
+      const field = el.dataset.drf;
+      const cur = l[field] || "";
+      const orig = el.innerHTML;
+      el.innerHTML = `<input class="inline-input" value="${esc(cur)}">`;
+      const inp = el.querySelector(".inline-input");
+      inp.focus(); inp.select();
+      function commit() {
+        l[field] = inp.value.trim();
+        l.score = recalcScore(l); l.tier = tierFromScore(l.score);
+        save(); renderTable(); openDrawer(l);
+      }
+      inp.addEventListener("blur", commit);
+      inp.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") { ev.preventDefault(); inp.blur(); }
+        if (ev.key === "Escape") { el.innerHTML = orig; }
+      });
+    });
+  });
+  document.getElementById("drActBtns").addEventListener("click", (e)=>{
+    const b=e.target.closest("[data-at]"); if(!b) return;
+    drawerActivityType=b.dataset.at;
+    document.querySelectorAll("#drActBtns .ab").forEach(x=>x.classList.toggle("active",x===b));
+  });
+  document.getElementById("drSaveActivity").addEventListener("click", ()=>{
+    const note=document.getElementById("drNote").value.trim();
+    const label={call:t("act_call"),email:t("tl_email_sent"),linkedin:t("act_linkedin"),note:t("act_note")}[drawerActivityType];
+    l.timeline.unshift({ type:drawerActivityType, date:todaySk(), text:label+(note?" — "+note:"") });
+    if (drawerActivityType==="note") l.notes=note;
+    if (drawerActivityType==="call" && l.status==="novy") l.status="kontaktovany";
+    save(); document.getElementById("drTimeline").innerHTML=renderTimeline(l); icons(); renderSidebar(); renderTable();
+    toast(t("toast_activity"),"ok");
+  });
+  document.getElementById("drFollowup").addEventListener("click", ()=>{
+    l.timeline.unshift({ type:"followup", date:todaySk(), text:t("dr_followup") });
+    save(); document.getElementById("drTimeline").innerHTML=renderTimeline(l); icons(); toast(t("toast_followup"),"ok");
+  });
+}
+function renderTimeline(l) {
+  if (!l.timeline || !l.timeline.length) return `<div class="tl-empty">—</div>`;
+  const icon = { call:"phone", email:"mail", linkedin:"linkedin", note:"sticky-note", lead:"user-plus", status:"refresh-cw", followup:"calendar-plus" };
+  return l.timeline.map(e=>`
+    <div class="tl-item">
+      <div class="dot"><i data-lucide="${icon[e.type]||"circle"}"></i></div>
+      <div><div class="tl-text">${esc(e.text)}</div><div class="tl-date">${esc(e.date)}</div></div>
+    </div>`).join("");
+}
+function closeDrawer() { document.getElementById("drawerRoot").innerHTML = ""; }
+
+/* ============================================================
+   Overlay close + ESC
+   ============================================================ */
+function bindOverlayClose(root, closeFn) {
+  root.querySelectorAll("[data-close]").forEach(el=>{
+    el.addEventListener("click", (e)=>{ if (el.dataset.close==="overlay" && e.target!==el) return; closeFn(); });
+  });
+}
+document.addEventListener("keydown", (e)=>{
+  if (e.key==="Escape") { if (document.getElementById("modalRoot").innerHTML) closeModal(); if (document.getElementById("drawerRoot").innerHTML) closeDrawer(); closeMenus(); }
+});
+
+/* ============================================================
+   BULK SELECT
+   ============================================================ */
+document.getElementById("selectAll").addEventListener("change", (e) => {
+  const checked = e.target.checked;
+  const rows = visibleLeads();
+  if (checked) rows.forEach(l => selectedIds.add(l.id));
+  else selectedIds.clear();
+  document.querySelectorAll(".row-chk").forEach(c => { c.checked = checked; });
+  renderBulkBar();
+});
+document.getElementById("leadRows").addEventListener("change", (e) => {
+  const chk = e.target.closest(".row-chk");
+  if (chk) {
+    const id = Number(chk.dataset.id);
+    if (chk.checked) selectedIds.add(id); else selectedIds.delete(id);
+    const rows = visibleLeads();
+    document.getElementById("selectAll").checked = rows.length > 0 && rows.every(l => selectedIds.has(l.id));
+    renderBulkBar();
+    return;
+  }
+});
+function renderBulkBar() {
+  const bar = document.getElementById("bulkBar");
+  if (!selectedIds.size) { bar.innerHTML = ""; return; }
+  bar.innerHTML = `
+    <div class="bulk-bar">
+      <span class="bulk-count">${t("bulk_selected")}: ${selectedIds.size}</span>
+      <span class="bulk-sep"></span>
+      <div style="position:relative">
+        <button class="btn btn-ghost btn-sm" id="bulkStatusBtn"><i data-lucide="refresh-cw"></i> ${esc(t("bulk_status"))}</button>
+        <div class="menu" id="bulkStatusMenu" style="display:none;top:110%;left:0">
+          ${STATUSES.map(s => `<button data-bs="${s.key}">${esc(statusLabel(s.key))}</button>`).join("")}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="bulkExport"><i data-lucide="download"></i> ${esc(t("bulk_export"))}</button>
+      <button class="btn btn-ghost btn-sm" id="bulkDelete" style="color:var(--hot)"><i data-lucide="trash-2"></i> ${esc(t("bulk_delete"))}</button>
+    </div>`;
+  icons();
+  document.getElementById("bulkStatusBtn").addEventListener("click", () => {
+    const m = document.getElementById("bulkStatusMenu");
+    m.style.display = m.style.display === "none" ? "block" : "none";
+  });
+  document.getElementById("bulkStatusMenu").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-bs]"); if (!b) return;
+    selectedIds.forEach(id => { const l = getLead(id); if (l) { l.status = b.dataset.bs; l.timeline.unshift({ type:"status", date:todaySk(), text:t("tl_status_to")+" "+statusLabel(b.dataset.bs) }); } });
+    save(); selectedIds.clear(); renderSidebar(); renderTable();
+    toast(t("toast_status") + ": " + statusLabel(b.dataset.bs), "ok");
+  });
+  document.getElementById("bulkDelete").addEventListener("click", () => {
+    if (!confirm(t("bulk_confirm_delete"))) return;
+    const count = selectedIds.size;
+    leads = leads.filter(l => !selectedIds.has(l.id));
+    selectedIds.clear(); save(); renderSidebar(); renderTable();
+    toast(t("bulk_deleted") + ": " + count, "ok");
+  });
+  document.getElementById("bulkExport").addEventListener("click", () => {
+    const sel = leads.filter(l => selectedIds.has(l.id));
+    const header = "shop,konatel,rola,telefon,email,score,tier,status,ico";
+    const rows = sel.map(l => [l.shop,l.konatel,l.rola,l.telefon,l.email,l.score,l.tier,l.status,l.ico].map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(","));
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "wector_export_" + new Date().toISOString().slice(0,10) + ".csv";
+    a.click(); URL.revokeObjectURL(a.href);
+    toast(t("bulk_export") + ": " + sel.length, "ok");
+  });
+}
+
+/* ============================================================
+   INLINE EDIT (table cells)
+   ============================================================ */
+function startInlineEdit(ed) {
+  const field = ed.dataset.edit;
+  const id = Number(ed.dataset.id);
+  const l = getLead(id); if (!l) return;
+  const cur = l[field] || "";
+  ed.innerHTML = `<input class="inline-input" value="${esc(cur)}">`;
+  const inp = ed.querySelector(".inline-input");
+  inp.focus(); inp.select();
+  function commit() {
+    const val = inp.value.trim();
+    l[field] = val;
+    l.score = recalcScore(l);
+    l.tier = tierFromScore(l.score);
+    save(); renderTable();
+  }
+  inp.addEventListener("blur", commit);
+  inp.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); inp.blur(); }
+    if (ev.key === "Escape") { inp.value = cur; inp.blur(); }
+  });
+}
+function recalcScore(l) {
+  let s = 0;
+  if (l.konatel) s += 50;
+  if (l.telefon) s += isPersonalPhone(l.telefon) ? 20 : 10;
+  if (l.email) s += 5;
+  return s;
+}
+
+/* ============================================================
+   BATCH SCRAPE MODAL
+   ============================================================ */
+document.getElementById("batchBtn").addEventListener("click", openBatchModal);
+function openBatchModal() {
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `
+    <div class="overlay" data-close="overlay">
+      <div class="modal" style="max-width:640px" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h2>${esc(t("batch_title"))}</h2>
+          <button class="x-btn" data-close="x"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <textarea class="batch-textarea" id="batchUrls" placeholder="${esc(t("batch_placeholder"))}"></textarea>
+          <div style="display:flex;gap:9px;margin-top:12px;align-items:center">
+            <button class="btn btn-primary" id="batchStart"><i data-lucide="zap"></i> ${esc(t("batch_start"))}</button>
+            <label class="file-label"><i data-lucide="file-up"></i> ${esc(t("batch_upload"))}<input type="file" id="batchFile" accept=".csv,.txt"></label>
+          </div>
+          <div class="batch-progress" id="batchProgress" style="display:none">
+            <div style="font-size:13px;font-weight:600" id="batchStatusText"></div>
+            <div class="batch-bar"><div class="batch-fill" id="batchFill" style="width:0%"></div></div>
+            <div class="batch-log" id="batchLog"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  bindOverlayClose(root, closeModal); icons();
+  document.getElementById("batchFile").addEventListener("change", (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result;
+      const lines = text.split(/[\r\n]+/).map(l => l.split(/[,;\t]/)[0].trim()).filter(l => l && (l.includes(".")||l.includes("//")));
+      document.getElementById("batchUrls").value = lines.join("\n");
+    };
+    reader.readAsText(file);
+  });
+  document.getElementById("batchStart").addEventListener("click", runBatchScrape);
+}
+async function runBatchScrape() {
+  const raw = document.getElementById("batchUrls").value.trim();
+  if (!raw) return;
+  const urls = raw.split(/[\r\n]+/).map(u => u.trim()).filter(u => u);
+  if (!urls.length) return;
+  const prog = document.getElementById("batchProgress");
+  const fill = document.getElementById("batchFill");
+  const log = document.getElementById("batchLog");
+  const statusText = document.getElementById("batchStatusText");
+  const startBtn = document.getElementById("batchStart");
+  prog.style.display = "block";
+  startBtn.disabled = true;
+  let ok = 0, fail = 0;
+  log.innerHTML = "";
+  for (let i = 0; i < urls.length; i++) {
+    const url = normUrl(urls[i]);
+    const domain = domainOnly(url);
+    statusText.textContent = `${t("batch_progress")} ${i+1}/${urls.length}... ${domain}`;
+    fill.style.width = ((i+1)/urls.length*100).toFixed(1) + "%";
+    try {
+      const d = await api("/api/leads/scrape", { url });
+      const ext = d.extracted || {};
+      const konatel = nn(ext.contact_name) || nn(d.meno) || "";
+      const telefon = nn(ext.phone) || nn(d.telefon) || "";
+      const email = nn(ext.email) || nn(d.email) || "";
+      const score = (typeof d.score === "number") ? d.score : estimateScore(konatel, telefon, email);
+      const tier = d.tier || tierFromScore(score);
+      const lead = hydrate({
+        id: uid++, shop: domainOnly(d.primary_identifier || d.url || url), konatel,
+        rola: nn(ext.contact_role) || nn(d.rola) || "", telefon, email, score, tier, status:"novy",
+        ico: ext.ico || d.ico || "",
+        reasoning: ext.reasoning || "",
+        phone_type: ext.phone_type || "",
+        phone_confidence: ext.phone_confidence || "",
+        employee_count: ext.employee_count || "",
+        employee_category: ext.employee_category || "",
+        name_found_on_web: ext.name_found_on_web || false,
+        score_breakdown: ext.score_breakdown || [],
+        all_phones: ext.all_phones || [],
+        other_contacts: ext.other_contacts || [],
+        registry_source: ext.registry_source || "",
+      });
+      leads.unshift(lead);
+      save(); renderSidebar(); renderTable();
+      ok++;
+      log.innerHTML += `<div class="ok">✓ ${esc(domain)} — ${esc(konatel||"?")} / ${esc(telefon||"—")}</div>`;
+    } catch (err) {
+      fail++;
+      log.innerHTML += `<div class="fail">✗ ${esc(domain)} — ${err.message||"error"}</div>`;
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+  statusText.textContent = `${t("batch_done")}: ${ok} ${t("batch_ok")}, ${fail} ${t("batch_fail")}`;
+  startBtn.disabled = false;
+  startBtn.innerHTML = `<i data-lucide="check"></i> ${esc(t("batch_done"))}`;
+  icons();
+}
+
+/* ============================================================
+   LANGUAGE SELECTOR
+   ============================================================ */
+document.getElementById("langBtn").addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (document.querySelector(".lang-menu")) { closeMenus(); return; }
+  closeMenus();
+  const r = e.currentTarget.getBoundingClientRect();
+  const m = document.createElement("div");
+  m.className = "menu lang-menu";
+  m.style.top = (r.bottom + window.scrollY + 6) + "px";
+  m.style.left = (r.left + window.scrollX - 100) + "px";
+  m.innerHTML = LANGS.map(L=>`
+    <button data-lang="${L.code}" class="${L.code===currentLang?"active":""}">
+      <span class="flag">${L.flag}</span> ${esc(L.name)} (${L.code})
+      ${L.code===currentLang?`<span class="check"><i data-lucide="check"></i></span>`:``}
+    </button>`).join("");
+  document.body.appendChild(m); icons();
+  m.addEventListener("click", (ev)=>{ const b=ev.target.closest("[data-lang]"); if(!b) return; setLang(b.dataset.lang); closeMenus(); });
+});
+function setLang(code) {
+  if (!I18N[code]) return;
+  currentLang = code; localStorage.setItem("wector_lang", code);
+  applyStaticI18n(); renderSidebar(); renderTable();
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+const themeBtn = document.getElementById("themeToggle");
+function applyTheme(th) {
+  document.documentElement.setAttribute("data-theme", th);
+  themeBtn.innerHTML = th==="light" ? `<i data-lucide="sun"></i>` : `<i data-lucide="moon"></i>`;
+  localStorage.setItem("wector_theme", th); icons();
+}
+themeBtn.addEventListener("click", ()=>{
+  const cur = document.documentElement.getAttribute("data-theme")==="light" ? "light":"dark";
+  applyTheme(cur==="light"?"dark":"light");
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+load();
+applyStaticI18n();
+applyTheme(localStorage.getItem("wector_theme") || "dark");
+renderSidebar();
+renderTable();
+icons();
+</script>
+</body>
+</html>

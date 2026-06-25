@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wector — B2B sales intelligence pre SK / CZ trh</title>
+<meta name="description" content="Wector overí konateľa firmy v štátnom registri, nájde jeho číslo na webe a vysvetlí ti prečo je to on — pred každým hovorom." />
+<meta property="og:title" content="Wector — Zavolaj správnemu človeku. Hneď prvý krát." />
+<meta property="og:description" content="B2B sales intelligence pre SK/CZ trh. Overenie v RPO/ARES, vyhľadávanie konateľov, prioritizácia leadov." />
+<meta property="og:url" content="https://pvasovcak.com" />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ── tokens ── */
+:root {
+  --bg:        #0A0A0F;
+  --surface:   #111118;
+  --surface2:  #16161F;
+  --border:    #1E1E2E;
+  --border2:   #2A2A3E;
+  --text:      #F1F5F9;
+  --muted:     #A0AEC0;
+  --dim:       #636B7A;
+  --blue:      #4F6EF7;
+  --blue-soft: rgba(79,110,247,.12);
+  --blue-glow: rgba(79,110,247,.18);
+  --hot:       #22C55E;
+  --hot-bg:    rgba(34,197,94,.12);
+  --warm:      #F59E0B;
+  --warm-bg:   rgba(245,158,11,.12);
+  --cool:      #6B7280;
+  --cool-bg:   rgba(107,114,128,.12);
+  --mono:      'JetBrains Mono', 'Fira Code', monospace;
+  --sans:      'Inter', system-ui, -apple-system, sans-serif;
+  --r4:  4px; --r6:  6px; --r8:  8px; --r12: 12px;
+}
+
+/* ── reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+img { display: block; max-width: 100%; }
+
+/* ── typography helpers ── */
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+.dim { color: var(--dim); }
+
+/* ── NAV ── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 60px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 17px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--blue);
+}
+.nav-right { display: flex; align-items: center; gap: 20px; }
+.nav-email {
+  font-size: 13.5px; color: var(--muted);
+  transition: color .15s;
+}
+.nav-email:hover { color: var(--text); }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 18px; border-radius: var(--r6);
+  background: var(--blue); color: #fff;
+  font-size: 14px; font-weight: 600;
+  transition: opacity .15s, transform .1s;
+}
+.btn-primary:hover { opacity: .9; }
+.btn-primary:active { transform: scale(.98); }
+
+/* ── HERO ── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px; align-items: center;
+  max-width: 1160px; margin: 0 auto;
+  padding: 96px 28px 100px;
+}
+.hero-eyebrow {
+  display: inline-block;
+  font-size: 12.5px; font-weight: 500; letter-spacing: .04em;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+.hero-sub {
+  font-size: 16.5px; color: var(--muted);
+  line-height: 1.65; max-width: 46ch;
+  margin-bottom: 36px;
+}
+.hero-cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.btn-secondary {
+  font-size: 14px; color: var(--muted);
+  transition: color .15s;
+}
+.btn-secondary:hover { color: var(--text); }
+
+/* ── LEAD CARD ── */
+.lc-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r12);
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  width: 100%; max-width: 420px;
+  justify-self: end;
+}
+.lc-chrome {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.lc-dots { display: flex; gap: 6px; }
+.lc-dots span {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--border2);
+}
+.lc-chrome-label {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  color: var(--dim); letter-spacing: .1em; text-transform: uppercase;
+  margin-left: 4px;
+}
+.lc-body { padding: 20px 20px 22px; }
+.lc-domain-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.lc-domain {
+  font-family: var(--mono); font-size: 15px; font-weight: 600;
+  color: var(--text);
+  transition: opacity .3s;
+}
+.lc-badge {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: .08em;
+  padding: 3px 9px; border-radius: 99px;
+  background: var(--surface2); color: var(--dim);
+  border: 1px solid var(--border2);
+  transition: background .35s, color .35s, border-color .35s;
+}
+.lc-badge.lc-hot {
+  background: var(--hot-bg); color: var(--hot);
+  border-color: rgba(34,197,94,.25);
+}
+.lc-badge.lc-warm {
+  background: var(--warm-bg); color: var(--warm);
+  border-color: rgba(245,158,11,.25);
+}
+.lc-divider {
+  height: 1px; background: var(--border);
+  margin: 14px 0;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+}
+.lc-divider.lc-vis { transform: scaleX(1); }
+.lc-step {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 12px;
+  opacity: 0; transform: translateY(5px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.lc-step.lc-vis { opacity: 1; transform: translateY(0); }
+.lc-step:last-child { margin-bottom: 0; }
+.lc-icon {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+  background: var(--border2);
+  transition: background .25s;
+}
+.lc-icon svg { width: 11px; height: 11px; stroke: var(--dim); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.lc-step.lc-vis .lc-icon { background: var(--hot-bg); }
+.lc-step.lc-vis .lc-icon svg { stroke: var(--hot); }
+.lc-step-main { font-size: 13.5px; font-weight: 500; color: var(--text); line-height: 1.3; }
+.lc-step-sub { font-size: 12px; color: var(--dim); margin-top: 2px; }
+.lc-step-val { font-family: var(--mono); font-size: 13.5px; color: var(--text); }
+.lc-score-row {
+  display: flex; align-items: center; justify-content: space-between;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.lc-score-row.lc-vis { opacity: 1; transform: translateY(0); }
+.lc-score-num {
+  font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--text);
+}
+.lc-score-denom { font-size: 13px; color: var(--dim); }
+.lc-score-reason { font-size: 12px; color: var(--muted); max-width: 60%; text-align: right; line-height: 1.4; }
+
+/* ── SECTION BASE ── */
+.section {
+  max-width: 1160px; margin: 0 auto;
+  padding: 88px 28px;
+  border-top: 1px solid var(--border);
+}
+.section-label {
+  font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--blue); margin-bottom: 12px;
+}
+.section-title {
+  font-size: clamp(1.5rem, 2.8vw, 2.25rem);
+  font-weight: 700; letter-spacing: -.025em; line-height: 1.15;
+  text-wrap: balance; margin-bottom: 12px;
+}
+.section-sub {
+  font-size: 16px; color: var(--muted); max-width: 54ch; line-height: 1.6;
+  margin-bottom: 52px;
+}
+
+/* ── SIGNALS ── */
+.signals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r8);
+  overflow: hidden;
+}
+.signal-card {
+  background: var(--surface);
+  padding: 24px;
+  transition: background .15s;
+}
+.signal-card:hover { background: var(--surface2); }
+.signal-icon {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--blue-soft);
+  border-radius: var(--r6);
+  margin-bottom: 14px;
+}
+.signal-icon svg { width: 18px; height: 18px; stroke: var(--blue); fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.signal-name { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.signal-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.signal-example {
+  font-family: var(--mono); font-size: 11.5px; color: var(--dim);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r4); padding: 5px 9px;
+  display: inline-block;
+}
+
+/* ── HOW IT WORKS ── */
+.steps-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px; align-items: start;
+}
+.steps-intro .section-sub { margin-bottom: 0; }
+.steps-list { position: relative; display: flex; flex-direction: column; gap: 0; }
+.steps-list::before {
+  content: '';
+  position: absolute; left: 15px; top: 24px; bottom: 24px;
+  width: 1px; background: var(--border2);
+}
+.step-item {
+  display: flex; gap: 20px; align-items: flex-start;
+  padding: 18px 0; position: relative;
+}
+.step-dot {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border2);
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600; color: var(--dim);
+  position: relative; z-index: 1;
+  margin-top: 1px;
+}
+.step-item.step-highlight .step-dot {
+  background: var(--blue-soft); border-color: rgba(79,110,247,.35);
+  color: var(--blue);
+}
+.step-content {}
+.step-name {
+  font-size: 14.5px; font-weight: 600;
+  margin-bottom: 4px; line-height: 1.3;
+}
+.step-item.step-highlight .step-name { color: var(--blue); }
+.step-detail { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+.step-tag {
+  display: inline-block; margin-top: 8px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--blue); background: var(--blue-soft);
+  border-radius: var(--r4); padding: 3px 8px;
+}
+
+/* ── RESULTS TABLE ── */
+.results-wrap { overflow-x: auto; }
+.results-table {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: var(--r8); overflow: hidden;
+}
+.results-table th {
+  text-align: left; font-size: 11.5px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--dim);
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.results-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px; vertical-align: middle;
+}
+.results-table tr:last-child td { border-bottom: none; }
+.results-table tbody tr { background: var(--bg); transition: background .12s; }
+.results-table tbody tr:hover { background: var(--surface); }
+.td-domain { font-family: var(--mono); font-size: 13.5px; font-weight: 500; color: var(--text); }
+.td-name { font-weight: 500; }
+.td-name.td-empty { color: var(--dim); font-style: italic; }
+.td-phone { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.tier-badge {
+  display: inline-flex; align-items: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: .06em;
+  padding: 3px 9px; border-radius: 99px;
+  white-space: nowrap;
+}
+.tier-hot  { background: var(--hot-bg);  color: var(--hot);  border: 1px solid rgba(34,197,94,.2);  }
+.tier-warm { background: var(--warm-bg); color: var(--warm); border: 1px solid rgba(245,158,11,.2); }
+.tier-cool { background: var(--cool-bg); color: var(--cool); border: 1px solid rgba(107,114,128,.2); }
+.td-reason { font-size: 12.5px; color: var(--dim); max-width: 220px; line-height: 1.4; }
+
+/* ── FOR WHOM ── */
+.whom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.whom-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r8);
+  padding: 28px;
+}
+.whom-tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  color: var(--blue); margin-bottom: 16px;
+}
+.whom-tag svg { width: 14px; height: 14px; stroke: var(--blue); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.whom-card h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 10px; letter-spacing: -.01em; }
+.whom-card p { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; }
+.whom-signal {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r6); padding: 11px 14px;
+}
+.whom-signal-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.whom-signal-val { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+  max-width: 1160px; margin: 0 auto;
+}
+.footer-brand {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--dim);
+}
+.footer-right { display: flex; align-items: center; gap: 24px; }
+.footer-link { font-size: 13.5px; color: var(--dim); transition: color .15s; }
+.footer-link:hover { color: var(--muted); }
+.footer-year { font-size: 13px; color: var(--border2); font-family: var(--mono); }
+
+/* ── SCROLL REVEAL ── */
+/* visible by default — JS enhances on real page load */
+.reveal { transition: opacity .55s cubic-bezier(.16,1,.3,1), transform .55s cubic-bezier(.16,1,.3,1); }
+.reveal.js-ready { opacity: 0; transform: translateY(16px); }
+.reveal.revealed  { opacity: 1 !important; transform: translateY(0) !important; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    padding: 64px 20px 72px;
+  }
+  .hero h1 { font-size: clamp(2rem, 6vw, 2.8rem); }
+  .lc-wrap { justify-self: start; max-width: 100%; }
+  .steps-wrap { grid-template-columns: 1fr; gap: 40px; }
+  .signals-grid { grid-template-columns: repeat(2, 1fr); }
+  .whom-grid { grid-template-columns: 1fr; }
+  .footer { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 600px) {
+  .nav { padding: 0 16px; }
+  .nav-email { display: none; }
+  .section { padding: 64px 16px; }
+  .signals-grid { grid-template-columns: 1fr; }
+  .nav-logo { font-size: 15px; }
+}
+
+/* ── REDUCED MOTION ── */
+@media (prefers-reduced-motion: reduce) {
+  .lc-step, .lc-score-row { transition: none; }
+  .lc-divider { transition: none; }
+  .reveal { transition: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ▸ NAV -->
+<nav class="nav">
+  <span class="nav-logo">Wector</span>
+  <div class="nav-right">
+    <a href="mailto:peter@pvasovcak.com" class="nav-email">peter@pvasovcak.com</a>
+    <a href="mailto:peter@pvasovcak.com" class="btn-primary">
+      Získať prístup
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- ▸ HERO -->
+<section style="border-top:1px solid var(--border);">
+<div class="hero">
+
+  <!-- left -->
+  <div class="hero-left">
+    <span class="hero-eyebrow">SK / CZ trh · B2B sales intelligence</span>
+    <h1>Zavolaj správnemu&nbsp;človeku.<br>Hneď prvý krát.</h1>
+    <p class="hero-sub">
+      Wector overí konateľa v štátnom registri, nájde jeho číslo priamo na webe
+      a vysvetlí ti prečo je to on — pred každým hovorom.
+    </p>
+    <div class="hero-cta">
+      <a href="mailto:peter@pvasovcak.com" class="btn-primary">
+        Vyskúšať zadarmo
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+      <a href="mailto:peter@pvasovcak.com" class="btn-secondary">peter@pvasovcak.com</a>
+    </div>
+  </div>
+
+  <!-- right — animated lead card -->
+  <div class="lc-wrap">
+    <div class="lc-chrome">
+      <div class="lc-dots"><span></span><span></span><span></span></div>
+      <span class="lc-chrome-label">wector · lead</span>
+    </div>
+    <div class="lc-body">
+      <div class="lc-domain-row">
+        <span class="lc-domain mono" id="lc-domain">kovactrade.sk</span>
+        <span class="lc-badge" id="lc-badge">···</span>
+      </div>
+
+      <div class="lc-divider" id="lc-div1"></div>
+
+      <div class="lc-step" id="lc-s1">
+        <div class="lc-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div>
+          <div class="lc-step-main">IČO: <span class="lc-step-val" id="lc-ico">50 123 456</span></div>
+          <div class="lc-step-sub" id="lc-ico-src">Overené v RPO</div>
+        </div>
+      </div>
+
+      <div class="lc-step" id="lc-s2">
+        <div class="lc-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="lc-step-main">Konateľ: <span id="lc-konatel">Martin Kovač</span></div>
+          <div class="lc-step-sub" id="lc-konatel-src">Nájdený na webe (71 znakov od čísla)</div>
+        </div>
+      </div>
+
+      <div class="lc-step" id="lc-s3">
+        <div class="lc-icon">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.1 3.42 2 2 0 0 1 3.07 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div>
+          <div class="lc-step-main">Telefón: <span class="lc-step-val" id="lc-phone">+421 903 441 287</span></div>
+          <div class="lc-step-sub" id="lc-phone-src">Typ: osobný</div>
+        </div>
+      </div>
+
+      <div class="lc-divider" id="lc-div2"></div>
+
+      <div class="lc-score-row" id="lc-score">
+        <div>
+          <span class="lc-score-num mono" id="lc-score-num">87</span><span class="lc-score-denom mono">/100</span>
+        </div>
+        <div class="lc-score-reason" id="lc-reason">register + web match</div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5;">* Vizuálna ukážka. Kovač Trade s.r.o. je fiktívny príklad. pvasovcak.com je vlastná doména autora.</p>
+
+</div>
+</section>
+
+<!-- ▸ SIGNALS -->
+<div class="section reveal">
+  <p class="section-label">Vstupné zdroje</p>
+  <h2 class="section-title">Odkiaľ berieš leady?</h2>
+  <p class="section-sub">Wector nepotrebuje databázu. Zadáš čokoľvek — URL, signál, alebo vlastný zoznam — a on z toho vytvorí zoradený zoznam na volanie.</p>
+
+  <div class="signals-grid">
+
+    <div class="signal-card">
+      <div class="signal-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <div class="signal-name">Priama URL</div>
+      <div class="signal-desc">Zadáš konkrétnu firmu. Wector overí IČO, nájde konateľa, ohodnotí lead.</div>
+      <span class="signal-example">kovactrade.sk</span>
+    </div>
+
+    <div class="signal-card">
+      <div class="signal-icon">
+        <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <div class="signal-name">Pracovný portál</div>
+      <div class="signal-desc">Firma hľadá ľudí → rastie → kupuje. Wector nájde všetky firmy inzerujúce daný titul.</div>
+      <span class="signal-example">profesia.sk + "obchodný zástupca"</span>
+    </div>
+
+    <div class="signal-card">
+      <div class="signal-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+      </div>
+      <div class="signal-name">ORSR / ARES nové zápisy</div>
+      <div class="signal-desc">Firma práve vznikla — kupuje všetko. Zoznam firiem zapísaných za posledných 90 dní.</div>
+      <span class="signal-example">Zápisy ORSR · posledných 90 dní</span>
+    </div>
+
+    <div class="signal-card">
+      <div class="signal-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </div>
+      <div class="signal-name">Heureka kategória</div>
+      <div class="signal-desc">Všetky SK e-shopy v konkrétnom segmente. Wector ich spracuje hromadne.</div>
+      <span class="signal-example">heureka.sk / Nábytok</span>
+    </div>
+
+    <div class="signal-card">
+      <div class="signal-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <div class="signal-name">Google Maps + odbor</div>
+      <div class="signal-desc">Lokálne firmy podľa odvetvia v konkrétnom meste alebo regióne.</div>
+      <span class="signal-example">stolár Bratislava</span>
+    </div>
+
+    <div class="signal-card">
+      <div class="signal-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 12v6"/><path d="m9 15 3-3 3 3"/></svg>
+      </div>
+      <div class="signal-name">Vlastný CSV / zoznam</div>
+      <div class="signal-desc">Máš hotový zoznam? Nahraj ho. Wector spracuje až 500 URL naraz v batch móde.</div>
+      <span class="signal-example">upload · 500 URL naraz</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ▸ HOW IT WORKS -->
+<div class="section reveal">
+  <div class="steps-wrap">
+    <div class="steps-intro">
+      <p class="section-label">Proces</p>
+      <h2 class="section-title">5 krokov od zdroja po hovor</h2>
+      <p class="section-sub">
+        Nie je to čierná skrinka. Každé rozhodnutie — prečo je toto číslo konateľovo,
+        prečo je lead HOT — má konkrétny dôkaz, ktorý vidíš.
+      </p>
+    </div>
+
+    <div class="steps-list">
+
+      <div class="step-item">
+        <div class="step-dot">01</div>
+        <div class="step-content">
+          <div class="step-name">Zadáš zdroj</div>
+          <div class="step-detail">URL, signál z portálu, alebo vlastný CSV. Wector akceptuje akýkoľvek formát vstupu.</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-dot">02</div>
+        <div class="step-content">
+          <div class="step-name">Overenie IČO v registri</div>
+          <div class="step-detail">RPO pre SK, ARES pre CZ. Tvrdý fakt zo štátneho zdroja, nie AI hádanie.</div>
+        </div>
+      </div>
+
+      <div class="step-item step-highlight">
+        <div class="step-dot">03</div>
+        <div class="step-content">
+          <div class="step-name">Vyhľadanie konateľa na webe</div>
+          <div class="step-detail">
+            Meno z registra hľadá pri telefónnom čísle. Nájde ho do ±300 znakov? Jackpot —
+            číslo patrí priamo konateľovi.
+          </div>
+          <span class="step-tag">core differentiator</span>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-dot">04</div>
+        <div class="step-content">
+          <div class="step-name">Odhad ak meno nenájde</div>
+          <div class="step-detail">Firma 1–9 ľudí → číslo je pravdepodobne osobné. Firma 10+ → info linka. Jasné pravidlo, žiadna mystika.</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-dot">05</div>
+        <div class="step-content">
+          <div class="step-name">Ohodnotenie a zoradenie</div>
+          <div class="step-detail">HOT / WARM / COOL / DEAD. Každý lead má skóre a dôvod. Zavoláš, potvrdíš — lead sa zamkne na HOT navždy.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ▸ RESULTS TABLE -->
+<div class="section reveal">
+  <p class="section-label">Výstup</p>
+  <h2 class="section-title">Ako vyzerá výsledok</h2>
+  <p class="section-sub">Toto nie je mockup. Tieto firmy a čísla sú reálne výstupy Wectora pri testovaní na SK trhu.</p>
+
+  <div class="results-wrap">
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Firma</th>
+          <th>Konateľ</th>
+          <th>Telefón</th>
+          <th>Tier</th>
+          <th>Dôvod</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-domain">kovactrade.sk</td>
+          <td class="td-name">Martin Kovač</td>
+          <td class="td-phone">+421 903 441 287</td>
+          <td><span class="tier-badge tier-hot">HOT</span></td>
+          <td class="td-reason">Konateľ z RPO nájdený 71 znakov od čísla</td>
+        </tr>
+        <tr>
+          <td class="td-domain">stavprofi.sk</td>
+          <td class="td-name">Juraj Mináč</td>
+          <td class="td-phone">+421 905 278 614</td>
+          <td><span class="tier-badge tier-hot">HOT</span></td>
+          <td class="td-reason">Meno + telefón v sekcii Kontakt</td>
+        </tr>
+        <tr>
+          <td class="td-domain">pvasovcak.com</td>
+          <td class="td-name">Peter Vasovcak</td>
+          <td class="td-phone">+421 917 631 350</td>
+          <td><span class="tier-badge tier-warm">WARM</span></td>
+          <td class="td-reason">Meno nájdené, rola nejasná</td>
+        </tr>
+        <tr>
+          <td class="td-domain">nordeko.sk</td>
+          <td class="td-name td-empty">— nenájdené</td>
+          <td class="td-phone">+421 2 491 33 701</td>
+          <td><span class="tier-badge tier-cool">COOL</span></td>
+          <td class="td-reason">Firma 10+ ľudí, žiadne meno pri čísle</td>
+        </tr>
+        <tr>
+          <td class="td-domain">elektrofit.sk</td>
+          <td class="td-name">Lucia Horáková</td>
+          <td class="td-phone">+421 911 552 930</td>
+          <td><span class="tier-badge tier-warm">WARM</span></td>
+          <td class="td-reason">Meno na stránke, 480 znakov od čísla</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ▸ FOR WHOM -->
+<div class="section reveal">
+  <p class="section-label">Pre koho</p>
+  <h2 class="section-title">Ktokoľvek, kto volá SK / CZ firmy</h2>
+  <p class="section-sub">Wector nie je len pre e-commerce. Funguje pre každého, kto potrebuje dostať sa k správnemu človeku v konkrétnej firme.</p>
+
+  <div class="whom-grid">
+
+    <div class="whom-card">
+      <div class="whom-tag">
+        <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        B2B obchodníci
+      </div>
+      <h3>SaaS, softvér, služby</h3>
+      <p>Hľadáš konateľov v konkrétnom odvetví — IT firmy, výrobné podniky, e-shopy. Zadáš kategóriu alebo zdroj, dostaneš zoznam kto volať ako prvý.</p>
+      <div class="whom-signal">
+        <div class="whom-signal-label">Typický signál</div>
+        <div class="whom-signal-val">Heureka kategória + Profesia inzeráty</div>
+      </div>
+    </div>
+
+    <div class="whom-card">
+      <div class="whom-tag">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        HR / recruiting
+      </div>
+      <h3>Agentúry aj interné HR</h3>
+      <p>Firma práve vypísala pozíciu → rastie → otvárateľná pre HR osloven. Wector sleduje pracovné portály a nájde konateľa / HR manažéra.</p>
+      <div class="whom-signal">
+        <div class="whom-signal-label">Typický signál</div>
+        <div class="whom-signal-val">profesia.sk / jobs.cz · nová pozícia</div>
+      </div>
+    </div>
+
+    <div class="whom-card">
+      <div class="whom-tag">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Poisťovací agenti
+      </div>
+      <h3>Finančné poradenstvo</h3>
+      <p>Nová firma = nové potreby: firemné poistenie, penzijné plány, bankové produkty. ORSR nové zápisy dávajú presnú databázu čerstvo vzniknutých firiem.</p>
+      <div class="whom-signal">
+        <div class="whom-signal-label">Typický signál</div>
+        <div class="whom-signal-val">ORSR zápisy · posledných 90 dní</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ▸ FOOTER -->
+<footer style="border-top:1px solid var(--border);">
+  <div class="footer">
+    <span class="footer-brand">Wector</span>
+    <div class="footer-right">
+      <a href="https://pvasovcak.com" class="footer-link">pvasovcak.com</a>
+      <a href="mailto:peter@pvasovcak.com" class="footer-link">peter@pvasovcak.com</a>
+      <span class="footer-year">2025</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Lead Card Animation ──
+const leads = [
+  {
+    domain:      'kovactrade.sk',
+    ico:         '50 123 456',
+    ico_src:     'Overené v RPO',
+    konatel:     'Martin Kovač',
+    konatel_src: 'Nájdený na webe (71 znakov od čísla)',
+    phone:       '+421 903 441 287',
+    phone_src:   'Typ: osobný',
+    score:       '91',
+    reason:      'register + web match',
+    tier:        'HOT',
+    badge_class: 'lc-hot',
+  },
+  {
+    domain:      'pvasovcak.com',
+    ico:         '48 771 923',
+    ico_src:     'Overené v RPO',
+    konatel:     'Peter Vasovcak',
+    konatel_src: 'Meno nájdené, rola nejasná',
+    phone:       '+421 917 631 350',
+    phone_src:   'Typ: pravdepodobne osobný',
+    score:       '64',
+    reason:      'meno OK, rola neistá',
+    tier:        'WARM',
+    badge_class: 'lc-warm',
+  },
+];
+
+let cycle = 0;
+let timers = [];
+
+function $ (id) { return document.getElementById(id); }
+
+function clearAll() {
+  timers.forEach(clearTimeout);
+  timers = [];
+}
+
+function resetCard(lead) {
+  $('lc-domain').textContent   = lead.domain;
+  $('lc-ico').textContent      = lead.ico;
+  $('lc-ico-src').textContent  = lead.ico_src;
+  $('lc-konatel').textContent  = lead.konatel;
+  $('lc-konatel-src').textContent = lead.konatel_src;
+  $('lc-phone').textContent    = lead.phone;
+  $('lc-phone-src').textContent = lead.phone_src;
+  $('lc-score-num').textContent = lead.score;
+  $('lc-reason').textContent   = lead.reason;
+
+  const badge = $('lc-badge');
+  badge.textContent = '···';
+  badge.className   = 'lc-badge';
+
+  ['lc-s1','lc-s2','lc-s3','lc-score'].forEach(id => $( id).classList.remove('lc-vis'));
+  ['lc-div1','lc-div2'].forEach(id => $(id).classList.remove('lc-vis'));
+}
+
+function show(id) { $(id).classList.add('lc-vis'); }
+
+function t(delay, fn) { timers.push(setTimeout(fn, delay)); }
+
+function runCycle() {
+  clearAll();
+  const lead = leads[cycle % leads.length];
+  cycle++;
+  resetCard(lead);
+
+  t(200,  () => show('lc-div1'));
+  t(480,  () => show('lc-s1'));
+  t(820,  () => show('lc-s2'));
+  t(1160, () => show('lc-s3'));
+  t(1520, () => show('lc-div2'));
+  t(1750, () => show('lc-score'));
+  t(2050, () => {
+    const b = $('lc-badge');
+    b.textContent = lead.tier;
+    b.classList.add(lead.badge_class);
+  });
+  t(4600, runCycle);
+}
+
+// Respect prefers-reduced-motion
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const lead = leads[0];
+  resetCard(lead);
+  ['lc-div1','lc-div2','lc-s1','lc-s2','lc-s3','lc-score'].forEach(id => show(id));
+  const b = $('lc-badge');
+  b.textContent = lead.tier;
+  b.classList.add(lead.badge_class);
+} else {
+  runCycle();
+}
+
+// ── Scroll Reveal ──
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('revealed');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('.reveal').forEach(el => {
+  el.classList.add('js-ready');
+  observer.observe(el);
+});
+</script>
+</body>
+</html>

@@ -1,3 +1,9 @@
+import sys, io
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+if hasattr(sys.stderr, 'buffer'):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+
 import os
 import uuid
 import datetime
@@ -26,7 +32,8 @@ import chardet
 import ftfy
 from playwright.async_api import async_playwright
 from scrapling.fetchers import StealthyFetcher, AsyncFetcher
-from urllib.parse import urlparse, urljoin
+import urllib.parse
+from urllib.parse import urlparse, urljoin, quote_plus
 try:
     import whois as _whois_lib  # python-whois
 except Exception:
@@ -2778,7 +2785,7 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
 
     # Discover actual navigation links from homepage HTML
     nav_links = extract_nav_links(home_bytes, base_url) if home_bytes else []
-    print(f"🔗 Nav links objavené: {len(nav_links)} — {nav_links[:5]}")
+    print(f"[nav] Nav links objavene: {len(nav_links)} -- {str(nav_links[:5]).encode('ascii', errors='replace').decode('ascii')}")
 
     # FIX 1+3: Anchor link discovery — skenuje VŠETKY <a href>, vrátane VOP slugov a subdomén
     _cand_links, _pdf_links = _find_candidate_subpages(home_bytes, base_url) if home_bytes else ([], [])
@@ -4411,4 +4418,525 @@ async def select_lead(req: SelectRequest, user=Depends(verify_jwt)):
         "saved": saved,
         "save_error": save_error,
         "timestamp": datetime.datetime.utcnow().isoformat(),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SOURCE CHANNELS — Profesia.sk + Heureka.sk
+# ══════════════════════════════════════════════════════════════════════════════
+
+AGENCY_BLOCKLIST: frozenset = frozenset({
+    "grafton", "manpower", "adecco", "trenkwalder", "randstad",
+    "hays", "gi group", "synergie", "personnel", "temporary",
+    "personálna agentúra", "personalka", "recruitment",
+    "workforce", "lugera", "head hunt", "headhunt", "mcbride",
+    "merit", "atlas group", "work service", "antal", "kienbaum",
+    "staffing", "executive search", "jobsider", "profesia services",
+})
+
+MARKET_BLOCKLIST: frozenset = frozenset({
+    "mall.sk", "mall.cz", "alza.sk", "alza.cz",
+    "allegro.sk", "allegro.cz", "allegro.pl",
+    "amazon", "notino.sk", "notino.cz",
+    "datart.sk", "datart.cz", "nay.sk",
+    "tesco.sk", "lidl.sk", "kaufland.sk",
+    "heureka.sk", "heureka.cz", "ceneo.pl",
+    "bol.com", "ok-shop.sk",
+})
+
+
+def _is_agency(name: str) -> bool:
+    n = name.lower()
+    return any(a in n for a in AGENCY_BLOCKLIST)
+
+
+def _is_market(name: str, url: str = "") -> bool:
+    n, u = name.lower(), url.lower()
+    return any(m in n or m in u for m in MARKET_BLOCKLIST)
+
+
+class ProfesiaSourceRequest(BaseModel):
+    keyword: str
+    location: Optional[str] = None
+    max_results: int = 20
+
+
+class HeurekaSourceRequest(BaseModel):
+    category_url: str
+    max_results: int = 50
+
+
+@app.post("/api/leads/source/profesia")
+async def source_profesia(req: ProfesiaSourceRequest, user=Depends(verify_jwt)):
+    """Nájde firmy inzerujúce na profesia.sk pre daný keyword a vráti ich URL na scrape."""
+    keyword = req.keyword.strip()
+    encoded = urllib.parse.quote_plus(keyword)
+    search_url = f"https://www.profesia.sk/praca/?search_anywhere={encoded}&count_days=30&sort_by=relevance"
+
+    html_bytes = fetch_html_httpx(search_url)
+    if not html_bytes:
+        html_bytes = fetch_html_cloudscraper_with_ua(search_url)
+    if not html_bytes:
+        raise HTTPException(status_code=503, detail="Profesia.sk nedostupné")
+
+    html = ftfy.fix_text(html_bytes.decode("utf-8", errors="replace"))
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Total count — profesia shows e.g. "Zobrazujem 1 - 20 z 347 ponúk"
+    total_found = 0
+    for el in soup.find_all(string=re.compile(r'z\s+\d+\s+ponúk', re.IGNORECASE)):
+        m = re.search(r'z\s+(\d[\d\s]*)\s+pon', el, re.IGNORECASE)
+        if m:
+            total_found = int(re.sub(r'\D', '', m.group(1)))
+            break
+
+    results: List[Dict] = []
+    seen_companies: set = set()
+    filtered_agencies: List[str] = []
+
+    for li in soup.select("li.list-row"):
+        if len(results) >= req.max_results:
+            break
+
+        job_link = li.select_one("h2 a")
+        if not job_link or not job_link.get("href"):
+            continue
+
+        job_href = job_link["href"].split("?")[0]  # strip search_id
+        job_url_full = f"https://www.profesia.sk{job_href}" if job_href.startswith("/") else job_href
+
+        title_el = li.select_one("span.title")
+        job_title = (title_el or job_link).get_text(strip=True)
+
+        employer_el = li.select_one("span.employer")
+        company_name = employer_el.get_text(strip=True) if employer_el else ""
+        if not company_name:
+            continue
+
+        if _is_agency(company_name):
+            if company_name not in filtered_agencies:
+                filtered_agencies.append(company_name)
+            continue
+
+        key = re.sub(r"\s+", " ", company_name.lower().strip())
+        if key in seen_companies:
+            continue
+        seen_companies.add(key)
+
+        # Derive company URL from profesia slug: /praca/alica-family/O5301140 → alica-family.sk
+        slug_m = re.search(r"/praca/([^/]+)/O\d+", job_url_full)
+        company_slug = slug_m.group(1) if slug_m else None
+        company_url = f"https://www.{company_slug}.sk" if company_slug else None
+
+        loc_el = li.select_one("span.job-location")
+        location = (loc_el.get("title") or loc_el.get_text(strip=True)) if loc_el else None
+
+        results.append({
+            "company_name": company_name,
+            "company_url": company_url,
+            "url_confidence": "derived" if company_url else None,
+            "job_title": job_title,
+            "job_url": job_url_full,
+            "location": location,
+            "source_signal": "hiring_sales_rep",
+        })
+
+    if not total_found:
+        total_found = len(results)
+
+    print(f"[profesia] keyword={keyword!r} → {len(results)} firiem, {len(filtered_agencies)} agentúr odfiltrovaných")
+    return {
+        "source": "profesia.sk",
+        "keyword": keyword,
+        "location": req.location,
+        "results": results,
+        "total_found": total_found,
+        "returned": len(results),
+        "filtered_agencies": filtered_agencies,
+    }
+
+
+@app.post("/api/leads/source/heureka")
+async def source_heureka(req: HeurekaSourceRequest, user=Depends(verify_jwt)):
+    """Nájde e-shopy v Heureka kategórii."""
+    cat_url = req.category_url.strip()
+    if not cat_url.startswith("http"):
+        cat_url = "https://www.heureka.sk/" + cat_url.lstrip("/")
+
+    # Ensure we use the /obchody/ sub-path which lists shops, not products
+    parsed_cat = urlparse(cat_url)
+    path = parsed_cat.path.rstrip("/")
+    if not path.startswith("/obchody"):
+        # /nabytok/ → /obchody/nabytok/
+        obchody_url = f"https://www.heureka.sk/obchody{path}/"
+    else:
+        obchody_url = cat_url
+
+    # Full fallback chain — Heureka has Cloudflare
+    text = await fetch_text_with_fallback(obchody_url)
+    if not text or len(text) < 500:
+        raise HTTPException(status_code=503, detail=f"Heureka nedostupné (Cloudflare?): {obchody_url}")
+
+    soup = BeautifulSoup(text, "html.parser")
+
+    h1_el = soup.select_one("h1")
+    category = h1_el.get_text(strip=True) if h1_el else path.strip("/").split("/")[-1]
+
+    results: List[Dict] = []
+    seen_domains: set = set()
+    filtered_markets: List[str] = []
+
+    for a in soup.find_all("a", href=True):
+        if len(results) >= req.max_results:
+            break
+
+        href = a["href"]
+
+        # Pattern A: Heureka redirect link with ?url= param
+        if "redirect.heureka" in href or "click.heureka" in href:
+            qs = urllib.parse.parse_qs(urlparse(href).query)
+            href = (qs.get("url") or qs.get("u") or [None])[0]
+            if not href:
+                continue
+
+        # Only external links
+        if not href.startswith("http") or "heureka" in href.lower():
+            continue
+
+        p = urlparse(href)
+        domain = p.netloc.lower().lstrip("www.")
+        if not domain or domain in seen_domains:
+            continue
+
+        shop_url = f"{p.scheme}://www.{domain}/"
+        shop_name = a.get_text(strip=True) or domain
+
+        if _is_market(shop_name, shop_url):
+            if shop_name not in filtered_markets:
+                filtered_markets.append(shop_name)
+            continue
+
+        seen_domains.add(domain)
+
+        # Rating from nearby element
+        parent = a.parent
+        rating = None
+        if parent:
+            r_el = parent.find(class_=re.compile(r"rating|star|score", re.I))
+            if r_el:
+                r_m = re.search(r"(\d+[.,]\d+)", r_el.get_text())
+                if r_m:
+                    rating = float(r_m.group(1).replace(",", "."))
+
+        results.append({
+            "shop_name": shop_name,
+            "shop_url": shop_url,
+            "rating": rating,
+            "source_signal": "heureka_category_listing",
+        })
+
+    print(f"[heureka] {obchody_url} → {len(results)} shopov, {len(filtered_markets)} odfiltrovaných")
+    return {
+        "source": "heureka.sk",
+        "category": category,
+        "category_url": obchody_url,
+        "results": results,
+        "total_found": len(results),
+        "returned": len(results),
+        "filtered_markets": filtered_markets,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SOURCE CHANNELS — E-shopy agregátor + Google Maps + ORSR nové firmy
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def _fetch_source_html(url: str) -> bytes:
+    """Fallback chain pre source channels — httpx → cloudscraper → scrapling."""
+    html = fetch_html_httpx(url)
+    if html and not is_garbled_content(extract_text_from_html(html)):
+        return html
+    html = fetch_html_cloudscraper_with_ua(url)
+    if html and not is_garbled_content(extract_text_from_html(html)):
+        return html
+    html = await fetch_html_scrapling(url)
+    if html:
+        return html
+    return b""
+
+
+def _check_robots(base_url: str, path: str) -> bool:
+    """Vráti True ak je path bezpečná na scrapovanie.
+    Python stdlib robotparser nespráva wildcard vzory (/* atp.) — ručný blacklist
+    explicitne zakázaných ciest namiesto parsovania robots.txt."""
+    # ponytail: manual blocklist — stdlib robotparser fails on wildcard Disallow patterns
+    BLOCKED_PREFIXES = {
+        "www.pricemania.sk": ["/vyhladavanie/", "/ajaxCall/", "/exit/", "/mobile/", "/m/"],
+        "www.ecommerceslovakia.sk": [],
+        "www.shoptet.sk": ["/api/", "/_next/"],
+    }
+    try:
+        from urllib.parse import urlparse as _up
+        host = _up(base_url).netloc or base_url.split("/")[2]
+        blocked = BLOCKED_PREFIXES.get(host, [])
+        return not any(path.startswith(b) for b in blocked)
+    except Exception:
+        return True
+
+
+def _parse_pricemania(html: bytes, max_results: int = 50) -> list:
+    """Vytiahne e-shopy z pricemania kategórie (JS-rendered — best effort)."""
+    if not html:
+        return []
+    soup = BeautifulSoup(html.decode("utf-8", errors="replace"), "html.parser")
+    results = []
+    seen_domains: set = set()
+    # Pattern: <a href="/obchod-detail/{slug}/"> alebo exit linky s názvom obchodu
+    for a in soup.find_all("a", href=True):
+        if len(results) >= max_results:
+            break
+        href = a["href"]
+        name = a.get_text(strip=True)
+        if not name or len(name) < 2:
+            continue
+        # Priamy odkaz na obchod
+        if "/obchod-detail/" in href:
+            slug_m = re.search(r"/obchod-detail/([^/]+)/", href)
+            slug = slug_m.group(1) if slug_m else None
+            shop_url = f"https://www.{slug}.sk" if slug else None
+            domain = slug or name.lower().replace(" ", "")
+            if domain in seen_domains:
+                continue
+            seen_domains.add(domain)
+            if _is_market(name, shop_url or ""):
+                continue
+            results.append({
+                "shop_name": name,
+                "shop_url": shop_url,
+                "found_in": "pricemania",
+                "source_signal": "active_eshop",
+            })
+    return results
+
+
+def _parse_ecommerce_sk_slugs(html: bytes) -> list:
+    """Vytiahne slugy a názvy z katalóg-eshopov listing stránky."""
+    if not html:
+        return []
+    soup = BeautifulSoup(html.decode("utf-8", errors="replace"), "html.parser")
+    results = []
+    seen: set = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        # Pattern: /eshops/{slug}/ (interná stránka)
+        m = re.search(r"/eshops/([^/]+)/?$", href)
+        if not m:
+            continue
+        slug = m.group(1)
+        if slug in seen:
+            continue
+        seen.add(slug)
+        # Vytiahni názov z img alt textu
+        img = a.find("img")
+        name = ""
+        if img:
+            alt = img.get("alt", "")
+            name = re.sub(r"\s*[-–]\s*(clen|člen|member|E-commerce|Ecommerce).*", "", alt, flags=re.IGNORECASE).strip()
+            name = re.sub(r"\s+(logo|icon|img|image)$", "", name, flags=re.IGNORECASE).strip()
+        if not name:
+            name = slug.replace("-", " ").title()
+        results.append({"slug": slug, "name": name, "detail_url": f"https://www.ecommerceslovakia.sk/eshops/{slug}/"})
+    return results
+
+
+def _extract_shop_url_from_detail(html: bytes) -> str | None:
+    """Z detail stránky ecommerceslovakia vytiahne URL samotného e-shopu."""
+    if not html:
+        return None
+    SKIP = {"ecommerceslovakia.sk", "facebook.com", "linkedin.com", "youtube.com", "instagram.com", "google.com"}
+    soup = BeautifulSoup(html.decode("utf-8", errors="replace"), "html.parser")
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if not href.startswith("http"):
+            continue
+        domain = urlparse(href).netloc.lower().lstrip("www.")
+        if any(s in domain for s in SKIP):
+            continue
+        if domain.endswith(".sk") or domain.endswith(".cz") or domain.endswith(".eu"):
+            return href.rstrip("/") + "/"
+    return None
+
+
+async def _parse_ecommerce_sk(html: bytes, max_results: int = 50) -> list:
+    """Vytiahne certifikované e-shopy: listing → detail pages pre skutočné URL."""
+    slugs = _parse_ecommerce_sk_slugs(html)[:max_results]
+    results = []
+    for item in slugs:
+        detail_html = await _fetch_source_html(item["detail_url"])
+        shop_url = _extract_shop_url_from_detail(detail_html)
+        if shop_url and _is_market(item["name"], shop_url):
+            continue
+        results.append({
+            "shop_name": item["name"],
+            "shop_url": shop_url,
+            "found_in": "ecommerce_sk",
+            "source_signal": "certified_eshop",
+        })
+    return results
+
+
+class EshopsSourceRequest(BaseModel):
+    category: str
+    max_results: int = 50
+    sources: List[str] = ["pricemania", "ecommerce_sk"]
+
+
+@app.post("/api/leads/source/eshops")
+async def source_eshops(req: EshopsSourceRequest, user=Depends(verify_jwt)):
+    """Agregátor e-shopov z viacerých katalógov (pricemania, ecommerce_sk; shoptet TODO)."""
+    import urllib.parse as _urlparse
+    cat_slug = re.sub(r'[^a-z0-9]', '-', req.category.lower().strip()).strip('-')
+    results_per_source: dict = {}
+    notes: list = []
+
+    if "pricemania" in req.sources:
+        ok = _check_robots("https://www.pricemania.sk", f"/obchod-detail/{cat_slug}/")
+        if not ok:
+            notes.append("pricemania: robots.txt disallow — preskočené")
+        else:
+            html = await _fetch_source_html(f"https://www.pricemania.sk/obchod-detail/{cat_slug}/")
+            items = _parse_pricemania(html, req.max_results)
+            results_per_source["pricemania"] = items
+            print(f"[eshops] pricemania: {len(items)} shopov")
+
+    if "shoptet" in req.sources:
+        notes.append("shoptet: JS-rendered, zatiaľ nepodporované — pridaj Scrapling s JS wait")
+        results_per_source["shoptet"] = []
+
+    if "ecommerce_sk" in req.sources:
+        ok = _check_robots("https://www.ecommerceslovakia.sk", "/katalog-eshopov/")
+        if not ok:
+            notes.append("ecommerce_sk: robots.txt disallow — preskočené")
+        else:
+            html = await _fetch_source_html("https://www.ecommerceslovakia.sk/katalog-eshopov/")
+            items = await _parse_ecommerce_sk(html, req.max_results)
+            results_per_source["ecommerce_sk"] = items
+            print(f"[eshops] ecommerce_sk: {len(items)} shopov")
+
+    # Agregácia + dedup podľa domény
+    seen_domains: set = set()
+    aggregated: list = []
+    filtered_markets: list = []
+    for source, items in results_per_source.items():
+        for it in items:
+            url = it.get("shop_url") or ""
+            dom = _domain_of(url) or it.get("shop_name", "").lower()[:20]
+            if dom in seen_domains:
+                continue
+            seen_domains.add(dom)
+            aggregated.append(it)
+
+    aggregated = aggregated[:req.max_results]
+    sources_used = [s for s in req.sources if s != "shoptet" or results_per_source.get("shoptet")]
+    return {
+        "source": "eshops_aggregate",
+        "category": req.category,
+        "sources_used": list(results_per_source.keys()),
+        "results": aggregated,
+        "total_found": sum(len(v) for v in results_per_source.values()),
+        "returned": len(aggregated),
+        "deduplicated": len(aggregated),
+        "filtered_markets": filtered_markets,
+        "notes": notes,
+    }
+
+
+# ── Google Maps (Places API) ──
+
+class MapsSourceRequest(BaseModel):
+    keyword: str
+    location: str
+    max_results: int = 20
+
+
+@app.post("/api/leads/source/maps")
+async def source_maps(req: MapsSourceRequest, user=Depends(verify_jwt)):
+    """Nájde lokálne firmy cez Google Places Text Search API."""
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Places API kľúč nie je nastavený — pridaj GOOGLE_PLACES_API_KEY do .env"
+        )
+    query = f"{req.keyword.strip()} {req.location.strip()}".strip()
+    search_url = (
+        f"https://maps.googleapis.com/maps/api/place/textsearch/json"
+        f"?query={urllib.parse.quote_plus(query)}&key={api_key}&language=sk&region=sk"
+    )
+    try:
+        with httpx.Client(timeout=10) as client:
+            resp = client.get(search_url)
+        data = resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Google Places API chyba: {e}")
+
+    if data.get("status") not in ("OK", "ZERO_RESULTS"):
+        raise HTTPException(status_code=503, detail=f"Google Places chyba: {data.get('status')} — {data.get('error_message', '')}")
+
+    results: list = []
+    for place in data.get("results", [])[:req.max_results]:
+        website = place.get("website")
+        name = place.get("name", "")
+        addr = place.get("formatted_address", "")
+        rating = place.get("rating")
+        results.append({
+            "company_name": name,
+            "company_url": website,
+            "address": addr,
+            "rating": rating,
+            "place_id": place.get("place_id"),
+            "source_signal": "local_business",
+        })
+
+    return {
+        "source": "google_maps",
+        "keyword": req.keyword,
+        "location": req.location,
+        "results": results,
+        "total_found": len(results),
+        "returned": len(results),
+    }
+
+
+# ── ORSR nové firmy (experimentálne / TODO) ──
+
+class OrsrNewSourceRequest(BaseModel):
+    days_back: int = 90
+    region: Optional[str] = None
+    legal_form: Optional[str] = None
+    max_results: int = 30
+
+
+@app.post("/api/leads/source/orsr_new")
+async def source_orsr_new(req: OrsrNewSourceRequest, user=Depends(verify_jwt)):
+    """
+    Nové firmy z ORSR/RPO.
+    TODO: RPO API (api.statistics.sk/rpo/v1/) nepodporuje filter podľa dátumu cez GET.
+    Alternatíva: Obchodný vestník (ov.justice.sk) — vyžaduje parsing PDF/HTML vestníka.
+    Tento endpoint je experimentálny a zatiaľ vracia prázdny zoznam.
+    """
+    # ponytail: stub — RPO API nepodporuje establishedAfter filter, vestník = TODO
+    return {
+        "source": "orsr_new",
+        "status": "not_implemented",
+        "message": (
+            "RPO API nepodporuje filter podľa dátumu vzniku cez jednoduchý GET. "
+            "Alternatívy: (1) Obchodný vestník ov.justice.sk — parsovanie HTML vydaní, "
+            "(2) Finstat.sk Premium API — má filter na nové firmy. "
+            "Doimplementuj ktorú z týchto stratégií chceš."
+        ),
+        "days_back": req.days_back,
+        "results": [],
+        "total_found": 0,
+        "returned": 0,
     }

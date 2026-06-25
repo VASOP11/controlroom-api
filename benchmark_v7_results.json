@@ -1,0 +1,3020 @@
+[
+  {
+    "url": "https://www.domoss.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "alena krištofová",
+      "tier": "WARM"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Igor Ďurina",
+    "score": 60,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Alena Krištofová' (rola: Zodpovedný vedúci) nájdené na webe s telefónom +421 33 77 44 800",
+      "IČO 36228389 overené v registri → konateľ: Igor Ďurina (+15)",
+      "[veľkosť: small_low] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@domoss.sk (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: WARM (skóre 60/100)"
+    ]
+  },
+  {
+    "url": "https://www.pomocnik.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "michal martinovič",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Michal Martinovič",
+    "score": 35,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 31324428 overené v registri → konateľ: Michal Martinovič (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Generický email info@pomocnik.sk (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: COOL (skóre 35/100)"
+    ]
+  },
+  {
+    "url": "https://www.stavbaeu.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "štěpán grochal",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Štěpán Grochal",
+    "score": 35,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 47114983 overené v registri → konateľ: Štěpán Grochal (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Generický email info@stavbaeu.cz (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: COOL (skóre 35/100)"
+    ]
+  },
+  {
+    "url": "https://www.velkykosik.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "petr wagner",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Petr Wagner",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Petr Wagner' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 25629662 overené v registri → konateľ: Petr Wagner (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@velkykosik.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://goodio.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@goodio.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.kokiskashop.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "jakub kokštein",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jakub Kokštein",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Jakub Kokštein' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 02509016 overené v registri → konateľ: Jakub Kokštein (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@kokiska.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://sk.harahu.com/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "roman person",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Roman Person",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Roman Person' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 46621903 overené v registri → konateľ: Roman Person (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@harahu.com (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.svet-svitidel.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "jiří mánek",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jiří Mánek",
+    "score": 35,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 47539569 overené v registri → konateľ: Jiří Mánek (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Generický email helpdesk@svet-svitidel.cz (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: COOL (skóre 35/100)"
+    ]
+  },
+  {
+    "url": "https://www.pohodlne-nakupy.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "štefan butaš",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Štefan Butaš",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Štefan Butaš' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 44470011 overené v registri → konateľ: Štefan Butaš (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email obchod@pohodlne-nakupy.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.svet-trampolin.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 40,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 03730689 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@svet-trampolin.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: COOL (skóre 40/100)"
+    ]
+  },
+  {
+    "url": "https://www.imago.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "tomáš reiter",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Tomáš Reiter",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Tomáš Reiter' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 06020933 overené v registri → konateľ: Tomáš Reiter (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@imago.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.bestbaby.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "zuzana sekáčová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Zuzana Sekáčová",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Zuzana Sekáčová' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 06410944 overené v registri → konateľ: Zuzana Sekáčová (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email objednavky@bestbaby.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.zuriel.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "cookies vážíme",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Lucie Krejčí Turková",
+    "score": 70,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Cookies Vážíme' (rola: konateľ) nájdené na webe s telefónom +420 602 191 636",
+      "IČO 28788214 overené v registri → konateľ: Lucie Krejčí Turková (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@zuriel.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://nejhracka.cz",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "značky zobrazit",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jakub Šůla",
+    "score": 80,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Značky Zobrazit' (rola: konateľ) nájdené na webe s telefónom +420 315 559 688",
+      "IČO 25089595 overené v registri → konateľ: Jakub Šůla (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Osobný email nejhracka@nejhracka.cz (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://www.fermatshop.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ladislav pocisk",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ladislav Pocisk",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Ladislav Pocisk' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 50963791 overené v registri → konateľ: Ladislav Pocisk (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@fermatshop.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.medhelp-shop.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "lubor zíta",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Lubor Zíta",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Lubor Zíta' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 28255356 overené v registri → konateľ: Lubor Zíta (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email obchod@medhelp-shop.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.svetkadernictvi.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@svetkadernictvi.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.dukra.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ivan dupej",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ivan Dupej",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Ivan Dupej' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 45340129 overené v registri → konateľ: Ivan Dupej (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@dukra.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://foxstyle.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "branislav semančík",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Branislav Semančík",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Branislav Semančík' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 02945291 overené v registri → konateľ: Branislav Semančík (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email eshop@foxstyle.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.aspira.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "peter lichman",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Peter Lichman",
+    "score": 35,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Žiadny telefón nenájdený na webe",
+      "IČO 46863800 overené v registri → konateľ: Peter Lichman (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Žiadny telefón nenájdený (-15)",
+      "Generický email info@aspira.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: COOL (skóre 35/100)"
+    ]
+  },
+  {
+    "url": "https://www.prodejparfemu.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "jiří železný",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jiří Železný",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Jiří Železný' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 13957201 overené v registri → konateľ: Jiří Železný (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email objednavky@prodejparfemu.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.bezvavlasy.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "aleš hudeček",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Aleš Hudeček",
+    "score": 35,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 24168416 overené v registri → konateľ: Aleš Hudeček (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Generický email info@bezvavlasy.cz (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: COOL (skóre 35/100)"
+    ]
+  },
+  {
+    "url": "https://www.vivantis.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "petr moučka",
+      "tier": "WARM"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Petr Moučka",
+    "score": 50,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 25977687 overené v registri → konateľ: Petr Moučka (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Osobný email zakaznicky-servis@vivantis.cz (+15)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: WARM (skóre 50/100)"
+    ]
+  },
+  {
+    "url": "https://www.biostyle.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ľubomír pejko",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ľubomír Pejko",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Ľubomír Pejko' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 52239802 overené v registri → konateľ: Ľubomír Pejko (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email lp-trade@lp-trade.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://bagalio.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "roman klein",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Roman Klein",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Roman Klein' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 29365252 overené v registri → konateľ: Roman Klein (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@bagalio.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://darcekvakcii.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@darcekvakcii.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.ludovka.eu/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@ludovka.eu (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.amirashop.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "radomír švihel",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Radomír Švihel",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Radomír Švihel' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 04728190 overené v registri → konateľ: Radomír Švihel (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email objednavky@amirashop.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.krasa-vitalita.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "tereza šimková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Tereza Šimková",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Tereza Šimková' nájdené na webe (43 znakov od čísla +420721639729)",
+      "IČO 05628253 overené v registri → konateľ: Tereza Šimková (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email obchod@krasa-vitalita.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://www.dalora.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "andrej slávik",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Andrej Slávik",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Andrej Slávik' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 54623979 overené v registri → konateľ: Andrej Slávik (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@dalora.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://eshop.natureal.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "daniela polakovič",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Daniela Polakovič",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Daniela Polakovič' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 52455335 overené v registri → konateľ: Daniela Polakovič (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email obchod@natureal.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://ksisters.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 0,
+    "confidence": "LOW",
+    "reasoning": [
+      "Žiadny telefón nenájdený na webe",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Žiadny telefón nenájdený (-15)",
+      "Generický email hello@ksisters.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 0/100)"
+    ]
+  },
+  {
+    "url": "https://www.medikament.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "adrián leško",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Adrián Leško",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Adrián Leško' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 57053324 overené v registri → konateľ: Adrián Leško (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@medikament.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://parfumeria-orion.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "marian jonáš",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Marian Jonáš",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Marian Jonáš' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 45723991 overené v registri → konateľ: Marian Jonáš (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@parfumeria-orion.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.kocos.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "františek križan",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "František Križan",
+    "score": 82,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'František Križan' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 44716931 overené v registri → konateľ: František Križan (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Osobný email nitra@kocos.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 82/100)"
+    ]
+  },
+  {
+    "url": "https://www.kmagic.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "miroslava tarčáková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Miroslava Tarčáková",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Miroslava Tarčáková' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 55897002 overené v registri → konateľ: Miroslava Tarčáková (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@kmagic.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.zdravie-shop.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "tamás mórocz",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Tamás Mórocz",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Tamás Mórocz' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 57358109 overené v registri → konateľ: Tamás Mórocz (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@zdravie-shop.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.kbloom.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "jozef dobrovič",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jozef Dobrovič",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Jozef Dobrovič' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 47911859 overené v registri → konateľ: Jozef Dobrovič (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@kbloom.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.kosmetika-zdravi.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "lukáš němeček",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Lukáš Němeček",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Lukáš Němeček' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 25292285 overené v registri → konateľ: Lukáš Němeček (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@kosmetika-zdravi.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.parfemy-elnino.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "lukáš němeček",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Lukáš Němeček",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Lukáš Němeček' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 25292285 overené v registri → konateľ: Lukáš Němeček (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@elnino.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.zks-shop.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@zks-shop.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://dimidi.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "helena duranková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Helena Duranková",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Helena Duranková' nájdené na webe (6977 znakov od čísla +421948206616)",
+      "IČO 36464724 overené v registri → konateľ: Helena Duranková (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@dimidi.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://vitalpoint.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 40,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 25663585 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@vitalpoint.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: COOL (skóre 40/100)"
+    ]
+  },
+  {
+    "url": "https://www.vaschovatel.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "nové dvory",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "David Skolil",
+    "score": 70,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Nové Dvory' (rola: majiteľ) nájdené na webe s telefónom +420 604 483 417",
+      "IČO 01604198 overené v registri → konateľ: David Skolil (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@vaschovatel.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://azpet.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ján šimčo",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ján Šimčo",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Ján Šimčo' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 53454022 overené v registri → konateľ: Ján Šimčo (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@azpet.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://fera.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "daria marta rudzka",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Daria Marta Rudzka",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Daria Marta Rudzka' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 05041261 overené v registri → konateľ: Daria Marta Rudzka (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@fera.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.spokojnypes.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 35,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email vas@spokojnypes.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: COOL (skóre 35/100)"
+    ]
+  },
+  {
+    "url": "https://www.bezednamiska.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "tomáš andrejsek",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Tomáš Andrejsek",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Tomáš Andrejsek' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 01915398 overené v registri → konateľ: Tomáš Andrejsek (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@bezednamiska.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://pet-market.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@pet-market.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.efitness.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@efitness.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://abc-zoo.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "radko ruščák",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Radko Ruščák",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Radko Ruščák' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 47508795 overené v registri → konateľ: Radko Ruščák (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email podpora@abc-zoo.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.garho.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@garho.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.petdays.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "vladimír urmanič",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Peter Orsovics",
+    "score": 70,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Vladimír Urmanič' (rola: generálny riaditeľ) nájdené na webe s telefónom +421 2 59 880 264",
+      "IČO 46211161 overené v registri → konateľ: Peter Orsovics (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@petdays.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.premiumdog.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "zsolt štrofek",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Zsolt Štrofek",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Zsolt Štrofek' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 45240477 overené v registri → konateľ: Zsolt Štrofek (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email premiumdog@premiumdog.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://www.abovzoo.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "juraj vavrek",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Juraj Vavrek",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Juraj Vavrek' nájdené na webe (102 znakov od čísla +421948631368)",
+      "IČO 36605018 overené v registri → konateľ: Juraj Vavrek (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@vet.abov.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://alfadog.eu/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "juraj országh",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Juraj Országh",
+    "score": 45,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 52010180 overené v registri → konateľ: Juraj Országh (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Osobný email alfadog.info@gmail.com (+15)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: COOL (skóre 45/100)"
+    ]
+  },
+  {
+    "url": "https://luckydogs.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "marek dóza",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Marek Dóza",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Marek Dóza' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 47172983 overené v registri → konateľ: Marek Dóza (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email luckydogs@jadotrade.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://www.vasenechty.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "štefánia kislan",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Štefánia Kislan",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Štefánia Kislan' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 46901230 overené v registri → konateľ: Štefánia Kislan (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email vasenechty@gmail.com (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://www.amirashop.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email objednavky@amirashop.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.naninails.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "david peterek",
+      "tier": "WARM"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 65,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'David Peterek' (rola: Jednatel) nájdené na webe s telefónom +420 552 341 784",
+      "IČO 29391920 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: small_low] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@naninails.cz (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: WARM (skóre 65/100)"
+    ]
+  },
+  {
+    "url": "https://marei.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "mariana reiselová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Mariana Reiselová",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Mariana Reiselová' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 41962061 overené v registri → konateľ: Mariana Reiselová (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@marei.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.hair-cosmetics.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "tomáš pavelka",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Tomáš Pavelka",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Tomáš Pavelka' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 07238908 overené v registri → konateľ: Tomáš Pavelka (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@haircosmetics.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://medistore.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "peter pavuk",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Peter Pavuk",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Peter Pavuk' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 35834498 overené v registri → konateľ: Peter Pavuk (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@medistore.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://knifestock.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "martin bohát",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Martin Bohát",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Martin Bohát' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 50231111 overené v registri → konateľ: Martin Bohát (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@knifestock.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://decorglass.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "katarína labaiová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Katarína Labaiová",
+    "score": 100,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Katarína Labaiová' nájdené na webe (123 znakov od čísla +421905351864)",
+      "IČO 36578215 overené v registri → konateľ: Katarína Labaiová (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Osobný email decorglass@decorglass.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 100/100)"
+    ]
+  },
+  {
+    "url": "https://nakupto.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 0,
+    "confidence": "LOW",
+    "reasoning": [
+      "Žiadny telefón nenájdený na webe",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Žiadny telefón nenájdený (-15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 0/100)"
+    ]
+  },
+  {
+    "url": "https://dedraeshop.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "anna bottová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Anna Bottová",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Anna Bottová' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 50096966 overené v registri → konateľ: Anna Bottová (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email dedraeshop@gmail.com (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://lunzo.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 0,
+    "confidence": "LOW",
+    "reasoning": [
+      "Žiadny telefón nenájdený na webe",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Žiadny telefón nenájdený (-15)",
+      "Osobný email safety@lunzo.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 0/100)"
+    ]
+  },
+  {
+    "url": "https://www.klobasky.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ľudovít danko",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ľudovít Danko",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Ľudovít Danko' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 36645354 overené v registri → konateľ: Ľudovít Danko (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email sklad.zvolen@maspoma.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://dekoraciedobytu.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "pavol šulava",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Pavol Šulava",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Pavol Šulava' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 41360036 overené v registri → konateľ: Pavol Šulava (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email obchod@dekoraciedobytu.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.astoreo.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "petr wagner",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Petr Wagner",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Petr Wagner' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 25629662 overené v registri → konateľ: Petr Wagner (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email astoreo@astoreo.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://dizajnove.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 0,
+    "confidence": "LOW",
+    "reasoning": [
+      "Žiadny telefón nenájdený na webe",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Žiadny telefón nenájdený (-15)",
+      "Generický email info@dizajnove.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 0/100)"
+    ]
+  },
+  {
+    "url": "https://4home.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@4home.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://mlongauer.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "martin longauer",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Martin Longauer",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Martin Longauer' nájdené na webe (0 znakov od čísla +421 940 404 831)",
+      "IČO 36565679 overené v registri → konateľ: Martin Longauer (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@mlongauer.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://www.dedra.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "františek černý",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "František Černý",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'František Černý' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 27482731 overené v registri → konateľ: František Černý (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email objednavky@dedra.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://beautyprof.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@beautyprof.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://tasha.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email obchod@tasha.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://eshop.agharta.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "emil rajčan",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Emil Rajčan",
+    "score": 80,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Emil Rajčan' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 36037346 overené v registri → konateľ: Emil Rajčan (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email agharta@atlas.sk (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 80/100)"
+    ]
+  },
+  {
+    "url": "https://mood.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "katarína markech",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Katarína Markech",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Katarína Markech' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 50002465 overené v registri → konateľ: Katarína Markech (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email ahoj@mood.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.vohy.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "pod wilec",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Juraj Heštera",
+    "score": 70,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Pod Wilec' (rola: konateľ) nájdené na webe s telefónom +421 919 071 612",
+      "IČO 50560956 overené v registri → konateľ: Juraj Heštera (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@vohy.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.pro-salony.cz/",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)"
+  },
+  {
+    "url": "https://www.zeniqo.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "peter šimko",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Peter Šimko",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Peter Šimko' nájdené na webe (0 znakov od čísla +421908761091)",
+      "IČO 44542143 overené v registri → konateľ: Peter Šimko (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email eshop@zeniqo.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://www.skinlovers.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "gašpieriková liššáková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Gašpieriková Liššáková",
+    "score": 77,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Gašpieriková Liššáková' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 53991192 overené v registri → konateľ: Gašpieriková Liššáková (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@skinlovers.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 77/100)"
+    ]
+  },
+  {
+    "url": "https://lomax.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ivo langer",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ivo Langer",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Ivo Langer' nájdené na webe (5776 znakov od čísla 0262523331)",
+      "IČO 17345669 overené v registri → konateľ: Ivo Langer (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@lomax.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://www.gundogstore.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ivana zástěrová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ivana Zástěrová",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Ivana Zástěrová' nájdené na webe (0 znakov od čísla +421 911 521 821)",
+      "IČO 44919441 overené v registri → konateľ: Ivana Zástěrová (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@gundogstore.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://www.brasty.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "alena masarová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Alena Masarová",
+    "score": 90,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Alena Masarová' nájdené na webe (882 znakov od čísla 00420581580660)",
+      "IČO 24276821 overené v registri → konateľ: Alena Masarová (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@brasty.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 90/100)"
+    ]
+  },
+  {
+    "url": "https://www.fgym.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ladislav ferenci",
+      "tier": "WARM"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 65,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Ladislav Ferenci' (rola: majiteľ) nájdené na webe s telefónom 0911 489 439",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Osobný email ferenci.ladislav@gmail.com (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: WARM (skóre 65/100)"
+    ]
+  },
+  {
+    "url": "https://eshop.globo-lighting.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "zsolt straňovský",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Zsolt Straňovský",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Zsolt Straňovský' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 36536989 overené v registri → konateľ: Zsolt Straňovský (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email eshop-sk@globo-lighting.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.tapka.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "michaela saukuličová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Michaela Saukuličová",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Michaela Saukuličová' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 47882077 overené v registri → konateľ: Michaela Saukuličová (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@tapka.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.ruzovakozmetika.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "martin janota",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Martin Janota",
+    "score": 85,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Martin Janota' nájdené na webe (179 znakov od čísla +421915741895)",
+      "IČO 03522083 overené v registri → konateľ: Martin Janota (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@ruzovakosmetika.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 85/100)"
+    ]
+  },
+  {
+    "url": "https://www.pandaoutdoor.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "jan cimický",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jan Cimický",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Jan Cimický' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 15801152 overené v registri → konateľ: Jan Cimický (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@pandaoutdoor.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.zvireci-potreby.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "mikros milla",
+      "tier": "WARM"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Roman Killinger",
+    "score": 60,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Mikros Milla' (rola: konateľ) nájdené na webe s telefónom 420510510852",
+      "IČO 29238170 overené v registri → konateľ: Roman Killinger (+15)",
+      "[veľkosť: small_low] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email obchod@zvireci-potreby.cz (+5)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: WARM (skóre 60/100)"
+    ]
+  },
+  {
+    "url": "https://www.bioruza.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "DEAD"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": false,
+    "registry_konatel": null,
+    "score": 25,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@bioruza.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: DEAD (skóre 25/100)"
+    ]
+  },
+  {
+    "url": "https://www.ajsi.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "dávid flaškár",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Dávid Flaškár",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Dávid Flaškár' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 55692931 overené v registri → konateľ: Dávid Flaškár (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@ajsi.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.dogz.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "juraj országh",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Juraj Országh",
+    "score": 45,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Firma odhad väčšia (small) → pravdepodobne info linka",
+      "IČO 52010180 overené v registri → konateľ: Juraj Országh (+15)",
+      "[veľkosť: small_low] [registry_only] → +10 bodov",
+      "Telefón pravdepodobne info linka (+10)",
+      "Osobný email dogzsk.info@gmail.com (+15)",
+      "Firma: 10+ zamestnancov (-5)",
+      "Tier: COOL (skóre 45/100)"
+    ]
+  },
+  {
+    "url": "https://www.profesionalnikosmetika.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "česká obchodní inspekce",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Česká obchodní inspekce",
+    "score": 77,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Česká obchodní inspekce' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 00020869 overené v registri → konateľ: Česká obchodní inspekce (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@profesionalnikosmetika.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 77/100)"
+    ]
+  },
+  {
+    "url": "https://www.magano.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "renáta zacharová",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Renáta Zacharová",
+    "score": 77,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Renáta Zacharová' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 22634452 overené v registri → konateľ: Renáta Zacharová (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@magano.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 77/100)"
+    ]
+  },
+  {
+    "url": "https://www.drug-store.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "jana kováčiková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Jana Kováčiková",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Jana Kováčiková' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 46848851 overené v registri → konateľ: Jana Kováčiková (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@drug-store.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://www.lavonio.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 45,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 60749440 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email obchod@lavonio.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: COOL (skóre 45/100)"
+    ]
+  },
+  {
+    "url": "https://www.nazuby.eu/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 40,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 27638863 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@nazuby.eu (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: COOL (skóre 40/100)"
+    ]
+  },
+  {
+    "url": "https://www.evonashop.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "stanislav pantůček",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 75,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Stanislav Pantůček' (rola: riaditeľ) nájdené na webe s telefónom +420 469 638 558",
+      "IČO 46509071 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email objednavky@evona.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 75/100)"
+    ]
+  },
+  {
+    "url": "https://www.zapardrobnych.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "COOL"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 40,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 04926889 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@zapardrobnych.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: COOL (skóre 40/100)"
+    ]
+  },
+  {
+    "url": "https://dekorbymirka.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "miroslava baránková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Miroslava Baránková",
+    "score": 72,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Miroslava Baránková' nájdené na webe, ďaleko od telefónu (register+web_distant)",
+      "IČO 51173948 overené v registri → konateľ: Miroslava Baránková (+15)",
+      "[veľkosť: micro] [register+web_distant] → +22 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email info@dekorbymirka.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 72/100)"
+    ]
+  },
+  {
+    "url": "https://eshop.casca.sk/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "digital všeobecné",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Peter Kasa",
+    "score": 70,
+    "confidence": "MEDIUM-HIGH",
+    "reasoning": [
+      "Meno 'Digital Všeobecné' (rola: konateľ) nájdené na webe s telefónom +421 918 736 570",
+      "IČO 50956299 overené v registri → konateľ: Peter Kasa (+15)",
+      "[veľkosť: micro] [web_only] → +20 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email eshop@casca.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://darcekeshop.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "ivan urcikán",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Ivan Urcikán",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Ivan Urcikán' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 45955824 overené v registri → konateľ: Ivan Urcikán (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email objednavky@tifantex.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://vasemanikury.cz",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "eva ptáčková",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Eva PTÁČKOVÁ",
+    "score": 90,
+    "confidence": "HIGH",
+    "reasoning": [
+      "Meno 'Eva PTÁČKOVÁ' nájdené na webe (1068 znakov od čísla +420777205566)",
+      "IČO 14658089 overené v registri → konateľ: Eva PTÁČKOVÁ (+15)",
+      "[veľkosť: micro] [register+web] → +35 bodov",
+      "Telefón klasifikovaný ako osobný (+25)",
+      "Generický email obchod@vasemanikury.cz (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Nájdené ďalšie kontakty s rolou (+5)",
+      "Tier: HOT (skóre 90/100)"
+    ]
+  },
+  {
+    "url": "https://oblecsalacno.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "štefan vartovník",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Štefan Vartovník",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Štefan Vartovník' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 57289191 overené v registri → konateľ: Štefan Vartovník (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@workman.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://tineke.sk",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "martin vretenár",
+      "tier": "HOT"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": "Martin Vretenár",
+    "score": 70,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ 'Martin Vretenár' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 36656020 overené v registri → konateľ: Martin Vretenár (+15)",
+      "[veľkosť: micro] [registry_only] → +25 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Generický email info@tineke.sk (+5)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: HOT (skóre 70/100)"
+    ]
+  },
+  {
+    "url": "https://www.bonobijou.cz/",
+    "name_match": true,
+    "tier_match": false,
+    "expected": {
+      "name": "",
+      "tier": ""
+    },
+    "got": {
+      "name": "",
+      "tier": "WARM"
+    },
+    "expected_phone": "",
+    "expected_role": "",
+    "registry_verified": true,
+    "registry_konatel": null,
+    "score": 50,
+    "confidence": "MEDIUM",
+    "reasoning": [
+      "Konateľ '?' nenájdený pri telefóne. Odhad veľkosti: micro → telefón pravdepodobne osobný",
+      "IČO 26224062 overené v registri → konateľ: neznámy (+15)",
+      "[veľkosť: micro] [žiadne meno] → -5 bodov",
+      "Telefón odhadovaný ako osobný — malá firma (+20)",
+      "Osobný email prodej@bonobijou.cz (+15)",
+      "Firma: 1–9 zamestnancov (+5)",
+      "Tier: WARM (skóre 50/100)"
+    ]
+  }
+]

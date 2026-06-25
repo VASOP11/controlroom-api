@@ -1,0 +1,60 @@
+[2026-06-08 18:22:47] INFO: Fetched (200) <GET https://www.zeniqo.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:23:44] INFO: Fetched (200) <GET https://www.citycomp.sk/> (referer: https://www.google.com/)
+Future exception was never retrieved
+future: <Future finished exception=TargetClosedError('Target page, context or browser has been closed\nCall log:\n  - navigating to "https://www.citycomp.sk/", waiting until "networkidle"\n')>
+playwright._impl._errors.TargetClosedError: Target page, context or browser has been closed
+Call log:
+  - navigating to "https://www.citycomp.sk/", waiting until "networkidle"
+
+[2026-06-08 18:24:09] INFO: Fetched (200) <GET https://www.stavbaeu.cz/> (referer: https://www.google.com/)
+[2026-06-08 18:24:24] INFO: Fetched (200) <GET https://www.esvit.cz/> (referer: https://www.google.com/)
+[2026-06-08 18:24:42] INFO: Fetched (200) <GET https://www.domoss.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:25:06] INFO: Fetched (200) <GET https://www.pomocnik.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:25:23] INFO: Fetched (200) <GET https://vsetkonaradie.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:25:41] INFO: Fetched (200) <GET https://www.velkykosik.cz/> (referer: https://www.google.com/)
+[2026-06-08 18:26:08] INFO: Fetched (200) <GET https://goodio.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:26:32] INFO: Fetched (200) <GET https://www.kokiskashop.cz/> (referer: https://www.google.com/)
+[2026-06-08 18:26:52] INFO: Fetched (200) <GET https://eshop.globo-lighting.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:27:17] INFO: Fetched (200) <GET https://www.profiledziarovky.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:28:07] INFO: Fetched (200) <GET https://www.svet-svitidel.cz/> (referer: https://www.google.com/)
+Future exception was never retrieved
+future: <Future finished exception=TargetClosedError('Target page, context or browser has been closed\nCall log:\n  - navigating to "https://www.svet-svitidel.cz//obchodne-podmienky", waiting until "networkidle"\n')>
+playwright._impl._errors.TargetClosedError: Target page, context or browser has been closed
+Call log:
+  - navigating to "https://www.svet-svitidel.cz//obchodne-podmienky", waiting until "networkidle"
+
+[2026-06-08 18:28:39] INFO: Fetched (200) <GET https://www.pohodlne-nakupy.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:28:45] INFO: Fetched (200) <GET https://www.megaknihy.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:29:08] INFO: Fetched (200) <GET https://www.indarceky.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:29:24] INFO: Fetched (200) <GET https://www.margaretkashop.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:29:35] INFO: Fetched (200) <GET https://www.florasystem.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:29:53] INFO: Fetched (200) <GET https://www.mpm-time.cz/> (referer: https://www.google.com/)
+[2026-06-08 18:30:12] INFO: Fetched (200) <GET https://www.hodiny-na-stenu.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:30:33] INFO: Fetched (200) <GET https://www.fgym.sk/> (referer: https://www.google.com/)
+[2026-06-08 18:30:54] INFO: Fetched (200) <GET https://www.sterix.cz/> (referer: https://www.google.com/)
+[2026-06-08 18:31:17] INFO: Fetched (200) <GET https://www.feim.sk/> (referer: https://www.google.com/)
+node:events:486
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: EPIPE: broken pipe, write
+    at Socket._write (node:internal/net:75:18)
+    at writeOrBuffer (node:internal/streams/writable:570:12)
+    at _write (node:internal/streams/writable:499:10)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at PipeTransport.send (C:\Users\vizva\AppData\Local\Programs\Python\Python313\Lib\site-packages\patchright\driver\package\lib\server\utils\pipeTransport.js:52:21)
+    at dispatcherConnection.onmessage (C:\Users\vizva\AppData\Local\Programs\Python\Python313\Lib\site-packages\patchright\driver\package\lib\cli\driver.js:60:59)
+    at DispatcherConnection.sendCreate (C:\Users\vizva\AppData\Local\Programs\Python\Python313\Lib\site-packages\patchright\driver\package\lib\server\dispatchers\dispatcher.js:181:10)
+    at new Dispatcher (C:\Users\vizva\AppData\Local\Programs\Python\Python313\Lib\site-packages\patchright\driver\package\lib\server\dispatchers\dispatcher.js:69:23)
+    at new BrowserTypeDispatcher (C:\Users\vizva\AppData\Local\Programs\Python\Python313\Lib\site-packages\patchright\driver\package\lib\server\dispatchers\browserTypeDispatcher.js:29:5)
+    at new PlaywrightDispatcher (C:\Users\vizva\AppData\Local\Programs\Python\Python313\Lib\site-packages\patchright\driver\package\lib\server\dispatchers\playwrightDispatcher.js:39:22)
+Emitted 'error' event on Socket instance at:
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -4047,
+  syscall: 'write',
+  code: 'EPIPE'
+}
+
+Node.js v24.14.1

@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wector — B2B Lead Intelligence</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ───────────────────────── Design tokens ───────────────────────── */
+:root{
+  /* Surfaces — warm off-white paper */
+  --bg:           #FAFAF7;
+  --surface:      oklch(1 0 0);
+  --surface-alt:  oklch(0.978 0.004 110);
+  --surface-hov:  oklch(0.965 0.006 145);
+
+  /* Borders */
+  --line:         oklch(0.92 0.008 252);
+  --line-strong:  oklch(0.86 0.012 252);
+  --line-soft:    oklch(0.95 0.005 252);
+
+  /* Ink (text) */
+  --ink:    oklch(0.20 0.018 252);
+  --ink-2:  oklch(0.36 0.014 252);
+  --ink-3:  oklch(0.50 0.010 252);
+  --ink-4:  oklch(0.66 0.008 252);
+  --ink-5:  oklch(0.78 0.005 252);
+
+  /* Brand — electric green (signature) */
+  --brand:        hsl(145 100% 42%);
+  --brand-hov:    hsl(145 100% 35%);
+  --brand-ink:    hsl(146 78% 26%);
+  --brand-soft:   hsl(145 62% 95%);
+  --brand-line:   hsl(145 52% 78%);
+
+  /* Header / chrome */
+  --header:       oklch(0.165 0.020 255);
+  --header-2:     oklch(0.21 0.020 255);
+  --header-ink:   oklch(0.98 0.003 252);
+  --header-mute:  oklch(0.66 0.014 252);
+  --header-line:  oklch(0.27 0.018 255);
+  --header-soft:  oklch(0.25 0.020 255);
+
+  /* Status / tier */
+  --hot:        oklch(0.58 0.16 152);
+  --hot-soft:   oklch(0.96 0.04 152);
+  --hot-ink:    oklch(0.38 0.15 152);
+
+  --warm:       oklch(0.60 0.16 250);
+  --warm-soft:  oklch(0.96 0.03 255);
+  --warm-ink:   oklch(0.40 0.18 252);
+
+  --cool:       oklch(0.72 0.14 78);
+  --cool-soft:  oklch(0.97 0.04 82);
+  --cool-ink:   oklch(0.46 0.12 70);
+
+  --dead:       oklch(0.62 0.008 252);
+  --dead-soft:  oklch(0.965 0.004 252);
+  --dead-ink:   oklch(0.42 0.008 252);
+
+  --danger:       oklch(0.58 0.22 25);
+  --danger-soft:  oklch(0.97 0.025 25);
+  --danger-ink:   oklch(0.44 0.20 25);
+
+  --success:      oklch(0.60 0.17 145);
+  --success-soft: oklch(0.96 0.04 145);
+  --success-ink:  oklch(0.40 0.15 145);
+
+  --warn-amber:     oklch(0.74 0.17 70);
+  --warn-amber-soft:oklch(0.97 0.04 75);
+  --warn-amber-ink: oklch(0.46 0.14 65);
+
+  /* Spacing — 4px grid */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
+
+  /* Radii — square, sharp (signature). r-full kept for dots/avatars/pills only */
+  --r-1: 2px; --r-2: 3px; --r-3: 4px; --r-4: 4px; --r-full: 999px;
+
+  /* Type — Geist body, JetBrains Mono headers (signature) */
+  --font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-display: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease:     cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 120ms; --dur-2: 180ms; --dur-3: 280ms;
+
+  /* Z-index scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 310;
+  --z-toast: 400;
+
+  /* Shadow — used sparingly for layering only */
+  --ring: 0 0 0 1px var(--line);
+  --pop:  0 1px 2px rgba(15,17,21,.04), 0 8px 24px rgba(15,17,21,.08);
+}
+
+/* ───────────────────────── Reset & base ───────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.5;
+  font-feature-settings:'ss01','cv11';
+  min-height:100vh;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line-strong);border:3px solid var(--bg);border-radius:var(--r-full)}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-4)}
+
+/* ───────────────────────── Layout primitives ───────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.shell{max-width:1440px;margin:0 auto;padding:0 var(--s-6);width:100%}
+@media(max-width:720px){.shell{padding:0 var(--s-4)}}
+
+/* ───────────────────────── Header ───────────────────────── */
+.hdr{
+  background:var(--header);
+  border-bottom:1px solid var(--header-line);
+  position:sticky;top:0;z-index:var(--z-sticky);
+}
+.hdr-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;gap:var(--s-4);
+}
+.hdr-left{display:flex;align-items:center;gap:var(--s-4);min-width:0}
+.brand{
+  display:inline-flex;align-items:center;gap:var(--s-2);
+  color:var(--header-ink);font-weight:600;font-size:15px;letter-spacing:-0.02em;
+  font-family:var(--font-display);
+  padding:6px 10px;margin-left:-10px;border-radius:var(--r-2);
+  transition:background var(--dur-1) var(--ease);
+}
+.brand:hover{background:var(--header-soft)}
+.brand-mark{
+  width:22px;height:22px;border-radius:var(--r-2);
+  background:linear-gradient(135deg,hsl(145 95% 46%),hsl(162 90% 36%));
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px;
+}
+.brand-mark::before{content:'W'}
+.lead-pill{
+  font-size:11px;font-weight:500;color:var(--header-mute);
+  background:var(--header-soft);padding:3px 8px;border-radius:var(--r-full);
+  font-variant-numeric:tabular-nums;
+}
+
+.hdr-right{display:flex;align-items:center;gap:var(--s-2)}
+.lang-group{
+  display:inline-flex;align-items:center;background:var(--header-soft);
+  border-radius:var(--r-2);padding:2px;gap:1px;
+}
+.lang-btn{
+  font-size:11px;font-weight:500;color:var(--header-mute);
+  padding:4px 8px;border-radius:4px;letter-spacing:0.02em;
+  transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+.lang-btn:hover{color:var(--header-ink)}
+.lang-btn.is-active{background:var(--header);color:var(--header-ink);box-shadow:0 1px 0 var(--header-line) inset}
+
+.nav-btn{
+  font-size:13px;color:var(--header-mute);padding:6px 12px;border-radius:var(--r-2);
+  transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+.nav-btn:hover{color:var(--header-ink);background:var(--header-soft)}
+.nav-btn.is-active{color:var(--header-ink);background:var(--header-soft)}
+
+.btn-primary{
+  font-size:13px;font-weight:500;color:#fff;background:var(--brand);
+  padding:7px 14px;border-radius:var(--r-2);
+  transition:background var(--dur-1) var(--ease),transform var(--dur-1) var(--ease);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary:hover{background:var(--brand-hov)}
+.btn-primary:active{transform:translateY(0.5px)}
+.btn-primary svg{width:14px;height:14px}
+.btn-primary:disabled{background:var(--ink-4);cursor:not-allowed}
+
+.btn-secondary{
+  font-size:13px;font-weight:500;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);padding:7px 14px;border-radius:var(--r-2);
+  transition:background var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease);
+}
+.btn-secondary:hover{background:var(--surface-hov);border-color:var(--line-strong)}
+
+.btn-ghost{
+  font-size:13px;color:var(--ink-2);padding:6px 10px;border-radius:var(--r-2);
+  transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+.btn-ghost:hover{color:var(--ink);background:var(--surface-hov)}
+
+/* ───────────────────────── Sub-bar (tabs + search) ───────────────────────── */
+.subbar{
+  background:var(--surface);border-bottom:1px solid var(--line);
+}
+.subbar-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s-4);
+}
+.tabs{display:flex;gap:2px;position:relative}
+.tab{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 14px;font-size:13px;color:var(--ink-3);
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color var(--dur-1) var(--ease);
+}
+.tab:hover{color:var(--ink)}
+.tab.is-active{color:var(--ink);font-weight:500}
+/* emil: tab underline slides between tabs (layoutId-style, CSS transition) */
+.tab-underline{
+  position:absolute;bottom:-1px;left:0;height:2px;width:0;
+  background:var(--brand);border-radius:var(--r-1) var(--r-1) 0 0;
+  transform:translateX(0);
+  transition:transform var(--dur-3) var(--ease-out),width var(--dur-3) var(--ease-out);
+  pointer-events:none;
+}
+.tab-dot{width:6px;height:6px;border-radius:var(--r-full);background:currentColor;opacity:.85}
+.tab-count{
+  font-size:11px;color:var(--ink-3);background:var(--surface-alt);
+  padding:1px 7px;border-radius:var(--r-full);font-variant-numeric:tabular-nums;
+  border:1px solid var(--line-soft);
+}
+.tab.is-active .tab-count{background:var(--brand-soft);color:var(--brand-ink);border-color:transparent}
+
+.search{position:relative;width:260px}
+.search input{
+  width:100%;font-size:13px;color:var(--ink);
+  border:1px solid var(--line);background:var(--surface);
+  padding:7px 10px 7px 32px;border-radius:var(--r-2);
+  transition:border-color var(--dur-1) var(--ease),box-shadow var(--dur-1) var(--ease);
+}
+.search input::placeholder{color:var(--ink-4)}
+.search input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.search svg{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  width:14px;height:14px;color:var(--ink-4);pointer-events:none;
+}
+
+/* ───────────────────────── Main / Page ───────────────────────── */
+.main{flex:1;padding:var(--s-6) 0 var(--s-10)}
+
+.page-head{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:var(--s-4);margin-bottom:var(--s-5);flex-wrap:wrap;
+}
+.page-title{font-family:var(--font-display);font-size:21px;font-weight:600;letter-spacing:-0.02em;color:var(--ink);text-wrap:balance;margin:0}
+.page-sub{font-size:13px;color:var(--ink-3);margin-top:4px}
+
+/* ───────────────────────── Stat row ───────────────────────── */
+.stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r-3);overflow:hidden;
+  margin-bottom:var(--s-5);
+}
+.stat{background:var(--surface);padding:var(--s-4) var(--s-5);display:flex;flex-direction:column;gap:6px}
+.stat-label{font-size:11px;color:var(--ink-3);font-weight:500;letter-spacing:0.02em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.stat-label-dot{width:6px;height:6px;border-radius:var(--r-full)}
+.stat-value{font-family:var(--font-display);font-size:21px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.1}
+.stat-meta{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+/* ───────────────────────── Table ───────────────────────── */
+.table-wrap{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-3);overflow:hidden;
+}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl thead th{
+  text-align:left;font-weight:500;color:var(--ink-3);font-size:11px;
+  text-transform:uppercase;letter-spacing:0.04em;
+  padding:10px 12px;border-bottom:1px solid var(--line);
+  background:var(--surface-alt);white-space:nowrap;
+}
+/* impeccable: sortable headers */
+.tbl thead th.th-sort{cursor:pointer;user-select:none;transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease)}
+.tbl thead th.th-sort:hover{color:var(--ink);background:var(--surface-hov)}
+.th-sort-inner{display:inline-flex;align-items:center;gap:5px}
+.th-arrow{font-size:9px;line-height:1;opacity:0;transition:opacity var(--dur-1) var(--ease),color var(--dur-1) var(--ease);color:var(--ink-4)}
+.tbl thead th.th-sort:hover .th-arrow{opacity:.5}
+.tbl thead th.th-sort.is-sorted{color:var(--brand-ink)}
+.tbl thead th.th-sort.is-sorted .th-arrow{opacity:1;color:var(--brand)}
+.tbl tbody td{
+  padding:0 12px;border-bottom:1px solid var(--line-soft);
+  height:42px;vertical-align:middle;
+}
+.tbl tbody tr{transition:background var(--dur-1) var(--ease)}
+.tbl tbody tr:hover{background:var(--surface-alt);cursor:pointer}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr.row-hot{background:linear-gradient(90deg,oklch(0.97 0.02 152) 0%, var(--surface) 80px)}
+.tbl tbody tr.row-hot:hover{background:linear-gradient(90deg,oklch(0.95 0.03 152) 0%, var(--surface-alt) 80px)}
+
+.cell-company{
+  display:flex;flex-direction:column;gap:1px;
+  font-weight:500;color:var(--ink);max-width:240px;
+}
+.cell-company-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-company-url{
+  font-size:11px;color:var(--ink-4);font-weight:400;font-family:var(--font-mono);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.score-cell{font-family:var(--font-mono);font-weight:500;font-variant-numeric:tabular-nums;color:var(--ink);font-size:13px}
+.score-bar{
+  position:relative;width:36px;height:3px;background:var(--line);
+  border-radius:var(--r-full);overflow:hidden;margin-top:3px;
+}
+.score-bar-fill{position:absolute;left:0;top:0;bottom:0;background:var(--brand);border-radius:inherit;transition:width var(--dur-3) var(--ease-out)}
+.score-bar-fill.hot{background:var(--hot)}
+.score-bar-fill.warm{background:var(--warm)}
+.score-bar-fill.cool{background:var(--cool)}
+.score-bar-fill.dead{background:var(--dead)}
+
+.muted-cell{color:var(--ink-4);font-size:13px}
+
+/* ───────────────────────── Inline editable cell ───────────────────────── */
+.inline-cell{
+  display:block;padding:6px 8px;margin:-6px -8px;border-radius:var(--r-1);
+  min-height:24px;color:var(--ink);
+  transition:background var(--dur-1) var(--ease);
+}
+.inline-cell:hover{background:var(--brand-soft)}
+.inline-cell.placeholder{color:var(--ink-4);font-style:italic}
+.inline-input{
+  width:100%;padding:5px 7px;font-size:13px;
+  border:1px solid var(--brand);background:var(--surface);
+  border-radius:var(--r-1);outline:none;
+  box-shadow:0 0 0 3px var(--brand-soft);
+}
+
+/* ───────────────────────── Badges & chips ───────────────────────── */
+.tier{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;letter-spacing:0.04em;
+  padding:3px 8px 3px 6px;border-radius:var(--r-full);
+  font-family:var(--font-sans);line-height:1;
+}
+.tier-dot{width:6px;height:6px;border-radius:var(--r-full);background:currentColor}
+.tier.tier-HOT  {background:var(--hot-soft); color:var(--hot-ink)}
+.tier.tier-WARM {background:var(--warm-soft);color:var(--warm-ink)}
+.tier.tier-COOL {background:var(--cool-soft);color:var(--cool-ink)}
+.tier.tier-DEAD {background:var(--dead-soft);color:var(--dead-ink)}
+
+.ov{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--r-full);
+  font-family:var(--font-sans);line-height:1;
+}
+.ov.ov-Neoverené     {background:var(--dead-soft);   color:var(--dead-ink)}
+.ov.ov-CEO           {background:var(--success-soft);color:var(--success-ink)}
+.ov.ov-Info-linka    {background:var(--warn-amber-soft);color:var(--warn-amber-ink)}
+.ov.ov-Nesprávne     {background:var(--danger-soft); color:var(--danger-ink)}
+
+/* ───────────────────────── Popover (tier / ov dropdown) ───────────────────────── */
+.pop-wrap{position:relative;display:inline-block}
+.pop{
+  position:absolute;top:calc(100% + 4px);left:0;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-2);box-shadow:var(--pop);
+  z-index:var(--z-dropdown);min-width:140px;padding:4px;
+  animation:popIn var(--dur-2) var(--ease-out);
+}
+@keyframes popIn{
+  from{opacity:0;transform:translateY(-4px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+.pop-item{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:6px 8px;font-size:12px;color:var(--ink-2);border-radius:var(--r-1);
+  transition:background var(--dur-1) var(--ease);
+}
+.pop-item:hover{background:var(--surface-hov);color:var(--ink)}
+
+/* ───────────────────────── Select (stage) ───────────────────────── */
+.stage-select{
+  font-size:12px;color:var(--ink-2);
+  padding:4px 22px 4px 8px;border-radius:var(--r-1);
+  border:1px solid transparent;background:transparent;
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23748094' d='M2.5 4.5L6 8l3.5-3.5z'/></svg>");
+  background-repeat:no-repeat;background-position:right 6px center;background-size:10px;
+  transition:background-color var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease);
+}
+.stage-select:hover{background-color:var(--surface-hov);border-color:var(--line)}
+.stage-select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+
+.row-x{
+  color:var(--ink-5);font-size:14px;width:24px;height:24px;
+  display:inline-grid;place-items:center;border-radius:var(--r-1);
+  opacity:0;
+  transition:opacity 150ms var(--ease),color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+/* emil: delete X fades in on row hover (150ms), not instant */
+.tbl tbody tr:hover .row-x{opacity:1}
+.row-x:focus-visible{opacity:1;outline:2px solid var(--brand);outline-offset:1px}
+.row-x:hover{color:var(--danger);background:var(--danger-soft)}
+
+/* ───────────────────────── Empty state ───────────────────────── */
+.empty{padding:64px var(--s-6);text-align:center}
+.empty-glyph{
+  width:48px;height:48px;border-radius:var(--r-3);background:var(--surface-alt);
+  border:1px solid var(--line);margin:0 auto var(--s-3);display:grid;place-items:center;
+  color:var(--ink-4);
+}
+.empty-title{font-size:15px;font-weight:600;color:var(--ink);margin:0 0 4px}
+.empty-sub{font-size:13px;color:var(--ink-3);margin:0 0 var(--s-4)}
+
+/* ───────────────────────── Modal ───────────────────────── */
+.modal-backdrop{
+  position:fixed;inset:0;background:oklch(0.20 0.018 252 / 0.45);
+  z-index:var(--z-modal-backdrop);
+  display:flex;align-items:flex-start;justify-content:center;padding:64px var(--s-4) var(--s-4);
+  animation:fadeIn var(--dur-2) var(--ease-out);
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--surface);border-radius:var(--r-4);
+  border:1px solid var(--line);box-shadow:var(--pop);
+  width:100%;max-width:640px;max-height:calc(100vh - 80px);
+  display:flex;flex-direction:column;overflow:hidden;
+  animation:modalIn var(--dur-3) var(--ease-out);
+}
+.modal.modal-wide{max-width:760px}
+@keyframes modalIn{
+  from{opacity:0;transform:translateY(8px) scale(0.99)}
+  to  {opacity:1;transform:translateY(0)   scale(1)}
+}
+.modal-hdr{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:var(--s-5) var(--s-5) var(--s-4);border-bottom:1px solid var(--line-soft);
+}
+.modal-hdr h2{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--ink);margin:0;letter-spacing:-0.02em}
+.modal-hdr-meta{font-size:12px;color:var(--ink-3);margin-top:4px}
+.modal-close{
+  width:28px;height:28px;border-radius:var(--r-2);
+  display:grid;place-items:center;color:var(--ink-3);
+  transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+.modal-close:hover{color:var(--ink);background:var(--surface-hov)}
+.modal-close svg{width:16px;height:16px}
+
+.modal-body{padding:var(--s-5);overflow-y:auto}
+.modal-foot{
+  padding:var(--s-4) var(--s-5);border-top:1px solid var(--line-soft);
+  display:flex;justify-content:space-between;align-items:center;gap:var(--s-3);
+  background:var(--surface-alt);
+}
+
+/* ───────────────────────── Forms ───────────────────────── */
+.field{display:flex;flex-direction:column;gap:6px}
+.field-label{font-size:11px;color:var(--ink-3);font-weight:500;letter-spacing:0.02em;text-transform:uppercase}
+.input,.textarea,.select{
+  font-size:13px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-2);
+  padding:9px 11px;transition:border-color var(--dur-1) var(--ease),box-shadow var(--dur-1) var(--ease);
+  width:100%;font-family:var(--font-sans);
+}
+.input:focus,.textarea:focus,.select:focus{
+  outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);
+}
+.textarea{resize:vertical;min-height:96px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6}
+.input::placeholder,.textarea::placeholder{color:var(--ink-4)}
+.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s-3)}
+.field-grid > .field.full{grid-column:1/-1}
+
+/* ───────────────────────── Scraping modal ───────────────────────── */
+.scrape-bar{
+  height:4px;background:var(--line-soft);border-radius:var(--r-full);
+  overflow:hidden;margin:var(--s-3) 0 var(--s-4);
+}
+.scrape-bar-fill{
+  position:relative;height:100%;overflow:hidden;
+  background:linear-gradient(90deg,var(--brand),hsl(162 88% 40%));
+  border-radius:inherit;transition:width var(--dur-3) var(--ease-out);
+}
+/* emil: Stripe/Linear shimmer sweep while scraping */
+.scrape-bar-fill.is-running::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.55) 50%,transparent 100%);
+  transform:translateX(-100%);animation:shimmer 1.3s var(--ease) infinite;
+}
+@keyframes shimmer{100%{transform:translateX(100%)}}
+.scrape-meta{
+  display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;
+}
+
+.err{
+  font-size:12px;color:var(--danger-ink);background:var(--danger-soft);
+  border:1px solid oklch(0.88 0.05 25);border-radius:var(--r-2);
+  padding:8px 10px;margin-top:8px;display:flex;gap:8px;align-items:flex-start;
+}
+.err-glyph{flex-shrink:0;width:14px;height:14px;color:var(--danger);margin-top:1px}
+.err-url{font-family:var(--font-mono);font-size:11.5px;word-break:break-all;color:var(--ink-2)}
+.err-msg{margin-top:2px;font-weight:500}
+
+.result-card{
+  border:1px solid var(--line);border-radius:var(--r-3);
+  margin-top:var(--s-3);overflow:hidden;background:var(--surface);
+  transition:border-color var(--dur-1) var(--ease);
+}
+.result-card:hover{border-color:var(--line-strong)}
+.result-hd{
+  padding:var(--s-3) var(--s-4);display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-3);
+}
+.result-name{font-weight:600;color:var(--ink);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-meta{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.chip{
+  font-size:11px;font-weight:500;color:var(--ink-2);
+  background:var(--surface-alt);border:1px solid var(--line-soft);
+  padding:2px 7px;border-radius:var(--r-full);
+}
+.chip.chip-brand{color:var(--brand-ink);background:var(--brand-soft);border-color:transparent}
+.discard{font-size:12px;color:var(--ink-4);padding:2px 6px;border-radius:var(--r-1);transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease)}
+.discard:hover{color:var(--danger);background:var(--danger-soft)}
+
+.summary-line{
+  font-size:12px;color:var(--ink-2);padding:8px var(--s-4);
+  background:var(--surface-alt);border-top:1px solid var(--line-soft);
+  display:flex;gap:6px;align-items:center;
+}
+.summary-line strong{color:var(--ink);font-weight:600}
+
+/* Person picker */
+.picker{padding:var(--s-3) var(--s-4) var(--s-4);border-top:1px solid var(--line-soft)}
+.picker-label{
+  font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.04em;
+  font-weight:500;margin-bottom:var(--s-2);display:flex;align-items:center;gap:6px;
+}
+.picker-grid{display:flex;flex-direction:column;gap:6px}
+.person-card{
+  text-align:left;padding:10px 12px;border:1px solid var(--line);
+  background:var(--surface);border-radius:var(--r-2);width:100%;
+  display:flex;align-items:center;gap:var(--s-3);
+  transition:border-color var(--dur-1) var(--ease),background var(--dur-1) var(--ease),box-shadow var(--dur-1) var(--ease);
+  cursor:pointer;position:relative;
+}
+.person-card:hover{background:var(--surface-hov);border-color:var(--line-strong)}
+.person-card.selected{
+  border-color:var(--brand);background:var(--brand-soft);
+  box-shadow:0 0 0 3px var(--brand-soft);
+}
+.person-card.selected::after{
+  content:'';position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  width:18px;height:18px;border-radius:var(--r-full);background:var(--brand);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6.5'/></svg>");
+  background-repeat:no-repeat;background-position:center;background-size:12px;
+}
+.person-avatar{
+  width:32px;height:32px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,hsl(145 48% 90%),hsl(158 46% 82%));
+  color:var(--brand-ink);font-weight:600;font-size:11px;
+  display:grid;place-items:center;flex-shrink:0;letter-spacing:0.04em;
+}
+.person-body{flex:1;min-width:0;padding-right:24px}
+.person-name{font-weight:600;color:var(--ink);font-size:13px;line-height:1.2}
+.person-role{font-size:12px;color:var(--ink-3);margin-top:2px}
+.person-meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;color:var(--ink-3)}
+.person-phone{font-family:var(--font-mono);color:var(--brand-ink);font-weight:500}
+.person-tag{
+  background:var(--surface-alt);border:1px solid var(--line-soft);
+  padding:1px 6px;border-radius:var(--r-1);font-size:10.5px;
+}
+.person-card.selected .person-tag{background:var(--surface);border-color:var(--brand-line)}
+
+.ai-hint{
+  font-size:11.5px;color:var(--ink-3);margin-top:var(--s-2);
+  padding:8px 10px;background:var(--surface-alt);border-radius:var(--r-2);
+  display:flex;align-items:center;gap:6px;border:1px dashed var(--line);
+}
+.ai-hint-label{font-weight:600;color:var(--ink-2);font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em}
+
+/* ───────────────────────── Detail modal ───────────────────────── */
+.detail-hero{
+  padding:var(--s-5) var(--s-5) var(--s-4);
+  border-bottom:1px solid var(--line-soft);
+  display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-4);
+}
+.detail-title{font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--ink);margin:0;letter-spacing:-0.02em;text-wrap:balance}
+.detail-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.detail-score{
+  font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.detail-score strong{color:var(--ink);font-weight:600;font-family:var(--font-mono)}
+
+.detail-tabs{
+  display:flex;padding:0 var(--s-5);border-bottom:1px solid var(--line);
+}
+.detail-tab{
+  padding:12px 14px;font-size:13px;color:var(--ink-3);
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease);
+}
+.detail-tab:hover{color:var(--ink)}
+.detail-tab.is-active{color:var(--ink);border-bottom-color:var(--brand);font-weight:500}
+
+/* Osoby tab */
+.osoba{
+  border:1px solid var(--line);border-radius:var(--r-3);
+  padding:var(--s-4);margin-bottom:var(--s-3);background:var(--surface);
+  transition:border-color var(--dur-1) var(--ease);
+}
+.osoba:hover{border-color:var(--line-strong)}
+.osoba-top{display:flex;gap:var(--s-3);align-items:flex-start}
+.osoba-body{flex:1;min-width:0}
+.osoba-name{font-weight:600;color:var(--ink);font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.osoba-role{font-size:12px;color:var(--ink-3)}
+.osoba-phone-row{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13px}
+.osoba-phone{font-family:var(--font-mono);color:var(--ink);font-weight:500}
+.osoba-phone.empty{color:var(--ink-4);font-style:italic;font-family:var(--font-sans)}
+.osoba-actions{display:flex;gap:6px;margin-top:var(--s-3);padding-left:44px;flex-wrap:wrap}
+.osoba-action{
+  font-size:12px;color:var(--ink-2);padding:5px 10px;border-radius:var(--r-1);
+  border:1px solid var(--line);background:var(--surface);
+  transition:background var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease),color var(--dur-1) var(--ease);
+}
+.osoba-action:hover{background:var(--surface-hov);border-color:var(--line-strong);color:var(--ink)}
+.osoba-action.success{color:var(--success-ink);border-color:oklch(0.86 0.08 145)}
+.osoba-action.success:hover{background:var(--success-soft)}
+.osoba-action.warn{color:var(--warn-amber-ink);border-color:oklch(0.86 0.10 70)}
+.osoba-action.warn:hover{background:var(--warn-amber-soft)}
+
+.phone-input{
+  font-family:var(--font-mono);font-size:12.5px;padding:5px 8px;
+  border:1px solid var(--brand);border-radius:var(--r-1);
+  box-shadow:0 0 0 3px var(--brand-soft);outline:none;width:180px;
+}
+
+/* Activities & Tasks */
+.compose{
+  display:flex;gap:var(--s-2);margin-bottom:var(--s-4);align-items:center;flex-wrap:wrap;
+}
+.compose .input,.compose .select{padding:8px 11px}
+.compose .input{flex:1;min-width:200px}
+
+.act-list{display:flex;flex-direction:column}
+.act{
+  display:flex;gap:var(--s-3);padding:10px 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.act:last-child{border-bottom:0}
+.act-icon{
+  width:28px;height:28px;border-radius:var(--r-2);background:var(--surface-alt);
+  border:1px solid var(--line-soft);display:grid;place-items:center;
+  flex-shrink:0;font-size:13px;
+}
+.act-body{flex:1;min-width:0}
+.act-note{font-size:13px;color:var(--ink);line-height:1.5}
+.act-meta{font-size:11px;color:var(--ink-3);margin-top:4px;font-variant-numeric:tabular-nums}
+
+.task{
+  display:flex;align-items:center;gap:var(--s-3);
+  padding:8px var(--s-3);border-radius:var(--r-2);
+  margin-bottom:4px;transition:background var(--dur-1) var(--ease);
+}
+.task:hover{background:var(--surface-hov)}
+.task.overdue{background:var(--danger-soft)}
+.task.overdue:hover{background:oklch(0.95 0.04 25)}
+.task input[type=checkbox]{
+  width:15px;height:15px;accent-color:var(--brand);cursor:pointer;
+}
+.task-text{flex:1;font-size:13px;color:var(--ink)}
+.task.done .task-text{text-decoration:line-through;color:var(--ink-4)}
+.task-due{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.task.overdue .task-due{color:var(--danger-ink);font-weight:600}
+
+.zero-state{text-align:center;padding:48px var(--s-4);color:var(--ink-4);font-size:13px}
+
+/* ───────────────────────── Pricing ───────────────────────── */
+.pricing-head{text-align:center;padding:var(--s-10) var(--s-4) var(--s-8)}
+.pricing-head h1{font-family:var(--font-display);font-size:30px;font-weight:600;letter-spacing:-0.03em;margin:0;color:var(--ink);text-wrap:balance}
+.pricing-head p{font-size:15px;color:var(--ink-3);margin:var(--s-2) 0 0}
+
+.plans{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:var(--s-3);max-width:1100px;margin:0 auto;
+}
+.plan{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-3);padding:var(--s-5);
+  display:flex;flex-direction:column;position:relative;
+  transition:border-color var(--dur-2) var(--ease),transform var(--dur-2) var(--ease);
+}
+.plan:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+.plan.is-current{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+.plan.is-popular{border-color:var(--success);box-shadow:0 0 0 4px var(--success-soft)}
+.plan-tag{
+  position:absolute;top:-9px;left:var(--s-5);
+  font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;
+  padding:3px 8px;border-radius:var(--r-full);
+}
+.plan-tag.current{background:var(--brand);color:#fff}
+.plan-tag.popular{background:var(--success);color:#fff}
+.plan-name{font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--ink-3);text-transform:uppercase}
+.plan-price{margin:var(--s-3) 0 var(--s-4)}
+.plan-price-amt{font-size:32px;font-weight:700;letter-spacing:-0.025em;color:var(--ink)}
+.plan-price-per{font-size:13px;color:var(--ink-3);margin-left:4px}
+.plan-feats{list-style:none;padding:0;margin:0 0 var(--s-5);flex:1;display:flex;flex-direction:column;gap:8px}
+.plan-feats li{font-size:13px;color:var(--ink-2);display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+.plan-feats svg{flex-shrink:0;width:14px;height:14px;color:var(--success);margin-top:2px}
+.plan-cta{
+  font-size:13px;font-weight:500;padding:9px 14px;border-radius:var(--r-2);
+  background:var(--surface-alt);color:var(--ink-3);
+  border:1px solid var(--line);text-align:center;cursor:not-allowed;
+}
+.pricing-foot{
+  text-align:center;font-size:12px;color:var(--ink-3);
+  margin:var(--s-8) auto 0;max-width:560px;line-height:1.7;
+}
+
+/* ───────────────────────── Footer ───────────────────────── */
+.foot{
+  border-top:1px solid var(--line);background:var(--surface);
+  margin-top:auto;
+}
+.foot-inner{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:var(--s-4) 0;gap:var(--s-4);flex-wrap:wrap;
+  font-size:12px;color:var(--ink-3);
+}
+.foot-links{display:flex;gap:var(--s-4);flex-wrap:wrap}
+.foot-link{transition:color var(--dur-1) var(--ease)}
+.foot-link:hover{color:var(--ink)}
+
+/* ───────────────────────── Legal ───────────────────────── */
+.legal{max-width:720px;margin:0 auto;padding:var(--s-10) var(--s-4)}
+.legal h1{font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-0.03em;margin:0 0 var(--s-5);color:var(--ink);text-wrap:balance}
+.legal h2{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--ink);margin:var(--s-6) 0 var(--s-2);letter-spacing:-0.02em}
+.legal p,.legal li{font-size:14px;color:var(--ink-2);line-height:1.7;margin-bottom:8px;text-wrap:pretty}
+.legal ul{padding-left:var(--s-5);list-style:disc}
+.legal strong{color:var(--ink);font-weight:600}
+.note{
+  background:var(--warn-amber-soft);border:1px solid oklch(0.88 0.08 75);
+  border-radius:var(--r-2);padding:10px 12px;font-size:12.5px;color:var(--warn-amber-ink);
+  margin-bottom:var(--s-4);display:flex;gap:8px;align-items:flex-start;
+}
+.note.info{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-ink)}
+
+/* ───────────────────────── Radar ping (signature) ───────────────────────── */
+/* HOT rows: the tier dot emits a continuous radar ping — Wector's signature. */
+@keyframes radarPing{
+  0%  {transform:translate(-50%,-50%) scale(1);  opacity:.55}
+  70% {transform:translate(-50%,-50%) scale(3.4); opacity:0}
+  100%{transform:translate(-50%,-50%) scale(3.4); opacity:0}
+}
+.row-hot .tier-HOT .tier-dot{position:relative}
+.row-hot .tier-HOT .tier-dot::after{
+  content:'';position:absolute;left:50%;top:50%;
+  width:6px;height:6px;border-radius:var(--r-full);
+  background:var(--hot);
+  animation:radarPing 1.9s var(--ease-out) infinite;
+}
+/* Empty-state radar: concentric rings ping outward from the glyph. */
+@keyframes radarRing{
+  0%  {transform:scale(0.6);opacity:.55}
+  100%{transform:scale(1.9); opacity:0}
+}
+.empty-glyph.radar{position:relative;color:var(--brand);background:var(--brand-soft);border-color:var(--brand-line)}
+.empty-glyph.radar::before,.empty-glyph.radar::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  border:1.5px solid var(--brand);
+  animation:radarRing 2.4s var(--ease-out) infinite;
+}
+.empty-glyph.radar::after{animation-delay:1.2s}
+
+/* ───────────────────────── Skeleton (scrape loading) ───────────────────────── */
+.skel-card{
+  border:1px solid var(--line);border-radius:var(--r-3);
+  padding:var(--s-3) var(--s-4);margin-top:var(--s-3);background:var(--surface);
+}
+.skel{
+  background:linear-gradient(90deg,var(--surface-alt) 25%,var(--line-soft) 37%,var(--surface-alt) 63%);
+  background-size:400% 100%;animation:skelShimmer 1.4s ease infinite;border-radius:var(--r-1);
+}
+@keyframes skelShimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.skel-line{height:11px}
+.skel-row{display:flex;align-items:center;gap:var(--s-3)}
+.skel-dot{width:32px;height:32px;border-radius:var(--r-full);flex-shrink:0}
+
+/* ───────────────────────── Filtered empty state ───────────────────────── */
+.empty .empty-actions{display:inline-flex;gap:var(--s-2);justify-content:center;flex-wrap:wrap}
+
+/* ───────────────────────── Error / retry (modal) ───────────────────────── */
+.err-retry{
+  flex-shrink:0;font-size:12px;font-weight:500;color:var(--danger-ink);
+  border:1px solid oklch(0.85 0.07 25);border-radius:var(--r-1);
+  padding:4px 9px;align-self:center;
+  transition:background var(--dur-1) var(--ease);
+}
+.err-retry:hover{background:oklch(0.95 0.04 25)}
+
+/* ───────────────────────── Keyboard shortcuts ───────────────────────── */
+.kbd-btn{
+  width:30px;height:30px;border-radius:var(--r-2);display:grid;place-items:center;
+  color:var(--header-mute);font-family:var(--font-mono);font-size:13px;font-weight:500;
+  transition:color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+.kbd-btn:hover{color:var(--header-ink);background:var(--header-soft)}
+.kbd-list{display:flex;flex-direction:column;gap:2px}
+.kbd-item{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);
+  padding:10px 4px;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--ink-2);
+}
+.kbd-item:last-child{border-bottom:0}
+.kbd-keys{display:inline-flex;gap:4px;flex-shrink:0}
+kbd{
+  font-family:var(--font-mono);font-size:11px;color:var(--ink-2);
+  background:var(--surface-alt);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:var(--r-2);
+  padding:2px 7px;min-width:20px;text-align:center;line-height:1.4;
+}
+
+/* ───────────────────────── Reduced motion ───────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+
+/* ───────────────────────── Responsive ───────────────────────── */
+@media (max-width:780px){
+  .hdr-inner{height:auto;padding:var(--s-3) 0;flex-wrap:wrap;gap:var(--s-2)}
+  .nav-btn{padding:5px 10px}
+  .search{width:100%}
+  .subbar-inner{flex-direction:column;align-items:stretch;gap:var(--s-2);padding:var(--s-2) 0}
+  .tabs{overflow-x:auto;padding-bottom:1px}
+  .tab{padding:10px 10px;white-space:nowrap}
+  .tbl{font-size:12.5px}
+  .cell-company{max-width:140px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useMemo}=React;
+
+const API_BASE="https://wecror-api.wonderfulbeach-d06c2eb0.westeurope.azurecontainerapps.io";
+const API_TOKEN="test-token";
+
+/* ───────────────── i18n ───────────────── */
+const I18N={
+sk:{
+  leads:"leadov",pricing:"Cenník",exportCrm:"Export do CRM",scraping:"Scraping",
+  all:"Všetky",search:"Hľadať firmy, kontakty, segment…",
+  thCompany:"Firma",thContact:"Kontakt",thRole:"Rola",thPhone:"Telefón",thVerif:"Overenie",
+  thTier:"Tier",thScore:"Skóre",thSegment:"Segment",thStage:"Fáza",thActions:" ",
+  empty:"Žiadne leady — pridaj URL firiem pomocou Scraping",
+  emptySub:"Wector prejde web každej firmy a nájde mená, role a telefóny kontaktov.",
+  phName:"meno",phRole:"rola",phPhone:"telefón",
+  scrapeTitle:"Spustiť scraping",scrapeSub:"Vlož URL firiem — jedna na riadok",
+  scrapePh:"https://firma1.sk\nhttps://firma2.cz",
+  scrapeRun:"Spustiť scraping",scrapeProgress:"Scrapujem",addAll:"Pridať do CRM",
+  discard:"Zahodiť",noContact:"bez kontaktu",personsN:"osôb",
+  tabInfo:"Informácie",tabPersons:"Osoby",tabAct:"Aktivity",tabTasks:"Úlohy",
+  lUrl:"URL",lEmail:"Email",lPhone:"Telefón",lSegment:"Segment",lNotes:"Poznámky",lVerif:"Overenie",
+  save:"Uložiť",btnCorrect:"Správne",btnInfoline:"Info linka",btnChangePhone:"Zmeniť číslo",
+  noPhone:"bez čísla",noPersons:"Žiadne osoby zo scrapu.",
+  pickerLabel:"Vyber primárny kontakt",
+  pickerHint:"Klik na kartu → osoba sa stane kontaktom leadu (meno, rola, telefón).",
+  aiSuggested:"AI návrh",
+  actCall:"Hovor",actEmail:"Email",actMeeting:"Stretnutie",actNote:"Poznámka",
+  actPh:"Popis aktivity…",add:"Pridať",noActs:"Žiadne aktivity.",
+  taskPh:"Nová úloha…",noTasks:"Žiadne úlohy.",
+  del:"Zmazať",close:"Zavrieť",confirmDel:"Zmazať lead?",
+  retry:"Skúsiť znova",openUrl:"Otvoriť web",
+  emptyTier:"Žiadne leady v tieri",emptyTierSub:"Skús scrapovať viac firiem alebo zmeň filter.",
+  emptySearch:"Nič sa nenašlo",emptySearchSub:"Skús iný výraz alebo zmaž vyhľadávanie.",
+  clearFilter:"Zrušiť filter",scrapeWait:"Spracúvam web…",
+  kbdTitle:"Klávesové skratky",kbdSearch:"Hľadať",kbdNew:"Nový scraping",kbdClose:"Zavrieť / zrušiť",kbdOpenUrl:"Dvojklik na riadok → otvoriť web",kbdHelp:"Zobraziť skratky",
+  csvBtn:"Stiahnuť CSV",jsonBtn:"Kopírovať JSON",copied:"Skopírované",
+  pdTitle:"Pipedrive",pdText:"Leads → Import data → CSV → namapuj (Firma → Organization, Kontakt → Person, Telefón → Phone).",
+  hsTitle:"HubSpot",hsText:"Contacts → Import → File from computer → CSV → namapuj polia. Telefón a email sa spárujú automaticky.",
+  prTitle:"Cenník",prSub:"Vyber plán podľa veľkosti tímu",prPopular:"Najpopulárnejší",prCurrent:"Aktuálny",
+  prChoose:"Vybrať plán",prSoon:"Čoskoro",
+  prIncl:"Všetky plány zahŕňajú: SK/CZ/PL lokálny trh, živý scraping webu, GDPR-compliant spracovanie, 14-dňová skúšobná doba zadarmo.",
+  prMo:"/mes",prDeal:"Dohodou",
+  fTerms:"Obchodné podmienky",fPrivacy:"Ochrana osobných údajov",fCookies:"Cookies",fContact:"Kontakt",
+  legalNote:"Právne dokumenty sú záväzné v slovenskej jazykovej verzii.",
+  statTotal:"Spolu leadov",statHot:"HOT",statWarm:"WARM",statCool:"COOL",statDead:"DEAD",
+  stages:{ "Nový":"Nový","Oslovený":"Oslovený","Záujem":"Záujem","Ponuka":"Ponuka","Zákazník":"Zákazník","Stratený":"Stratený"},
+  verif:{"Neoverené":"Neoverené","Overené — CEO":"Overené — CEO","Info linka":"Info linka","Nesprávne":"Nesprávne"},
+  planFeats:{
+    starter:["1 používateľ","100 scrapov/mesiac","Základný CRM (táto app)","CSV export","Email podpora"],
+    growth:["3 používatelia","500 scrapov/mesiac","CRM export (Pipedrive, Hubspot)","Prioritná podpora"],
+    agency:["10 používateľov","Neobmedzené scraping","API prístup","White-label možnosť","Dedikovaný account manager"],
+    enterprise:["Neobmedzené všetko","White-label + vlastná doména","Dedikovaný server","SLA zmluva","Kontakt: sales@wector.io"]}
+},
+cs:{
+  leads:"leadů",pricing:"Ceník",exportCrm:"Export do CRM",scraping:"Scraping",
+  all:"Všechny",search:"Hledat firmy, kontakty, segment…",
+  thCompany:"Firma",thContact:"Kontakt",thRole:"Role",thPhone:"Telefon",thVerif:"Ověření",
+  thTier:"Tier",thScore:"Skóre",thSegment:"Segment",thStage:"Fáze",thActions:" ",
+  empty:"Žádné leady — přidej URL firem pomocí Scraping",
+  emptySub:"Wector projde web každé firmy a najde jména, role a telefony kontaktů.",
+  phName:"jméno",phRole:"role",phPhone:"telefon",
+  scrapeTitle:"Spustit scraping",scrapeSub:"Vlož URL firem — jedna na řádek",
+  scrapePh:"https://firma1.cz\nhttps://firma2.sk",
+  scrapeRun:"Spustit scraping",scrapeProgress:"Scrapuji",addAll:"Přidat do CRM",
+  discard:"Zahodit",noContact:"bez kontaktu",personsN:"osob",
+  tabInfo:"Informace",tabPersons:"Osoby",tabAct:"Aktivity",tabTasks:"Úkoly",
+  lUrl:"URL",lEmail:"Email",lPhone:"Telefon",lSegment:"Segment",lNotes:"Poznámky",lVerif:"Ověření",
+  save:"Uložit",btnCorrect:"Správné",btnInfoline:"Infolinka",btnChangePhone:"Změnit číslo",
+  noPhone:"bez čísla",noPersons:"Žádné osoby ze scrapu.",
+  pickerLabel:"Vyber primární kontakt",
+  pickerHint:"Klik na kartu → osoba se stane kontaktem leadu (jméno, role, telefon).",
+  aiSuggested:"AI návrh",
+  actCall:"Hovor",actEmail:"Email",actMeeting:"Schůzka",actNote:"Poznámka",
+  actPh:"Popis aktivity…",add:"Přidat",noActs:"Žádné aktivity.",
+  taskPh:"Nový úkol…",noTasks:"Žádné úkoly.",
+  del:"Smazat",close:"Zavřít",confirmDel:"Smazat lead?",
+  retry:"Zkusit znovu",openUrl:"Otevřít web",
+  emptyTier:"Žádné leady v tieru",emptyTierSub:"Zkus scrapovat víc firem nebo změň filtr.",
+  emptySearch:"Nic nenalezeno",emptySearchSub:"Zkus jiný výraz nebo smaž hledání.",
+  clearFilter:"Zrušit filtr",scrapeWait:"Zpracovávám web…",
+  kbdTitle:"Klávesové zkratky",kbdSearch:"Hledat",kbdNew:"Nový scraping",kbdClose:"Zavřít / zrušit",kbdOpenUrl:"Dvojklik na řádek → otevřít web",kbdHelp:"Zobrazit zkratky",
+  csvBtn:"Stáhnout CSV",jsonBtn:"Kopírovat JSON",copied:"Zkopírováno",
+  pdTitle:"Pipedrive",pdText:"Leads → Import data → CSV → namapuj (Firma → Organization, Kontakt → Person, Telefon → Phone).",
+  hsTitle:"HubSpot",hsText:"Contacts → Import → File from computer → CSV → namapuj pole. Telefon a email se spárují automaticky.",
+  prTitle:"Ceník",prSub:"Vyber plán podle velikosti týmu",prPopular:"Nejpopulárnější",prCurrent:"Aktuální",
+  prChoose:"Vybrat plán",prSoon:"Brzy",
+  prIncl:"Všechny plány zahrnují: SK/CZ/PL lokální trh, živý scraping webu, GDPR-compliant zpracování, 14denní zkušební doba zdarma.",
+  prMo:"/měs",prDeal:"Dohodou",
+  fTerms:"Obchodní podmínky",fPrivacy:"Ochrana osobních údajů",fCookies:"Cookies",fContact:"Kontakt",
+  legalNote:"Právní dokumenty jsou závazné ve slovenské jazykové verzi.",
+  statTotal:"Celkem leadů",statHot:"HOT",statWarm:"WARM",statCool:"COOL",statDead:"DEAD",
+  stages:{"Nový":"Nový","Oslovený":"Oslovený","Záujem":"Zájem","Ponuka":"Nabídka","Zákazník":"Zákazník","Stratený":"Ztracený"},
+  verif:{"Neoverené":"Neověřeno","Overené — CEO":"Ověřeno — CEO","Info linka":"Infolinka","Nesprávne":"Nesprávné"},
+  planFeats:{
+    starter:["1 uživatel","100 scrapů/měsíc","Základní CRM (tato app)","CSV export","Email podpora"],
+    growth:["3 uživatelé","500 scrapů/měsíc","CRM export (Pipedrive, Hubspot)","Prioritní podpora"],
+    agency:["10 uživatelů","Neomezený scraping","API přístup","White-label možnost","Dedikovaný account manager"],
+    enterprise:["Neomezené vše","White-label + vlastní doména","Dedikovaný server","SLA smlouva","Kontakt: sales@wector.io"]}
+},
+pl:{
+  leads:"leadów",pricing:"Cennik",exportCrm:"Eksport do CRM",scraping:"Scraping",
+  all:"Wszystkie",search:"Szukaj firm, kontaktów, segmentów…",
+  thCompany:"Firma",thContact:"Kontakt",thRole:"Rola",thPhone:"Telefon",thVerif:"Weryfikacja",
+  thTier:"Tier",thScore:"Wynik",thSegment:"Segment",thStage:"Etap",thActions:" ",
+  empty:"Brak leadów — dodaj URL firm w Scraping",
+  emptySub:"Wector przeszuka stronę każdej firmy i znajdzie nazwiska, role i telefony.",
+  phName:"imię",phRole:"rola",phPhone:"telefon",
+  scrapeTitle:"Uruchom scraping",scrapeSub:"Wklej URL firm — jeden na linię",
+  scrapePh:"https://firma1.pl\nhttps://firma2.pl",
+  scrapeRun:"Uruchom scraping",scrapeProgress:"Scrapuję",addAll:"Dodaj do CRM",
+  discard:"Odrzuć",noContact:"brak kontaktu",personsN:"osób",
+  tabInfo:"Informacje",tabPersons:"Osoby",tabAct:"Aktywności",tabTasks:"Zadania",
+  lUrl:"URL",lEmail:"Email",lPhone:"Telefon",lSegment:"Segment",lNotes:"Notatki",lVerif:"Weryfikacja",
+  save:"Zapisz",btnCorrect:"Poprawny",btnInfoline:"Infolinia",btnChangePhone:"Zmień numer",
+  noPhone:"brak numeru",noPersons:"Brak osób ze scrapu.",
+  pickerLabel:"Wybierz główny kontakt",
+  pickerHint:"Kliknij kartę → osoba zostanie kontaktem leadu (imię, rola, telefon).",
+  aiSuggested:"AI sugeruje",
+  actCall:"Telefon",actEmail:"Email",actMeeting:"Spotkanie",actNote:"Notatka",
+  actPh:"Opis aktywności…",add:"Dodaj",noActs:"Brak aktywności.",
+  taskPh:"Nowe zadanie…",noTasks:"Brak zadań.",
+  del:"Usuń",close:"Zamknij",confirmDel:"Usunąć lead?",
+  retry:"Spróbuj ponownie",openUrl:"Otwórz stronę",
+  emptyTier:"Brak leadów w tierze",emptyTierSub:"Zescrapuj więcej firm lub zmień filtr.",
+  emptySearch:"Nic nie znaleziono",emptySearchSub:"Spróbuj innej frazy lub wyczyść wyszukiwanie.",
+  clearFilter:"Wyczyść filtr",scrapeWait:"Przetwarzam stronę…",
+  kbdTitle:"Skróty klawiszowe",kbdSearch:"Szukaj",kbdNew:"Nowy scraping",kbdClose:"Zamknij / anuluj",kbdOpenUrl:"Dwuklik w wiersz → otwórz stronę",kbdHelp:"Pokaż skróty",
+  csvBtn:"Pobierz CSV",jsonBtn:"Kopiuj JSON",copied:"Skopiowano",
+  pdTitle:"Pipedrive",pdText:"Leads → Import data → CSV → zmapuj (Firma → Organization, Kontakt → Person, Telefon → Phone).",
+  hsTitle:"HubSpot",hsText:"Contacts → Import → File from computer → CSV → zmapuj pola. Telefon i email sparują się automatycznie.",
+  prTitle:"Cennik",prSub:"Wybierz plan według wielkości zespołu",prPopular:"Najpopularniejszy",prCurrent:"Aktualny",
+  prChoose:"Wybierz plan",prSoon:"Wkrótce",
+  prIncl:"Wszystkie plany obejmują: rynek lokalny SK/CZ/PL, scraping na żywo, przetwarzanie zgodne z RODO, 14-dniowy darmowy okres próbny.",
+  prMo:"/mies",prDeal:"Do uzgodnienia",
+  fTerms:"Regulamin",fPrivacy:"Polityka prywatności",fCookies:"Cookies",fContact:"Kontakt",
+  legalNote:"Dokumenty prawne są wiążące w słowackiej wersji językowej.",
+  statTotal:"Wszystkich leadów",statHot:"HOT",statWarm:"WARM",statCool:"COOL",statDead:"DEAD",
+  stages:{"Nový":"Nowy","Oslovený":"Skontaktowany","Záujem":"Zainteresowany","Ponuka":"Oferta","Zákazník":"Klient","Stratený":"Utracony"},
+  verif:{"Neoverené":"Niezweryfikowane","Overené — CEO":"Zweryfikowane — CEO","Info linka":"Infolinia","Nesprávne":"Niepoprawne"},
+  planFeats:{
+    starter:["1 użytkownik","100 scrapów/miesiąc","Podstawowy CRM (ta aplikacja)","Eksport CSV","Wsparcie email"],
+    growth:["3 użytkowników","500 scrapów/miesiąc","Eksport CRM (Pipedrive, Hubspot)","Priorytetowe wsparcie"],
+    agency:["10 użytkowników","Nielimitowany scraping","Dostęp API","Opcja white-label","Dedykowany account manager"],
+    enterprise:["Wszystko bez limitu","White-label + własna domena","Dedykowany serwer","Umowa SLA","Kontakt: sales@wector.io"]}
+},
+en:{
+  leads:"leads",pricing:"Pricing",exportCrm:"Export to CRM",scraping:"Scraping",
+  all:"All",search:"Search companies, contacts, segments…",
+  thCompany:"Company",thContact:"Contact",thRole:"Role",thPhone:"Phone",thVerif:"Verification",
+  thTier:"Tier",thScore:"Score",thSegment:"Segment",thStage:"Stage",thActions:" ",
+  empty:"No leads yet — add company URLs via Scraping",
+  emptySub:"Wector crawls each company's site to find names, roles, and contact phones.",
+  phName:"name",phRole:"role",phPhone:"phone",
+  scrapeTitle:"Run scraping",scrapeSub:"Paste company URLs — one per line",
+  scrapePh:"https://company1.com\nhttps://company2.com",
+  scrapeRun:"Run scraping",scrapeProgress:"Scraping",addAll:"Add to CRM",
+  discard:"Discard",noContact:"no contact",personsN:"people",
+  tabInfo:"Details",tabPersons:"People",tabAct:"Activities",tabTasks:"Tasks",
+  lUrl:"URL",lEmail:"Email",lPhone:"Phone",lSegment:"Segment",lNotes:"Notes",lVerif:"Verification",
+  save:"Save",btnCorrect:"Correct",btnInfoline:"Info line",btnChangePhone:"Change number",
+  noPhone:"no number",noPersons:"No people from scrape.",
+  pickerLabel:"Pick primary contact",
+  pickerHint:"Click a card → that person becomes the lead's contact (name, role, phone).",
+  aiSuggested:"AI suggested",
+  actCall:"Call",actEmail:"Email",actMeeting:"Meeting",actNote:"Note",
+  actPh:"Activity description…",add:"Add",noActs:"No activities.",
+  taskPh:"New task…",noTasks:"No tasks.",
+  del:"Delete",close:"Close",confirmDel:"Delete lead?",
+  retry:"Retry",openUrl:"Open site",
+  emptyTier:"No leads in tier",emptyTierSub:"Try scraping more companies or change the filter.",
+  emptySearch:"Nothing found",emptySearchSub:"Try another term or clear the search.",
+  clearFilter:"Clear filter",scrapeWait:"Processing site…",
+  kbdTitle:"Keyboard shortcuts",kbdSearch:"Search",kbdNew:"New scrape",kbdClose:"Close / cancel",kbdOpenUrl:"Double-click a row → open site",kbdHelp:"Show shortcuts",
+  csvBtn:"Download CSV",jsonBtn:"Copy JSON",copied:"Copied",
+  pdTitle:"Pipedrive",pdText:"Leads → Import data → select CSV → map columns (Company → Organization, Contact → Person, Phone → Phone).",
+  hsTitle:"HubSpot",hsText:"Contacts → Import → File from computer → CSV → map fields. Phone and email pair automatically.",
+  prTitle:"Pricing",prSub:"Pick a plan by team size",prPopular:"Most popular",prCurrent:"Current",
+  prChoose:"Choose plan",prSoon:"Coming soon",
+  prIncl:"All plans include: SK/CZ/PL local market, live web scraping, GDPR-compliant processing, 14-day free trial.",
+  prMo:"/mo",prDeal:"Custom",
+  fTerms:"Terms",fPrivacy:"Privacy",fCookies:"Cookies",fContact:"Contact",
+  legalNote:"Legal documents are binding in their Slovak language version.",
+  statTotal:"Total leads",statHot:"HOT",statWarm:"WARM",statCool:"COOL",statDead:"DEAD",
+  stages:{"Nový":"New","Oslovený":"Contacted","Záujem":"Interested","Ponuka":"Proposal","Zákazník":"Customer","Stratený":"Lost"},
+  verif:{"Neoverené":"Unverified","Overené — CEO":"Verified — CEO","Info linka":"Info line","Nesprávne":"Incorrect"},
+  planFeats:{
+    starter:["1 user","100 scrapes/month","Basic CRM (this app)","CSV export","Email support"],
+    growth:["3 users","500 scrapes/month","CRM export (Pipedrive, Hubspot)","Priority support"],
+    agency:["10 users","Unlimited scraping","API access","White-label option","Dedicated account manager"],
+    enterprise:["Everything unlimited","White-label + custom domain","Dedicated server","SLA agreement","Contact: sales@wector.io"]}
+}
+};
+const LANG_LIST=[["sk","SK"],["cs","CZ"],["pl","PL"],["en","EN"]];
+
+const TIERS=["HOT","WARM","COOL","DEAD"];
+const TIER_DOT={HOT:"var(--hot)",WARM:"var(--warm)",COOL:"var(--cool)",DEAD:"var(--dead)"};
+const OVERENIA={
+  "Neoverené":{cls:"ov-Neoverené",delta:0},
+  "Overené — CEO":{cls:"ov-CEO",delta:20},
+  "Info linka":{cls:"ov-Info-linka",delta:-15},
+  "Nesprávne":{cls:"ov-Nesprávne",delta:-10},
+};
+const OV_OPTS=["Neoverené","Overené — CEO","Info linka","Nesprávne"];
+const STAGES=["Nový","Oslovený","Záujem","Ponuka","Zákazník","Stratený"];
+
+function tierFromScore(s){return s>=80?"HOT":s>=60?"WARM":s>=40?"COOL":"DEAD"}
+function recalc(lead){
+  let s=lead.base_score||0;
+  s+=(OVERENIA[lead.overenie]||OVERENIA["Neoverené"]).delta;
+  if(["CEO","obchodne"].includes(lead.role_category))s+=10;
+  s=Math.max(0,Math.min(100,s));
+  return {...lead,score:s,tier:tierFromScore(s)};
+}
+function loadLeads(){try{return JSON.parse(localStorage.getItem("wector_leads"))||[]}catch{return[]}}
+function saveLeads(l){localStorage.setItem("wector_leads",JSON.stringify(l))}
+const today=()=>new Date().toISOString().slice(0,10);
+function useEscape(handler){
+  useEffect(()=>{
+    const h=e=>{if(e.key==="Escape")handler();};
+    window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);
+  },[handler]);
+}
+function useClickOutside(ref,handler){
+  useEffect(()=>{
+    const h=e=>{if(ref.current&&!ref.current.contains(e.target))handler();};
+    document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);
+  },[handler]);
+}
+function initials(name){return (name||"?").split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase()}
+
+/* ───────────────── Icons ───────────────── */
+const Icon={
+  search:()=><svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  close:()=><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  plus:()=><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>,
+  chev:()=><svg viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5l3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  check:()=><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  warn:()=><svg viewBox="0 0 16 16" fill="none"><path d="M8 2.5L14 13H2L8 2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  inbox:()=><svg viewBox="0 0 24 24" fill="none"><path d="M3 13l3-8h12l3 8M3 13v6h18v-6M3 13h5l1 2h6l1-2h5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
+  spark:()=><svg viewBox="0 0 14 14" fill="none"><path d="M7 1.5l1.4 3.6L12 6.5l-3.6 1.4L7 11.5l-1.4-3.6L2 6.5l3.6-1.4L7 1.5z" fill="currentColor"/></svg>,
+  radar:()=><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2.1" fill="currentColor"/><path d="M12 12L18.5 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M12 5a7 7 0 107 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  ext:()=><svg viewBox="0 0 16 16" fill="none"><path d="M6 3.5H4a1.5 1.5 0 00-1.5 1.5v7A1.5 1.5 0 004 13.5h7A1.5 1.5 0 0012.5 12v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M9.5 2.5H13.5V6.5M13 3L7.5 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+};
+
+/* ───────────────── CountUp — animated number (emil) ───────────────── */
+function CountUp({value,dur=300}){
+  const [disp,setDisp]=useState(value);
+  const fromRef=useRef(value);
+  const rafRef=useRef(0);
+  useEffect(()=>{
+    const from=fromRef.current, to=value, delta=to-from;
+    if(delta===0)return;
+    const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduce){fromRef.current=to;setDisp(to);return;}
+    const t0=performance.now();
+    const tick=now=>{
+      const p=Math.min(1,(now-t0)/dur);
+      const eased=1-Math.pow(1-p,3); // ease-out cubic
+      setDisp(Math.round(from+delta*eased));
+      if(p<1)rafRef.current=requestAnimationFrame(tick);
+      else fromRef.current=to;
+    };
+    rafRef.current=requestAnimationFrame(tick);
+    return ()=>cancelAnimationFrame(rafRef.current);
+  },[value,dur]);
+  return <>{disp}</>;
+}
+
+/* ───────────────── Sliding tab underline (emil, layoutId-style) ───────────────── */
+function useSlidingUnderline(activeKey,deps){
+  const wrapRef=useRef(null);
+  const [bar,setBar]=useState({left:0,width:0});
+  useEffect(()=>{
+    const wrap=wrapRef.current;if(!wrap)return;
+    const el=wrap.querySelector(".is-active");
+    if(el)setBar({left:el.offsetLeft,width:el.offsetWidth});
+  },[activeKey,...(deps||[])]);
+  return [wrapRef,bar];
+}
+
+/* ───────────────── InlineCell ───────────────── */
+function InlineCell({value,onSave,placeholder,mono}){
+  const [edit,setEdit]=useState(false);
+  const [val,setVal]=useState(value||"");
+  useEffect(()=>setVal(value||""),[value]);
+  if(edit) return <input autoFocus value={val}
+    onChange={e=>setVal(e.target.value)}
+    onBlur={()=>{setEdit(false);if(val!==(value||""))onSave(val)}}
+    onKeyDown={e=>{
+      if(e.key==="Enter"){setEdit(false);if(val!==(value||""))onSave(val)}
+      if(e.key==="Escape"){setEdit(false);setVal(value||"")}
+    }}
+    onClick={e=>e.stopPropagation()}
+    style={mono?{fontFamily:'var(--font-mono)'}:undefined}
+    className="inline-input"/>;
+  return <span onClick={e=>{e.stopPropagation();setEdit(true)}}
+    className={"inline-cell"+(value?"":" placeholder")}
+    style={mono?{fontFamily:'var(--font-mono)'}:undefined}
+    title={value||""}>
+    {value||placeholder||"—"}
+  </span>;
+}
+
+/* ───────────────── TierCell ───────────────── */
+function TierCell({tier,onChange}){
+  const [open,setOpen]=useState(false);
+  const ref=useRef();
+  useClickOutside(ref,()=>setOpen(false));
+  return <div ref={ref} className="pop-wrap" onClick={e=>e.stopPropagation()}>
+    <button onClick={()=>setOpen(o=>!o)} className={"tier tier-"+tier}>
+      <span className="tier-dot" style={{color:TIER_DOT[tier]}}></span>{tier}
+    </button>
+    {open&&<div className="pop">
+      {TIERS.map(k=><button key={k} onClick={()=>{onChange(k);setOpen(false)}} className="pop-item">
+        <span className={"tier tier-"+k}><span className="tier-dot" style={{color:TIER_DOT[k]}}></span>{k}</span>
+      </button>)}
+    </div>}
+  </div>;
+}
+
+/* ───────────────── OverenieBadge ───────────────── */
+function OverenieBadge({value,onChange,t}){
+  const [open,setOpen]=useState(false);
+  const ref=useRef();
+  useClickOutside(ref,()=>setOpen(false));
+  const cls=(OVERENIA[value]||OVERENIA["Neoverené"]).cls;
+  return <div ref={ref} className="pop-wrap" onClick={e=>e.stopPropagation()}>
+    <button onClick={()=>setOpen(o=>!o)} className={"ov "+cls}>{t.verif[value||"Neoverené"]}</button>
+    {open&&<div className="pop" style={{minWidth:160}}>
+      {OV_OPTS.map(k=><button key={k} onClick={()=>{onChange(k);setOpen(false)}} className="pop-item">
+        <span className={"ov "+OVERENIA[k].cls}>{t.verif[k]}</span>
+      </button>)}
+    </div>}
+  </div>;
+}
+
+/* ───────────────── ScrapingModal ───────────────── */
+function ScrapingModal({onClose,onAdd,t}){
+  const [urls,setUrls]=useState("");
+  const [running,setRunning]=useState(false);
+  const [progress,setProgress]=useState([0,0]);
+  const [results,setResults]=useState([]);
+  const [errors,setErrors]=useState([]);
+  useEscape(onClose);
+
+  async function scrapeOne(url){
+    const headers={"Authorization":`Bearer ${API_TOKEN}`,"Content-Type":"application/json"};
+    const body=JSON.stringify({url});
+    const [scrapeRes,rawRes]=await Promise.allSettled([
+      fetch(`${API_BASE}/api/leads/scrape`,{method:"POST",headers,body}),
+      fetch(`${API_BASE}/api/leads/raw-extract`,{method:"POST",headers,body}),
+    ]);
+    if(scrapeRes.status!=="fulfilled"||!scrapeRes.value.ok){
+      const code=scrapeRes.status==="fulfilled"?`HTTP ${scrapeRes.value.status}`:scrapeRes.reason?.message||"network error";
+      throw new Error(code);
+    }
+    const scrapeData=await scrapeRes.value.json();
+    const ext=scrapeData.extracted||{};
+    let raw={};
+    if(rawRes.status==="fulfilled"&&rawRes.value.ok){
+      try{raw=await rawRes.value.json();}catch{raw={};}
+    }
+    return {scrapeData,ext,raw};
+  }
+
+  function buildLead(url,scrapeData,ext,raw){
+    const osoby=(raw.osoby||[]).map(o=>({
+      meno:o.meno||"",
+      rola:o.rola||"",
+      rola_level:o.rola_level||0,
+      confidence:o.confidence||0,
+      telefon:o.telefon||o.telefon_osoby||"",
+      kontext:o.kontext||"",
+      overenie:"Neoverené",
+    }));
+    const baseScore=Number(scrapeData.score)||0;
+    return {
+      id:Date.now()+Math.random(),
+      company:scrapeData.primary_identifier||raw.firma||url,
+      url,
+      contact:"",role:"",role_category:ext.role_category||"",
+      email:ext.email||(raw.emails&&raw.emails[0])||"",
+      phone:"",
+      all_phones:ext.all_phones||(raw.cisla?raw.cisla.map(c=>c.cislo):[]),
+      segment:scrapeData.vertical||"",
+      base_score:baseScore,score:baseScore,
+      tier:scrapeData.tier||tierFromScore(baseScore),
+      stage:"Nový",overenie:"Neoverené",
+      osoby,
+      _ai_contact:ext.contact_name||"",
+      _ai_role:ext.role||"",
+      _ai_phone:ext.phone||"",
+      activities:[],tasks:[],notes:"",scraped_at:today(),
+      selectedPersonIdx:null,
+    };
+  }
+
+  // impeccable: retry a single failed URL (network error → retry CTA)
+  async function retryOne(url){
+    setErrors(es=>es.filter(e=>e.url!==url));
+    setRunning(true);
+    try{
+      const {scrapeData,ext,raw}=await scrapeOne(url);
+      setResults(rs=>[...rs,buildLead(url,scrapeData,ext,raw)]);
+    }catch(e){
+      setErrors(es=>[...es,{url,msg:e.message}]);
+    }
+    setRunning(false);
+  }
+
+  async function run(){
+    const list=urls.split("\n").map(u=>u.trim()).filter(Boolean);
+    if(!list.length)return;
+    setRunning(true);setResults([]);setErrors([]);setProgress([0,list.length]);
+    const out=[],errs=[];
+    for(let i=0;i<list.length;i++){
+      const url=list[i].startsWith("http")?list[i]:"https://"+list[i];
+      try{
+        const {scrapeData,ext,raw}=await scrapeOne(url);
+        out.push(buildLead(url,scrapeData,ext,raw));
+      }catch(e){errs.push({url,msg:e.message})}
+      setProgress([i+1,list.length]);
+      setResults([...out]);setErrors([...errs]);
+    }
+    setRunning(false);
+  }
+
+  function selectPerson(resultId,idx){
+    setResults(rs=>rs.map(r=>{
+      if(r.id!==resultId) return r;
+      if(idx===null||idx===r.selectedPersonIdx){
+        return {...r,selectedPersonIdx:null,contact:"",role:"",phone:""};
+      }
+      const o=r.osoby[idx];
+      return {...r,selectedPersonIdx:idx,contact:o.meno||"",role:o.rola||"",phone:o.telefon||""};
+    }));
+  }
+
+  function addAll(){
+    const clean=results.map(({_ai_contact,_ai_role,_ai_phone,selectedPersonIdx,...rest})=>({
+      ...rest,
+      contact:rest.contact||_ai_contact||"",
+      role:rest.role||_ai_role||"",
+      phone:rest.phone||_ai_phone||"",
+    }));
+    onAdd(clean);
+    onClose();
+  }
+
+  const pct=progress[1]?Math.round(progress[0]/progress[1]*100):0;
+
+  return <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal modal-wide" onClick={e=>e.stopPropagation()}>
+      <div className="modal-hdr">
+        <div>
+          <h2>{t.scrapeTitle}</h2>
+          <div className="modal-hdr-meta">{t.scrapeSub}</div>
+        </div>
+        <button className="modal-close" onClick={onClose}><Icon.close/></button>
+      </div>
+
+      <div className="modal-body">
+        <textarea value={urls} onChange={e=>setUrls(e.target.value)} rows={5}
+          placeholder={t.scrapePh} className="textarea"/>
+
+        {(running||progress[1]>0)&&<>
+          <div className="scrape-bar"><div className={"scrape-bar-fill"+(running?" is-running":"")} style={{width:pct+"%"}}/></div>
+          <div className="scrape-meta">
+            <span>{running?`${t.scrapeProgress} · ${progress[0]} / ${progress[1]}`:`${progress[0]} / ${progress[1]}`}</span>
+            <span style={{fontFamily:'var(--font-mono)'}}>{pct}%</span>
+          </div>
+        </>}
+
+        {errors.map((e,i)=><div key={i} className="err">
+          <span className="err-glyph"><Icon.warn/></span>
+          <div style={{minWidth:0,flex:1}}>
+            <div className="err-url">{e.url}</div>
+            <div className="err-msg">{e.msg}</div>
+          </div>
+          <button className="err-retry" onClick={()=>retryOne(e.url)} disabled={running}>{t.retry}</button>
+        </div>)}
+
+        {results.map(r=>{
+          const sel=r.selectedPersonIdx;
+          return <div key={r.id} className="result-card">
+            <div className="result-hd">
+              <div style={{flex:1,minWidth:0}}>
+                <div className="result-name" title={r.company}>{r.company}</div>
+                <div className="result-meta">
+                  <span className={"tier tier-"+r.tier}><span className="tier-dot" style={{color:TIER_DOT[r.tier]}}></span>{r.tier}</span>
+                  <span className="chip" style={{fontFamily:'var(--font-mono)'}}>Score {r.score}</span>
+                  {r.segment&&<span className="chip">{r.segment}</span>}
+                  {r.osoby.length>0&&<span className="chip chip-brand">{r.osoby.length} {t.personsN}</span>}
+                </div>
+              </div>
+              <button className="discard" onClick={()=>setResults(rs=>rs.filter(x=>x.id!==r.id))}>{t.discard}</button>
+            </div>
+
+            {(r.contact||r.phone)&&<div className="summary-line">
+              <Icon.spark/>
+              <span><strong>{r.contact||t.noContact}</strong>{r.role&&` · ${r.role}`}{r.phone&&` · ${r.phone}`}</span>
+            </div>}
+
+            {r.osoby.length>0&&<div className="picker">
+              <div className="picker-label">
+                {t.pickerLabel} <span style={{color:'var(--ink-4)',fontWeight:400,textTransform:'none',letterSpacing:0}}>· {t.pickerHint}</span>
+              </div>
+              <div className="picker-grid">
+                {r.osoby.map((o,idx)=>{
+                  const isSel=sel===idx;
+                  return <div key={idx} className={"person-card"+(isSel?" selected":"")} onClick={()=>selectPerson(r.id,idx)}>
+                    <div className="person-avatar">{initials(o.meno)}</div>
+                    <div className="person-body">
+                      <div className="person-name">{o.meno||"—"}</div>
+                      {o.rola&&<div className="person-role">{o.rola}</div>}
+                      <div className="person-meta">
+                        {o.telefon&&<span className="person-phone">{o.telefon}</span>}
+                        {o.confidence!=null&&<span className="person-tag">conf {o.confidence}</span>}
+                        {o.rola_level>0&&<span className="person-tag">lvl {o.rola_level}</span>}
+                      </div>
+                    </div>
+                  </div>;
+                })}
+              </div>
+              {sel===null&&(r._ai_contact||r._ai_phone)&&<div className="ai-hint">
+                <Icon.spark/>
+                <span><span className="ai-hint-label">{t.aiSuggested}:</span> {r._ai_contact||"—"}{r._ai_role?` · ${r._ai_role}`:""}{r._ai_phone?` · ${r._ai_phone}`:""}</span>
+              </div>}
+            </div>}
+          </div>;
+        })}
+
+        {running&&Array.from({length:Math.min(6,Math.max(0,progress[1]-progress[0]))}).map((_,i)=>
+          <div key={"sk"+i} className="skel-card" aria-hidden="true">
+            <div className="skel-row">
+              <div className="skel skel-dot"/>
+              <div style={{flex:1}}>
+                <div className="skel skel-line" style={{width:"58%"}}/>
+                <div className="skel skel-line" style={{width:"34%",marginTop:8}}/>
+              </div>
+              <div className="skel skel-line" style={{width:54,height:18}}/>
+            </div>
+          </div>)}
+      </div>
+
+      <div className="modal-foot">
+        <button className="btn-ghost" onClick={onClose}>{t.close}</button>
+        <div style={{display:'flex',gap:8}}>
+          {results.length===0&&<button className="btn-primary" onClick={run} disabled={running||!urls.trim()}>
+            {running?`${t.scrapeProgress}…`:t.scrapeRun}
+          </button>}
+          {results.length>0&&!running&&<button className="btn-primary" onClick={addAll}>
+            <Icon.check/> {t.addAll} ({results.length})
+          </button>}
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ───────────────── DetailModal ───────────────── */
+function DetailModal({lead,onClose,onSave,onDelete,t}){
+  const [d,setD]=useState({...lead});
+  const [tab,setTab]=useState("info");
+  const [newAct,setNewAct]=useState({type:"Hovor",note:"",date:today()});
+  const [newTask,setNewTask]=useState({text:"",due:""});
+  const [editPhoneIdx,setEditPhoneIdx]=useState(null);
+  const [tmpPhone,setTmpPhone]=useState("");
+  useEscape(onClose);
+
+  const set=k=>v=>setD(x=>({...x,[k]:v}));
+  const persist=upd=>{const merged=recalc({...d,...upd});setD(merged);onSave(merged)};
+
+  function setOsobaOverenie(i,ov){
+    const osoby=d.osoby.map((o,j)=>j===i?{...o,overenie:ov}:o);
+    const target=osoby[i]||{};
+    const targetPhone=target.telefon||target.telefon_osoby||"";
+    const patch={osoby};
+    if(ov==="Správne"){
+      patch.overenie="Overené — CEO";
+      if(target.meno) patch.contact=target.meno;
+      if(target.rola) patch.role=target.rola;
+      if(targetPhone) patch.phone=targetPhone;
+    } else if(ov==="Info linka"){
+      patch.overenie="Info linka";
+    } else {
+      patch.overenie=d.overenie;
+    }
+    persist(patch);
+  }
+  function setOsobaPhone(i,ph){
+    if(!ph||!ph.trim()){setEditPhoneIdx(null);return;}
+    const osoby=d.osoby.map((o,j)=>j===i?{...o,telefon:ph,telefon_osoby:ph}:o);
+    const wasCorrect=(d.osoby[i]?.overenie==="Správne")||(d.osoby[i]?.meno&&d.osoby[i].meno===d.contact);
+    persist(wasCorrect?{osoby,phone:ph}:{osoby});
+    setEditPhoneIdx(null);
+  }
+  function addActivity(){
+    if(!newAct.note.trim())return;
+    persist({activities:[{id:Date.now(),...newAct},...(d.activities||[])]});
+    setNewAct({type:"Hovor",note:"",date:today()});
+  }
+  function addTask(){
+    if(!newTask.text.trim())return;
+    persist({tasks:[...(d.tasks||[]),{id:Date.now(),...newTask,done:false}]});
+    setNewTask({text:"",due:""});
+  }
+  const ACT_TYPES=[["Hovor",t.actCall],["Email",t.actEmail],["Stretnutie",t.actMeeting],["Poznámka",t.actNote]];
+  const actIcon={Hovor:"☏",Email:"✉",Stretnutie:"☆","Poznámka":"✎"};
+  const actLabel=k=>(ACT_TYPES.find(([key])=>key===k)||[,""])[1]||k;
+
+  return <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal modal-wide" onClick={e=>e.stopPropagation()}>
+      <div className="detail-hero">
+        <div style={{minWidth:0,flex:1}}>
+          <h2 className="detail-title" title={d.company}>{d.company}</h2>
+          <div className="detail-meta">
+            <span className={"tier tier-"+d.tier}><span className="tier-dot" style={{color:TIER_DOT[d.tier]}}></span>{d.tier}</span>
+            <span className="detail-score">{t.thScore} <strong><CountUp value={d.score}/></strong></span>
+            <select value={d.stage} onChange={e=>persist({stage:e.target.value})} className="stage-select">
+              {STAGES.map(s=><option key={s} value={s}>{t.stages[s]}</option>)}
+            </select>
+          </div>
+        </div>
+        <button className="modal-close" onClick={onClose}><Icon.close/></button>
+      </div>
+
+      <div className="detail-tabs">
+        {[["info",t.tabInfo],["osoby",t.tabPersons],["akt",t.tabAct],["ulohy",t.tabTasks]].map(([k,l])=>
+          <button key={k} onClick={()=>setTab(k)}
+            className={"detail-tab"+(tab===k?" is-active":"")}>{l}</button>)}
+      </div>
+
+      <div className="modal-body" style={{padding:"var(--s-5)"}}>
+
+        {tab==="info"&&<div className="field-grid">
+          {[["url",t.lUrl,false],["email",t.lEmail,false],["phone",t.lPhone,true],["segment",t.lSegment,false]].map(([k,l,mono])=>
+            <div key={k} className="field">
+              <label className="field-label">{l}</label>
+              <input value={d[k]||""} onChange={e=>set(k)(e.target.value)}
+                className="input" style={mono?{fontFamily:'var(--font-mono)'}:undefined}/>
+            </div>)}
+          <div className="field full">
+            <label className="field-label">{t.lVerif}</label>
+            <div><OverenieBadge value={d.overenie} onChange={ov=>persist({overenie:ov})} t={t}/></div>
+          </div>
+          <div className="field full">
+            <label className="field-label">{t.lNotes}</label>
+            <textarea value={d.notes||""} onChange={e=>set("notes")(e.target.value)} rows={3}
+              className="input" style={{minHeight:80,resize:'vertical',fontFamily:'var(--font-sans)',fontSize:13,lineHeight:1.6}}/>
+          </div>
+          <div className="field full" style={{flexDirection:'row',justifyContent:'flex-end'}}>
+            <button onClick={()=>persist({})} className="btn-primary">{t.save}</button>
+          </div>
+        </div>}
+
+        {tab==="osoby"&&<div>
+          {(!d.osoby||!d.osoby.length)&&<div className="zero-state">{t.noPersons}</div>}
+          {(d.osoby||[]).map((o,i)=>{
+            const phone=o.telefon||o.telefon_osoby||"";
+            return <div key={i} className="osoba">
+              <div className="osoba-top">
+                <div className="person-avatar">{initials(o.meno)}</div>
+                <div className="osoba-body">
+                  <div className="osoba-name">
+                    {o.meno||"—"}
+                    {o.rola&&<span className="osoba-role">· {o.rola}</span>}
+                    {o.confidence!=null&&<span className="person-tag">conf {o.confidence}</span>}
+                    <OverenieBadge value={o.overenie||"Neoverené"} onChange={ov=>setOsobaOverenie(i,ov)} t={t}/>
+                  </div>
+                  <div className="osoba-phone-row">
+                    {editPhoneIdx===i
+                      ?<input autoFocus value={tmpPhone} onChange={e=>setTmpPhone(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter")setOsobaPhone(i,tmpPhone);if(e.key==="Escape")setEditPhoneIdx(null)}}
+                          onBlur={()=>setOsobaPhone(i,tmpPhone)}
+                          className="phone-input"/>
+                      :<span className={"osoba-phone"+(phone?"":" empty")}>{phone||t.noPhone}</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="osoba-actions">
+                <button onClick={()=>setOsobaOverenie(i,"Správne")} className="osoba-action success">✓ {t.btnCorrect}</button>
+                <button onClick={()=>setOsobaOverenie(i,"Info linka")} className="osoba-action warn">{t.btnInfoline}</button>
+                <button onClick={()=>{setEditPhoneIdx(i);setTmpPhone(phone)}} className="osoba-action">{t.btnChangePhone}</button>
+              </div>
+            </div>;
+          })}
+        </div>}
+
+        {tab==="akt"&&<div>
+          <div className="compose">
+            <select value={newAct.type} onChange={e=>setNewAct(a=>({...a,type:e.target.value}))} className="input" style={{width:140,flex:'none'}}>
+              {ACT_TYPES.map(([k,l])=><option key={k} value={k}>{l}</option>)}
+            </select>
+            <input value={newAct.note} onChange={e=>setNewAct(a=>({...a,note:e.target.value}))}
+              onKeyDown={e=>e.key==="Enter"&&addActivity()} placeholder={t.actPh} className="input"/>
+            <input type="date" value={newAct.date} onChange={e=>setNewAct(a=>({...a,date:e.target.value}))} className="input" style={{width:140,flex:'none'}}/>
+            <button onClick={addActivity} className="btn-primary"><Icon.plus/>{t.add}</button>
+          </div>
+          <div className="act-list">
+            {(d.activities||[]).sort((a,b)=>b.date.localeCompare(a.date)).map(a=>
+              <div key={a.id} className="act">
+                <div className="act-icon">{actIcon[a.type]||"•"}</div>
+                <div className="act-body">
+                  <div className="act-note">{a.note}</div>
+                  <div className="act-meta">{actLabel(a.type)} · {a.date}</div>
+                </div>
+              </div>)}
+            {!(d.activities||[]).length&&<div className="zero-state">{t.noActs}</div>}
+          </div>
+        </div>}
+
+        {tab==="ulohy"&&<div>
+          <div className="compose">
+            <input value={newTask.text} onChange={e=>setNewTask(x=>({...x,text:e.target.value}))}
+              onKeyDown={e=>e.key==="Enter"&&addTask()} placeholder={t.taskPh} className="input"/>
+            <input type="date" value={newTask.due} onChange={e=>setNewTask(x=>({...x,due:e.target.value}))} className="input" style={{width:140,flex:'none'}}/>
+            <button onClick={addTask} className="btn-primary"><Icon.plus/>{t.add}</button>
+          </div>
+          {(d.tasks||[]).map(tk=>{
+            const overdue=tk.due&&tk.due<today()&&!tk.done;
+            return <div key={tk.id} className={"task"+(overdue?" overdue":"")+(tk.done?" done":"")}>
+              <input type="checkbox" checked={tk.done}
+                onChange={()=>persist({tasks:d.tasks.map(x=>x.id===tk.id?{...x,done:!x.done}:x)})}/>
+              <span className="task-text">{tk.text}</span>
+              {tk.due&&<span className="task-due">{tk.due}</span>}
+            </div>;
+          })}
+          {!(d.tasks||[]).length&&<div className="zero-state">{t.noTasks}</div>}
+        </div>}
+
+      </div>
+      <div className="modal-foot">
+        <button onClick={()=>{if(confirm(t.confirmDel))onDelete(d.id)}} className="btn-ghost" style={{color:'var(--danger-ink)'}}>{t.del}</button>
+        <button onClick={onClose} className="btn-secondary">{t.close}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ───────────────── ExportModal ───────────────── */
+function ExportModal({leads,onClose,t,lang}){
+  const [copied,setCopied]=useState(false);
+  useEscape(onClose);
+  function csv(){
+    const head=[t.thCompany,t.thContact,t.thRole,t.lEmail,t.thPhone,t.thTier,t.thScore,t.thSegment,t.thStage,t.lUrl,t.thVerif];
+    const esc=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+    const rows=leads.map(l=>[l.company,l.contact,l.role,l.email,l.phone,l.tier,l.score,l.segment,t.stages[l.stage]||l.stage,l.url,t.verif[l.overenie]||l.overenie].map(esc).join(","));
+    const blob=new Blob(["﻿"+[head.join(","),...rows].join("\n")],{type:"text/csv;charset=utf-8"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="wector_leads.csv";a.click();
+  }
+  function copyJson(){
+    navigator.clipboard.writeText(JSON.stringify(leads,null,2)).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),1500)});
+  }
+  return <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
+      <div className="modal-hdr">
+        <div>
+          <h2>{t.exportCrm}</h2>
+          <div className="modal-hdr-meta">{leads.length} {t.leads}</div>
+        </div>
+        <button className="modal-close" onClick={onClose}><Icon.close/></button>
+      </div>
+      <div className="modal-body">
+        <div style={{display:'grid',gap:8,marginBottom:'var(--s-5)'}}>
+          <button onClick={csv} className="btn-primary" style={{justifyContent:'center',padding:'12px 16px'}}>
+            {t.csvBtn} · {leads.length}
+          </button>
+          <button onClick={copyJson} className="btn-secondary" style={{justifyContent:'center',padding:'12px 16px',display:'inline-flex',alignItems:'center',gap:6}}>
+            {copied?<><Icon.check/>{t.copied}</>:t.jsonBtn}
+          </button>
+        </div>
+        <div style={{background:'var(--surface-alt)',border:'1px solid var(--line-soft)',borderRadius:'var(--r-2)',padding:'var(--s-4)',display:'grid',gap:'var(--s-3)'}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:4}}>{t.pdTitle}</div>
+            <div style={{fontSize:12,color:'var(--ink-2)',lineHeight:1.6}}>{t.pdText}</div>
+          </div>
+          <div style={{height:1,background:'var(--line-soft)'}}/>
+          <div>
+            <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:4}}>{t.hsTitle}</div>
+            <div style={{fontSize:12,color:'var(--ink-2)',lineHeight:1.6}}>{t.hsText}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ───────────────── ShortcutsModal (impeccable) ───────────────── */
+function ShortcutsModal({onClose,t}){
+  useEscape(onClose);
+  const mod=(navigator.platform||"").toLowerCase().includes("mac")?"⌘":"Ctrl";
+  const rows=[
+    [[mod,"K"],t.kbdSearch],
+    [["N"],t.kbdNew],
+    [["Esc"],t.kbdClose],
+    [["?"],t.kbdHelp],
+    [["2×"],t.kbdOpenUrl],
+  ];
+  return <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal" style={{maxWidth:440}} onClick={e=>e.stopPropagation()}>
+      <div className="modal-hdr">
+        <div><h2>{t.kbdTitle}</h2></div>
+        <button className="modal-close" onClick={onClose}><Icon.close/></button>
+      </div>
+      <div className="modal-body">
+        <div className="kbd-list">
+          {rows.map(([keys,label],i)=><div key={i} className="kbd-item">
+            <span>{label}</span>
+            <span className="kbd-keys">{keys.map((k,j)=><kbd key={j}>{k}</kbd>)}</span>
+          </div>)}
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ───────────────── Pricing ───────────────── */
+function Pricing({t}){
+  const plans=[
+    {key:"starter",name:"Starter",price:"€29",per:t.prMo,current:true},
+    {key:"growth",name:"Growth",price:"€79",per:t.prMo,popular:true},
+    {key:"agency",name:"Agency",price:"€199",per:t.prMo},
+    {key:"enterprise",name:"Enterprise",price:t.prDeal,per:""},
+  ];
+  return <div className="shell">
+    <div className="pricing-head">
+      <h1>{t.prTitle}</h1>
+      <p>{t.prSub}</p>
+    </div>
+    <div className="plans">
+      {plans.map(p=><div key={p.key} className={"plan"+(p.current?" is-current":"")+(p.popular?" is-popular":"")}>
+        {p.popular&&<span className="plan-tag popular">{t.prPopular}</span>}
+        {p.current&&<span className="plan-tag current">{t.prCurrent}</span>}
+        <div className="plan-name">{p.name}</div>
+        <div className="plan-price">
+          <span className="plan-price-amt">{p.price}</span>
+          <span className="plan-price-per">{p.per}</span>
+        </div>
+        <ul className="plan-feats">
+          {t.planFeats[p.key].map(f=><li key={f}>
+            <svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {f}
+          </li>)}
+        </ul>
+        <div className="plan-cta" title={t.prSoon}>{t.prChoose}</div>
+      </div>)}
+    </div>
+    <p className="pricing-foot">{t.prIncl}</p>
+  </div>;
+}
+
+/* ───────────────── Legal ───────────────── */
+function Legal({page,lang,t}){
+  const company=<p><strong>Prevádzkovateľ:</strong> [DOPLŇ: Obchodné meno / meno a priezvisko], [DOPLŇ: sídlo/miesto podnikania], IČO: [DOPLŇ], DIČ: [DOPLŇ], zapísaný v [DOPLŇ: obchodný register / živnostenský register], e-mail: [DOPLŇ], (ďalej len „Prevádzkovateľ").</p>;
+  const disclaimer=<div className="note">⚠ Toto je šablóna pripravená pre službu Wector. Pred spustením do prevádzky ju nechaj skontrolovať advokátom — najmä časti o spracúvaní osobných údajov tretích strán (scraping) a o zodpovednosti používateľa.</div>;
+  const langNote=lang!=="sk"&&<div className="note info">{t.legalNote}</div>;
+
+  if(page==="vop")return <div className="legal">
+    {disclaimer}{langNote}
+    <h1>Všeobecné obchodné podmienky</h1>
+    {company}
+    <h2>1. Úvodné ustanovenia</h2>
+    <p>Tieto všeobecné obchodné podmienky (ďalej len „VOP") upravujú práva a povinnosti medzi Prevádzkovateľom a používateľom služby Wector — softvérového nástroja na vyhľadávanie a správu obchodných kontaktov (ďalej len „Služba"). Používaním Služby používateľ vyjadruje súhlas s týmito VOP.</p>
+    <h2>2. Opis Služby</h2>
+    <p>Služba umožňuje automatizované získavanie verejne dostupných kontaktných údajov z webových stránok zadaných používateľom (tzv. scraping), ich hodnotenie (lead scoring) a správu v rozhraní CRM. Služba je poskytovaná „tak ako je" (as-is).</p>
+    <h2>3. Registrácia a používateľský účet</h2>
+    <p>Na používanie platených funkcií Služby je potrebná registrácia. Používateľ je povinný uvádzať pravdivé údaje a chrániť svoje prihlasovacie údaje. Účet je neprenosný v rozsahu zvoleného plánu.</p>
+    <h2>4. Cena a platobné podmienky</h2>
+    <p>Ceny jednotlivých plánov sú uvedené v cenníku Služby. Predplatné sa účtuje mesačne vopred. Používateľ môže predplatné kedykoľvek zrušiť; zrušenie nadobúda účinnosť ku koncu aktuálneho fakturačného obdobia. Skúšobná doba 14 dní je bezplatná.</p>
+    <h2>5. Povinnosti a zodpovednosť používateľa</h2>
+    <ul>
+      <li>Používateľ zadáva do Služby URL adresy webových stránok na vlastnú zodpovednosť.</li>
+      <li>Používateľ je samostatným prevádzkovateľom osobných údajov, ktoré prostredníctvom Služby získa, a je povinný ich spracúvať v súlade s nariadením GDPR a zákonom č. 18/2018 Z. z. o ochrane osobných údajov.</li>
+      <li>Používateľ nesmie Službu používať na hromadné nevyžiadané správy (spam) v rozpore so zákonom č. 452/2021 Z. z., na obchádzanie technických ochrán webových stránok ani na získavanie údajov v rozpore s podmienkami cieľových stránok.</li>
+    </ul>
+    <h2>6. Zodpovednosť Prevádzkovateľa</h2>
+    <p>Prevádzkovateľ nezodpovedá za presnosť, úplnosť ani aktuálnosť údajov získaných scrapingom, za dostupnosť cieľových webových stránok ani za škodu vzniknutú použitím získaných údajov používateľom. Celková zodpovednosť Prevádzkovateľa je obmedzená na sumu zaplatenú používateľom za posledné 3 mesiace.</p>
+    <h2>7. Duševné vlastníctvo</h2>
+    <p>Softvér, dizajn a know-how Služby sú duševným vlastníctvom Prevádzkovateľa. Používateľ získava nevýhradnú, neprenosnú licenciu na používanie Služby počas trvania predplatného.</p>
+    <h2>8. Odstúpenie od zmluvy a reklamácie</h2>
+    <p>Spotrebiteľ má právo odstúpiť od zmluvy do 14 dní od jej uzavretia bez udania dôvodu. Reklamácie vybavuje Prevádzkovateľ e-mailom do 30 dní. Orgánom dozoru je Slovenská obchodná inšpekcia (SOI).</p>
+    <h2>9. Záverečné ustanovenia</h2>
+    <p>Tieto VOP sa riadia právom Slovenskej republiky. Prevádzkovateľ si vyhradzuje právo VOP meniť; zmeny oznámi najmenej 14 dní vopred.</p>
+  </div>;
+
+  if(page==="privacy")return <div className="legal">
+    {disclaimer}{langNote}
+    <h1>Zásady ochrany osobných údajov</h1>
+    {company}
+    <h2>1. Aké údaje spracúvame</h2>
+    <ul>
+      <li><strong>Údaje používateľov Služby:</strong> meno, e-mail, fakturačné údaje, IP adresa, údaje o používaní Služby.</li>
+      <li><strong>Údaje získané scrapingom:</strong> Služba na pokyn používateľa zhromažďuje verejne dostupné obchodné kontaktné údaje. Pre tieto údaje je prevádzkovateľom používateľ; Wector vystupuje ako sprostredkovateľ podľa čl. 28 GDPR.</li>
+    </ul>
+    <h2>2. Účel a doba spracúvania</h2>
+    <p>Údaje používateľov spracúvame na poskytovanie Služby, fakturáciu a komunikáciu — po dobu trvania zmluvy a následne po dobu vyžadovanú zákonom.</p>
+    <h2>3. Príjemcovia údajov</h2>
+    <p>Údaje môžu byť sprístupnené sprostredkovateľom: Microsoft Azure (EÚ región West Europe), Supabase, platobná brána [DOPLŇ].</p>
+    <h2>4. Práva dotknutých osôb</h2>
+    <p>Máte právo na prístup, opravu, vymazanie, obmedzenie spracúvania, prenosnosť a námietku. Sťažnosť môžete podať Úradu na ochranu osobných údajov SR.</p>
+    <h2>5. Zabezpečenie</h2>
+    <p>Údaje sú šifrované pri prenose (TLS) aj v pokoji. Prístup k produkčným systémom je obmedzený a logovaný.</p>
+  </div>;
+
+  if(page==="cookies")return <div className="legal">
+    {disclaimer}{langNote}
+    <h1>Zásady používania cookies</h1>
+    <h2>1. Čo sú cookies</h2>
+    <p>Cookies sú malé textové súbory ukladané do prehliadača. Používame ich v súlade so zákonom č. 452/2021 Z. z.</p>
+    <h2>2. Aké cookies používame</h2>
+    <ul>
+      <li><strong>Nevyhnutné:</strong> localStorage pre uloženie leadov a nastavení aplikácie. Nevyžadujú súhlas.</li>
+      <li><strong>Analytické:</strong> momentálne nepoužívame.</li>
+      <li><strong>Marketingové:</strong> nepoužívame.</li>
+    </ul>
+    <h2>3. Správa cookies</h2>
+    <p>Technické úložisko môžete vymazať v nastaveniach prehliadača. Prídete tým o lokálne uložené leady.</p>
+  </div>;
+
+  return <div className="legal">
+    {disclaimer}{langNote}
+    <h1>Kontakt</h1>
+    {company}
+    <p style={{marginTop:'var(--s-4)'}}>E-mail: [DOPLŇ] · Web: wector.io</p>
+    <p>Orgán dozoru: Slovenská obchodná inšpekcia (SOI), Bajkalská 21/A, 820 07 Bratislava.</p>
+  </div>;
+}
+
+/* ───────────────── App ───────────────── */
+function App(){
+  const [lang,setLang]=useState(()=>localStorage.getItem("wector_lang")||"sk");
+  const [leads,setLeads]=useState(loadLeads);
+  const [view,setView]=useState("crm");
+  const [tab,setTab]=useState("Všetky");
+  const [search,setSearch]=useState("");
+  const [showScrape,setShowScrape]=useState(false);
+  const [showExport,setShowExport]=useState(false);
+  const [showKbd,setShowKbd]=useState(false);
+  const [selected,setSelected]=useState(null);
+  const [sort,setSort]=useState({key:null,dir:null}); // dir: 'desc' | 'asc' | null
+  const searchRef=useRef(null);
+  const clickTimer=useRef(null);
+  const t=I18N[lang];
+
+  useEffect(()=>saveLeads(leads),[leads]);
+  useEffect(()=>localStorage.setItem("wector_lang",lang),[lang]);
+
+  // impeccable: sortable headers — 1st click DESC, 2nd ASC, 3rd off
+  const TIER_RANK={HOT:4,WARM:3,COOL:2,DEAD:1};
+  function toggleSort(key){
+    setSort(s=>{
+      if(s.key!==key)return {key,dir:"desc"};
+      if(s.dir==="desc")return {key,dir:"asc"};
+      return {key:null,dir:null};
+    });
+  }
+  function sortVal(l,key){
+    if(key==="score")return l.score||0;
+    if(key==="tier")return TIER_RANK[l.tier]||0;
+    if(key==="company")return (l.company||"").toLowerCase();
+    if(key==="stage")return STAGES.indexOf(l.stage);
+    return 0;
+  }
+
+  // impeccable: keyboard shortcuts (⌘K search · N new scrape · ? help · Esc close)
+  useEffect(()=>{
+    const inField=el=>el&&(/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)||el.isContentEditable);
+    const h=e=>{
+      if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){
+        e.preventDefault();setView("crm");
+        setTimeout(()=>searchRef.current&&searchRef.current.focus(),0);
+        return;
+      }
+      if(e.key==="Escape"){setShowKbd(false);return;}
+      if(inField(e.target)||e.metaKey||e.ctrlKey||e.altKey)return;
+      if(e.key.toLowerCase()==="n"){e.preventDefault();setShowScrape(true);}
+      else if(e.key==="?"||(e.key==="/"&&e.shiftKey)){e.preventDefault();setShowKbd(v=>!v);}
+    };
+    window.addEventListener("keydown",h);
+    return ()=>window.removeEventListener("keydown",h);
+  },[]);
+
+  // emil: lead row — single click opens detail, double click opens the site
+  function rowClick(l){
+    clearTimeout(clickTimer.current);
+    clickTimer.current=setTimeout(()=>setSelected(l),200);
+  }
+  function rowDblClick(l){
+    clearTimeout(clickTimer.current);
+    if(l.url)window.open(l.url.startsWith("http")?l.url:"https://"+l.url,"_blank","noopener");
+  }
+  function SortableTh(key,label,align){
+    const active=sort.key===key;
+    const arrow=active?(sort.dir==="asc"?"▲":"▼"):"↕";
+    return <th onClick={()=>toggleSort(key)}
+      className={"th-sort"+(active?" is-sorted":"")}
+      style={align==="right"?{textAlign:"right"}:undefined}>
+      <span className="th-sort-inner">{label}<span className="th-arrow">{arrow}</span></span>
+    </th>;
+  }
+
+  const update=(id,patch)=>setLeads(ls=>ls.map(l=>l.id===id?recalc({...l,...patch}):l));
+  const save=lead=>setLeads(ls=>ls.map(l=>l.id===lead.id?lead:l));
+  const del=id=>{setLeads(ls=>ls.filter(l=>l.id!==id));setSelected(null)};
+
+  const counts=useMemo(()=>{
+    const c={Všetky:leads.length};
+    TIERS.forEach(x=>c[x]=leads.filter(l=>l.tier===x).length);
+    return c;
+  },[leads]);
+
+  const filtered=useMemo(()=>{
+    const out=leads.filter(l=>{
+      if(tab!=="Všetky"&&l.tier!==tab)return false;
+      if(search&&!`${l.company||""} ${l.contact||""} ${l.email||""} ${l.segment||""}`.toLowerCase().includes(search.toLowerCase()))return false;
+      return true;
+    });
+    if(sort.key){
+      const dir=sort.dir==="asc"?1:-1;
+      out.sort((a,b)=>{
+        const va=sortVal(a,sort.key),vb=sortVal(b,sort.key);
+        if(va<vb)return -1*dir;
+        if(va>vb)return 1*dir;
+        return 0;
+      });
+    }
+    return out;
+  },[leads,tab,search,sort]);
+
+  // emil: sliding tab underline indicator
+  const [tabsRef,tabBar]=useSlidingUnderline(tab,[lang,leads.length]);
+
+  return <div className="app">
+    {/* ── HEADER ── */}
+    <header className="hdr">
+      <div className="shell hdr-inner">
+        <div className="hdr-left">
+          <button onClick={()=>setView("crm")} className="brand">
+            <span className="brand-mark"></span>
+            <span>Wector</span>
+          </button>
+          <span className="lead-pill">{leads.length} {t.leads}</span>
+        </div>
+        <div className="hdr-right">
+          <div className="lang-group">
+            {LANG_LIST.map(([code,label])=><button key={code} onClick={()=>setLang(code)}
+              className={"lang-btn"+(lang===code?" is-active":"")}>{label}</button>)}
+          </div>
+          <button onClick={()=>setShowKbd(true)} className="kbd-btn" title={t.kbdTitle} aria-label={t.kbdTitle}>⌘</button>
+          <button onClick={()=>setView("pricing")} className={"nav-btn"+(view==="pricing"?" is-active":"")}>{t.pricing}</button>
+          <button onClick={()=>setShowExport(true)} className="nav-btn">{t.exportCrm}</button>
+          <button onClick={()=>setShowScrape(true)} className="btn-primary"><Icon.plus/>{t.scraping}</button>
+        </div>
+      </div>
+    </header>
+
+    {view==="crm"&&<>
+      {/* ── SUBBAR ── */}
+      <div className="subbar">
+        <div className="shell subbar-inner">
+          <div className="tabs" ref={tabsRef}>
+            {["Všetky",...TIERS].map(x=>{
+              const isActive=tab===x;
+              return <button key={x} onClick={()=>setTab(x)} className={"tab"+(isActive?" is-active":"")}>
+                {x!=="Všetky"&&<span className="tab-dot" style={{color:TIER_DOT[x]}}></span>}
+                <span>{x==="Všetky"?t.all:x}</span>
+                <span className="tab-count">{counts[x]}</span>
+              </button>;
+            })}
+            <span className="tab-underline" style={{transform:`translateX(${tabBar.left}px)`,width:tabBar.width+"px"}}/>
+          </div>
+          <div className="search">
+            <Icon.search/>
+            <input ref={searchRef} value={search} onChange={e=>setSearch(e.target.value)} placeholder={t.search}/>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MAIN ── */}
+      <main className="main">
+        <div className="shell">
+          {leads.length>0&&<div className="stats">
+            <div className="stat">
+              <div className="stat-label">{t.statTotal}</div>
+              <div className="stat-value">{leads.length}</div>
+              <div className="stat-meta">{filtered.length} {t.search.toLowerCase().includes("hľad")||t.search.toLowerCase().includes("hled")||t.search.toLowerCase().includes("szuk")?"po filtri":"after filter"}</div>
+            </div>
+            {TIERS.map(k=><div key={k} className="stat">
+              <div className="stat-label"><span className="stat-label-dot" style={{background:TIER_DOT[k]}}/>{t["stat"+k.charAt(0)+k.slice(1).toLowerCase()]||k}</div>
+              <div className="stat-value">{counts[k]||0}</div>
+              <div className="stat-meta">{leads.length?Math.round((counts[k]||0)/leads.length*100):0}%</div>
+            </div>)}
+          </div>}
+
+          <div className="table-wrap">
+            {filtered.length===0
+              ? (leads.length===0
+                ? <div className="empty">
+                    <div className="empty-glyph radar"><Icon.radar/></div>
+                    <p className="empty-title">{t.empty}</p>
+                    <p className="empty-sub">{t.emptySub}</p>
+                    <button onClick={()=>setShowScrape(true)} className="btn-primary"><Icon.plus/>{t.scraping}</button>
+                  </div>
+                : search
+                  ? <div className="empty">
+                      <div className="empty-glyph"><Icon.search/></div>
+                      <p className="empty-title">{t.emptySearch}</p>
+                      <p className="empty-sub">{t.emptySearchSub}</p>
+                      <div className="empty-actions">
+                        <button onClick={()=>setSearch("")} className="btn-secondary">{t.clearFilter}</button>
+                      </div>
+                    </div>
+                  : <div className="empty">
+                      <div className="empty-glyph radar"><Icon.radar/></div>
+                      <p className="empty-title">{t.emptyTier} {tab}</p>
+                      <p className="empty-sub">{t.emptyTierSub}</p>
+                      <div className="empty-actions">
+                        <button onClick={()=>setTab("Všetky")} className="btn-secondary">{t.clearFilter}</button>
+                        <button onClick={()=>setShowScrape(true)} className="btn-primary"><Icon.plus/>{t.scraping}</button>
+                      </div>
+                    </div>)
+              : <table className="tbl">
+                  <thead>
+                    <tr>
+                      {SortableTh("company",t.thCompany)}
+                      <th>{t.thContact}</th>
+                      <th>{t.thRole}</th>
+                      <th>{t.thPhone}</th>
+                      <th>{t.thVerif}</th>
+                      {SortableTh("tier",t.thTier)}
+                      {SortableTh("score",t.thScore,"right")}
+                      <th>{t.thSegment}</th>
+                      {SortableTh("stage",t.thStage)}
+                      <th aria-label={t.thActions}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(l=>{
+                      const cleanUrl=(l.url||"").replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,"");
+                      const tierLow=(l.tier||"DEAD").toLowerCase();
+                      return <tr key={l.id} onClick={()=>rowClick(l)} onDoubleClick={()=>rowDblClick(l)} title={t.kbdOpenUrl} className={l.tier==="HOT"?"row-hot":""}>
+                        <td>
+                          <div className="cell-company">
+                            <span className="cell-company-name" title={l.company}>{l.company}</span>
+                            {cleanUrl&&<span className="cell-company-url">{cleanUrl}</span>}
+                          </div>
+                        </td>
+                        <td><InlineCell value={l.contact} onSave={v=>update(l.id,{contact:v})} placeholder={t.phName}/></td>
+                        <td><InlineCell value={l.role} onSave={v=>update(l.id,{role:v})} placeholder={t.phRole}/></td>
+                        <td><InlineCell value={l.phone} onSave={v=>update(l.id,{phone:v})} placeholder={t.phPhone} mono/></td>
+                        <td onClick={e=>e.stopPropagation()}><OverenieBadge value={l.overenie} onChange={v=>update(l.id,{overenie:v})} t={t}/></td>
+                        <td onClick={e=>e.stopPropagation()}><TierCell tier={l.tier} onChange={v=>setLeads(ls=>ls.map(x=>x.id===l.id?{...x,tier:v}:x))}/></td>
+                        <td style={{textAlign:'right'}}>
+                          <div className="score-cell"><CountUp value={l.score}/></div>
+                          <div className="score-bar"><div className={"score-bar-fill "+tierLow} style={{width:l.score+"%"}}/></div>
+                        </td>
+                        <td><span className="muted-cell">{l.segment||"—"}</span></td>
+                        <td onClick={e=>e.stopPropagation()}>
+                          <select value={l.stage} onChange={e=>update(l.id,{stage:e.target.value})} className="stage-select">
+                            {STAGES.map(s=><option key={s} value={s}>{t.stages[s]}</option>)}
+                          </select>
+                        </td>
+                        <td onClick={e=>e.stopPropagation()}>
+                          <button onClick={()=>{if(confirm(t.confirmDel))del(l.id)}} className="row-x" title={t.del}>×</button>
+                        </td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+            }
+          </div>
+        </div>
+      </main>
+    </>}
+
+    {view==="pricing"&&<main className="main"><Pricing t={t}/></main>}
+    {["vop","privacy","cookies","kontakt"].includes(view)&&<main className="main"><Legal page={view} lang={lang} t={t}/></main>}
+
+    {/* ── FOOTER ── */}
+    <footer className="foot">
+      <div className="shell foot-inner">
+        <span>© {new Date().getFullYear()} Wector · B2B Lead Intelligence</span>
+        <div className="foot-links">
+          <button onClick={()=>setView("vop")} className="foot-link">{t.fTerms}</button>
+          <button onClick={()=>setView("privacy")} className="foot-link">{t.fPrivacy}</button>
+          <button onClick={()=>setView("cookies")} className="foot-link">{t.fCookies}</button>
+          <button onClick={()=>setView("kontakt")} className="foot-link">{t.fContact}</button>
+        </div>
+      </div>
+    </footer>
+
+    {showScrape&&<ScrapingModal onClose={()=>setShowScrape(false)} t={t}
+      onAdd={rs=>setLeads(ls=>[...rs.map(recalc),...ls])}/>}
+    {showExport&&<ExportModal leads={leads} onClose={()=>setShowExport(false)} t={t} lang={lang}/>}
+    {selected&&<DetailModal lead={selected} onClose={()=>setSelected(null)} onSave={save} onDelete={del} t={t}/>}
+    {showKbd&&<ShortcutsModal onClose={()=>setShowKbd(false)} t={t}/>}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

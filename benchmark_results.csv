@@ -1,0 +1,42 @@
+﻿url;exp_email;got_email;email_ok;exp_phone;got_phone;phone_ok;error
+https://www.indarceky.sk/;podpora@indarceky.sk;;0;0222205919;;0;HTTP 502
+https://ema-elektro.sk/;servis@ema-elektro.sk;;0;317804046;;0;HTTP 502
+https://www.zeniqo.sk/;eshop@zeniqo.sk;;0;908761091;;0;HTTP 502
+https://www.fgym.sk/;ferenci.ladislav@gmail.com;ferenci.ladislav@gmail.com;1;0911489439;421911489439;0;
+https://www.domoss.sk/;marketing@domoss.sk;info@domoss.sk;0;33774800;303490010;0;
+https://www.stylin.sk/;info@stylin.sk;info@stylin.sk;1;777592979;420777592979;0;
+https://lomax.sk/;info@lomax.sk;info@lomax.sk;1;0903768771;421262523331;0;
+https://www.velkykosik.cz/;info@velkykosik.cz;info@velkykosik.cz;1;245008200;245008200;1;
+https://www.zuriel.cz/;info@zuriel.cz;info@zuriel.cz;1;602191636;420602191636;0;
+https://www.fermatshop.sk/;info@fermatshop.sk;info@fermatshop.sk;1;918570777;50963791;0;
+https://www.vsetkonaradie.sk/;objednavky@vsetkonaradie.sk;objednavky@vsetkonaradie.sk;1;948255085;421948255085;0;
+https://www.profiledziarovky.sk/;info@profiledziarovky.sk;info@profiledziarovky.sk;1;0902248611;47543621;0;
+https://www.citycomp.sk/;eshop@citycomp.sk;info@citycomp.sk;0;0514525360;;0;
+https://www.florasystem.sk/;lukacova@florasystem.sk;;0;918521056;;0;TIMEOUT
+https://www.hodiny-na-stenu.sk/;obchod@hodiny-na-stenu.sk;;0;908962505;;0;('Connection aborted.', ConnectionResetError(10054, 'An existing connection was 
+https://www.pomocnik.sk/;info@pomocnik.sk;info@pomocnik.sk;1;0434554433;0434554433;1;
+https://www.stavbaeu.cz/;info@stavbaeu.cz;benes@stavbaeu.cz;0;;;0;
+https://www.goodio.sk/;info@goodio.cz;;0;266266325;;0;HTTP 502
+https://www.kokiskashop.cz/;info@kokiska.cz;;0;776150650;;0;HTTP 503
+https://www.esvit.cz/;esvit@esvit.cz;;0;773977937;;0;HTTP 503
+https://eshop.globo-lighting.sk/;;;0;0362300225;;0;HTTP 503
+https://www.megaknihy.sk/;info@megaknihy.sk;;0;;;0;HTTP 503
+https://www.margaretkashop.sk/;;;0;0948236042;;0;HTTP 503
+https://www.mpm-time.cz/;info@mpm-time.cz;;0;558441190;;0;HTTP 503
+https://www.sterix.cz/;info@sterix.cz;;0;604580017;;0;HTTP 503
+https://www.feim.sk/;svietidla@feim.sk;;0;0347743228;;0;HTTP 503
+https://www.inlea.sk/;info@inlea.sk;;0;482304811;;0;HTTP 503
+https://www.tvojregal.sk/;info@tvojregal.sk;;0;905923673;;0;HTTP 503
+https://www.kidero.sk/;info@kidero.cz;;0;266266325;;0;HTTP 503
+https://www.harahu.com/;info@harahu.com;;0;918212326;;0;HTTP 503
+https://www.svet-svitidel.cz/;helpdesk@svet-svitidel.cz;;0;515555111;;0;HTTP 503
+https://www.pohodlne-nakupy.sk/;obchod@pohodlne-nakupy.sk;;0;;;0;HTTP 503
+https://www.svet-trampolin.cz/;info@svet-trampolin.cz;;0;775775472;;0;HTTP 503
+https://www.imago.cz/;info@imago.cz;;0;774421641;;0;HTTP 503
+https://www.bestbaby.sk/;info@nejbaby.cz;;0;222205982;;0;HTTP 503
+https://www.nejhracka.cz/;nejhracka@nejhracka.cz;;0;315559688;;0;HTTP 503
+https://www.medhelp-shop.cz/;obchod@medhelp-shop.cz;;0;325610462;;0;HTTP 503
+https://www.profimed.eu/;info@profimed.eu;;0;907908316;;0;HTTP 503
+https://www.pilulka.cz/;dotazy@pilulka.cz;;0;222703000;;0;HTTP 503
+https://www.holime.eu/;info@holime.eu;;0;380831830;;0;HTTP 503
+https://www.hairbook.sk/;info@hairbook.sk;;0;948381589;;0;HTTP 503
