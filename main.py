@@ -40,7 +40,7 @@ except Exception:
     _whois_lib = None
 
 import scoring
-from registry_lookup import extract_ico_from_text, lookup_sk, lookup_cz, lookup_registry
+from registry_lookup import extract_ico_from_text, lookup_sk, lookup_cz, lookup_registry, orsr_search_by_name
 
 print("ENCODING FIX v3 loaded (ftfy mojibake repair)")
 
@@ -4510,6 +4510,137 @@ class ProfesiaSourceRequest(BaseModel):
     max_results: int = 20
 
 
+_PROFESIA_NOISE_DOMAINS = re.compile(
+    r"profesia|almacareer|platy|google|facebook|linkedin|twitter|instagram|"
+    r"youtube|youtu\.be|vimeo|tiktok|pinterest|snapchat|"
+    r"edujobs|dielne|sosrdcom|najzamest|jobs\.cz|prace\.cz|nelisa|arnold-robot|"
+    r"teamio|seduo|paylab|cvonline|visidarbi|otsintood|personaloatrankos|"
+    r"recruitment\.lv|mojposao|vrabotuvanje|hercul|virtualvalley|zadovoljstvo|"
+    r"jobly|pracezaroh|pracazaroh|atmoskop|spotify|intercom\.help|"
+    r"w3\.org|gstatic|googleapis|botsrv|pracezarohem|pracazarohom",
+    re.I,
+)
+
+def _extract_url_from_company_info(soup: "BeautifulSoup") -> str | None:  # type: ignore[name-defined]
+    """Vytiahne URL z .company-info sekcie (anchor alebo plain text)."""
+    ci = soup.select_one(".company-info")
+    if not ci:
+        return None
+    for a in ci.find_all("a", href=True):
+        href = a["href"].strip()
+        if href.startswith("http") and not _PROFESIA_NOISE_DOMAINS.search(href):
+            return href
+    ci_text = ci.get_text(" ", strip=True)
+    for match in re.finditer(
+        r'(?:https?://|www\.)[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])\.[a-z]{2,}(?:/[^\s]*)?',
+        ci_text,
+    ):
+        url = match.group(0)
+        if not _PROFESIA_NOISE_DOMAINS.search(url):
+            return url if url.startswith("http") else "https://" + url
+    return None
+
+
+def _fetch_company_url_from_job(job_url: str) -> str | None:
+    """Stiahne detail inzerátu (O-slug) a prípadne firemný profil (C-slug) pre reálnu URL."""
+    html_bytes = fetch_html_httpx(job_url)
+    if not html_bytes:
+        return None
+    soup = BeautifulSoup(html_bytes.decode("utf-8", errors="replace"), "html.parser")
+
+    # 1) URL z .company-info na job-detail stránke
+    url = _extract_url_from_company_info(soup)
+    if url:
+        return url
+
+    # 2) Fallback: firemný profil /praca/{slug}/C{id} má rovnakú sekciu, ale niekedy naviac
+    cp_a = soup.find("a", href=re.compile(r"^/praca/[^/]+/C\d+"))
+    if cp_a:
+        cp_url = "https://www.profesia.sk" + cp_a["href"].split("?")[0]
+        cp_html = fetch_html_httpx(cp_url)
+        if cp_html:
+            cp_soup = BeautifulSoup(cp_html.decode("utf-8", errors="replace"), "html.parser")
+            url = _extract_url_from_company_info(cp_soup)
+            if url:
+                return url
+
+    return None
+
+
+async def _validate_slug_url(slug: str) -> str | None:
+    """HEAD-validates profesia slug candidates. 403 = exists but blocks HEAD."""
+    candidates = [
+        f"https://www.{slug}.sk",
+        f"https://{slug}.sk",
+        f"https://www.{slug}.com",
+    ]
+    async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
+        for url in candidates:
+            try:
+                r = await client.head(url)
+                if r.status_code in (200, 301, 302, 403):
+                    return str(r.url)
+            except Exception:
+                continue
+    return None
+
+
+async def _create_registry_only_lead(company: dict) -> dict | None:
+    """Registry-only lead pre firmy s IČO ale bez web URL.
+    Volá lookup_sk(ico) → konateľ + veľkosť, potom score cez calculate_lead_score.
+    """
+    ico = company.get("ico")
+    if not ico:
+        return None
+    try:
+        loop = asyncio.get_event_loop()
+        reg = await loop.run_in_executor(None, lookup_sk, ico)
+    except Exception as e:
+        print(f"[registry_only] lookup_sk error for {ico}: {e}")
+        return None
+
+    konatel = reg.get("konatel")
+    velkost = reg.get("velkost_category")
+    verified = reg.get("verified", False)
+
+    score_result = scoring.calculate_lead_score({
+        "name_source": "registry_only",
+        "registry_verified": verified,
+        "registry_konatel": konatel,
+        "ico": ico,
+        "velkost_category": velkost,
+        "phone": None,
+        "phone_type": None,
+        "email": None,
+        "email_type": None,
+        "jurisdiction": "SK",
+        "hiring_signal": company.get("source_signal") == "hiring_sales_rep",
+    })
+
+    return {
+        "company_name": company.get("company_name"),
+        "domain": None,
+        "url": None,
+        "url_confidence": "registry_only",
+        "ico": ico,
+        "konatel": konatel,
+        "velkost_category": velkost,
+        "registry_verified": verified,
+        "score": score_result["score"],
+        "tier": score_result["tier"],
+        "confidence": score_result["confidence"],
+        "reasoning": score_result["reasoning"] + [
+            f"Firma hľadá obchodníka na profesii ({company.get('job_title', '')}), "
+            "konateľ overený v registri, web nenájdený"
+        ],
+        "breakdown": score_result["breakdown"],
+        "source_signal": company.get("source_signal"),
+        "source_channel": "profesia",
+        "job_url": company.get("job_url"),
+        "persons": [{"name": konatel, "role": "konatel", "source": "registry"}] if konatel else [],
+    }
+
+
 async def _scrape_profesia_pages(keyword: str, max_results: int) -> list:
     """Fetch all profesia pages up to max_results raw job entries (not yet deduped/filtered)."""
     encoded = urllib.parse.quote_plus(keyword)
@@ -4543,19 +4674,52 @@ async def _scrape_profesia_pages(keyword: str, max_results: int) -> list:
                 continue
             slug_m = re.search(r"/praca/([^/]+)/O\d+", job_url_full)
             company_slug = slug_m.group(1) if slug_m else None
-            company_url = f"https://www.{company_slug}.sk" if company_slug else None
             loc_el = li.select_one("span.job-location")
             location_str = (loc_el.get("title") or loc_el.get_text(strip=True)) if loc_el else None
             all_jobs.append({
                 "company_name": company_name,
-                "company_url": company_url,
-                "url_confidence": "derived" if company_url else None,
+                "company_url": None,
+                "url_confidence": None,
+                "company_slug": company_slug,
+                "ico": None,
                 "job_title": job_title,
                 "job_url": job_url_full,
                 "location": location_str,
                 "source_signal": "hiring_sales_rep",
             })
 
+    # Resolution pipeline: scraped → validated_guess → ORSR (for IČO)
+    sem = asyncio.Semaphore(5)
+
+    async def _resolve(job: dict) -> None:
+        async with sem:
+            # Step 1: scraped from profesia .company-info
+            url = await asyncio.get_event_loop().run_in_executor(
+                None, _fetch_company_url_from_job, job["job_url"]
+            )
+            if url:
+                job["company_url"] = url
+                job["url_confidence"] = "scraped"
+                return
+
+            # Step 2: validated slug guess
+            slug = job.get("company_slug")
+            if slug:
+                url = await _validate_slug_url(slug)
+                if url:
+                    job["company_url"] = url
+                    job["url_confidence"] = "validated_guess"
+                    return
+
+            # Step 3: ORSR by name → at least get IČO; web_url always None from ORSR
+            orsr = await asyncio.get_event_loop().run_in_executor(
+                None, orsr_search_by_name, job["company_name"]
+            )
+            if orsr:
+                job["ico"] = orsr.get("ico")
+                # web_url from ORSR is always None currently — but IČO enables RPO fallback
+
+    await asyncio.gather(*[_resolve(j) for j in all_jobs])
     return all_jobs
 
 
@@ -5053,12 +5217,17 @@ async def source_auto(req: SourceAutoRequest, user=Depends(verify_jwt)):
     else:
         raise HTTPException(400, f"Nezname kanaly: {req.channel}")
 
-    # 2. Scrape each company sequentially
+    # 2. Scrape each company; registry-only fallback for IČO-only
     leads: list = []
     skipped: list = []
     for company in found:
         url = company.get("company_url") or ""
         if not url:
+            if company.get("ico"):
+                reg_lead = await _create_registry_only_lead(company)
+                if reg_lead:
+                    leads.append(reg_lead)
+                    continue
             skipped.append({"company": company.get("company_name"), "reason": "ziadna URL"})
             continue
         try:

@@ -366,7 +366,88 @@ def lookup_ares(ico: str) -> dict:
 # ---------------------------------------------------------------------------
 
 _ORSR_SEARCH = "https://www.orsr.sk/hladaj_ico.asp"
+_ORSR_NAME_SEARCH = "https://www.orsr.sk/hladaj_subjekt.asp"
 _ORSR_BASE = "https://www.orsr.sk"
+
+_ORSR_LEGAL_SUFFIX_RE = re.compile(
+    r'\b(?:s\.?\s*r\.?\s*o\.?|spol\.?\s*s\s*r\.?\s*o\.?|a\.?\s*s\.?|'
+    r'k\.?\s*s\.?|v\.?\s*o\.?\s*s\.?|n\.?\s*o\.?|s\.?\s*p\.?)\s*$',
+    re.IGNORECASE,
+)
+
+
+def orsr_search_by_name(company_name: str) -> Optional[dict]:
+    """Search ORSR by company name. Returns {ico, web_url, detail_url} or None.
+
+    ORSR doesn't store company websites, so web_url is always None.
+    Use ico for downstream RPO/FinStat lookups.
+    """
+    clean = _ORSR_LEGAL_SUFFIX_RE.sub("", company_name).strip().strip(",").strip()
+    if not clean or len(clean) < 3:
+        return None
+
+    cache_key = f"orsr_name_{clean.lower()[:40]}"
+    cached = _cache_get(cache_key)
+    if cached:
+        return cached if cached.get("ico") else None
+
+    try:
+        with httpx.Client(timeout=5, follow_redirects=True) as client:
+            r = client.get(
+                _ORSR_NAME_SEARCH,
+                params={"OBMENO": clean, "AKTUALNE": "1"},
+                headers={**_HEADERS, "Accept-Language": "sk-SK,sk;q=0.9"},
+            )
+            r.encoding = "windows-1250"
+            if r.status_code != 200:
+                return None
+
+            soup = BeautifulSoup(r.text, "html.parser")
+            detail_href = None
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if "vypis.asp" in href and "ID=" in href and "&P=0" in href:
+                    detail_href = href
+                    break
+
+            if not detail_href:
+                _cache_set(cache_key, {"ico": None})
+                return None
+
+            detail_url = _ORSR_BASE + "/" + detail_href.lstrip("/")
+
+            # Fetch detail to get IČO
+            dr = client.get(detail_url, headers=_HEADERS)
+            dr.encoding = "windows-1250"
+            if dr.status_code != 200:
+                return None
+
+            detail_soup = BeautifulSoup(dr.text, "html.parser")
+            ico = None
+            for td in detail_soup.find_all("td"):
+                if re.search(r'I.O\s*:', td.get_text(strip=True), re.IGNORECASE):
+                    sib = td.find_next_sibling("td")
+                    if sib:
+                        # First 8-digit group — stops before date "(od: DD.MM.YYYY)"
+                        m8 = re.search(r'\b(\d[\d\s]{5,9}\d)\b', sib.get_text())
+                        if m8:
+                            raw = re.sub(r'\s', '', m8.group(1))
+                            if len(raw) == 8 and raw.isdigit():
+                                ico = raw
+                    break
+
+            if not ico:
+                _cache_set(cache_key, {"ico": None})
+                return None
+
+            result = {"ico": ico, "web_url": None, "detail_url": detail_url}
+            _cache_set(cache_key, result)
+            print(f"[ORSR name] {company_name!r} -> IČO {ico}")
+            return result
+
+    except Exception as e:
+        print(f"[WARN] ORSR name search error for {company_name!r}: {e}")
+        return None
 
 
 def _parse_orsr_detail(html: str) -> List[dict]:

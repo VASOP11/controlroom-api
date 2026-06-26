@@ -147,6 +147,7 @@ def calculate_lead_score(lead_data: dict) -> dict:
     cat = lead_data.get("velkost_category")
     jurisdiction = lead_data.get("jurisdiction")
     bucket = _size_bucket(cat, jurisdiction)
+    hiring_signal = lead_data.get("hiring_signal", False)
 
     # --- Registry verification ---
     if lead_data.get("registry_verified"):
@@ -220,6 +221,14 @@ def calculate_lead_score(lead_data: dict) -> dict:
         score += 5
         breakdown["other_contacts"] = 5
         reasoning.append("Nájdené ďalšie kontakty s rolou (+5)")
+
+    # --- Hiring signal (registry-only leads only) ---
+    # +25 namiesto +20: cat=None defaultuje na micro bucket ale bez +5 size bonus,
+    # takže 25+15-15+0+25=50 → WARM pre neznámu/micro firmu ako požadované
+    if hiring_signal and lead_data.get("name_source") == "registry_only":
+        score += 25
+        breakdown["hiring_signal"] = 25
+        reasoning.append("Firma aktívne hľadá obchodníka na profesii (+25)")
 
     score = max(0, min(100, score))
 
