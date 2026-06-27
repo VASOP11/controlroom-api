@@ -15,7 +15,7 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -854,6 +854,9 @@ def is_valid_phone(num: str) -> bool:
     # CZ holých 9 číslic, mobil začína 6/7, pevná 2-5; SK mobil bez 0 (9XX...)
     if len(digits) == 9 and digits[0] in '23456789':
         return True
+    # 10-digit starting with '00': not a valid SK/CZ local number (no prefix 00X exists)
+    if len(digits) == 10 and digits.startswith('00'):
+        return False
     # Ostatné 10-13 ciferné čísla — zachytí medzinárodné formáty
     if 10 <= len(digits) <= 13:
         return True
@@ -1797,8 +1800,8 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
             continue
         if not is_valid_phone(raw):
             continue
-        # BUG 1: preskočiť čísla ktoré sú IČO
-        if norm in ico_digits_set:
+        # preskočiť čísla ktoré sú IČO (aj s leading zeros: 0002605074 → 02605074)
+        if norm in ico_digits_set or norm.lstrip('0').zfill(8) in ico_digits_set:
             print(f"⚠️ Preskakujem IČO ako telefón: {raw}")
             continue
         seen_phones.add(norm)
@@ -3247,6 +3250,66 @@ async def scrape_lead(req: ScrapeRequest, user=Depends(verify_jwt)):
     return await _do_scrape(req.url)
 
 
+class BatchRequest(BaseModel):
+    urls: List[str]
+    max_concurrent: int = 1  # ponytail: always sequential, server can't handle parallel
+
+
+@app.post("/api/leads/batch")
+async def batch_scrape(req: BatchRequest, user=Depends(verify_jwt)):
+    """Sequentially scrape + save a list of URLs. Streams SSE progress events."""
+    try:
+        async with async_session() as session:
+            result = await session.execute(select(OrganizationConfig).where(OrganizationConfig.org_id == 1))
+            org_config = result.scalar_one_or_none()
+    except Exception:
+        org_config = None
+
+    async def _generate():
+        total = len(req.urls)
+        ok_count = 0
+        for i, url in enumerate(req.urls):
+            event: dict = {"i": i + 1, "total": total, "url": url}
+            try:
+                data = await _do_scrape(url)
+                rule_score = evaluate_lead(data, org_config.scoring_rules) if org_config else 0
+                thresholds = org_config.tier_thresholds if org_config else {"HOT": 80, "WARM": 60, "COOL": 40, "DEAD": 0}
+                if rule_score >= thresholds["HOT"]: tier = "HOT"
+                elif rule_score >= thresholds["WARM"]: tier = "WARM"
+                elif rule_score >= thresholds.get("COOL", 40): tier = "COOL"
+                else: tier = "DEAD"
+                new_lead = Lead(
+                    lead_id=str(uuid.uuid4()),
+                    primary_identifier=data.get("primary_identifier", "Unknown"),
+                    vertical=data.get("vertical"),
+                    platform_presence=data.get("platform_presence", {}),
+                    value_indicators=data.get("value_indicators", {}),
+                    lead_metadata=data,
+                    rule_score=rule_score,
+                    final_score=rule_score,
+                    tier=tier,
+                )
+                try:
+                    async with async_session() as session:
+                        session.add(new_lead)
+                        await session.commit()
+                except Exception:
+                    pass  # ponytail: scrape result still emitted even if DB save fails
+                ok_count += 1
+                event.update({"status": "ok", "tier": tier, "score": rule_score,
+                              "name": data.get("primary_identifier", url)})
+            except Exception as e:
+                event.update({"status": "error", "error": str(e)[:200]})
+            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'done': True, 'total': total, 'ok': ok_count})}\n\n"
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @app.post("/api/debug/scrape")
 async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
     """
@@ -4617,15 +4680,28 @@ async def _create_registry_only_lead(company: dict) -> dict | None:
         "hiring_signal": company.get("source_signal") == "hiring_sales_rep",
     })
 
+    job_url = company.get("job_url")
+    konatelia_count = reg.get("konatelia_count", 1 if konatel else 0)
     return {
+        "url": job_url,
         "company_name": company.get("company_name"),
         "domain": None,
-        "url": None,
         "url_confidence": "registry_only",
         "ico": ico,
-        "konatel": konatel,
-        "velkost_category": velkost,
-        "registry_verified": verified,
+        "primary_contact": {
+            "name": konatel,
+            "role": "konateľ",
+            "phone": None,
+            "email": None,
+            "name_source": "registry_only",
+        },
+        "registry": {
+            "source": reg.get("source", "ORSR"),
+            "verified": verified,
+            "konatel": konatel,
+            "konatelia_count": konatelia_count,
+            "velkost_firmy": velkost,
+        },
         "score": score_result["score"],
         "tier": score_result["tier"],
         "confidence": score_result["confidence"],
@@ -4633,11 +4709,10 @@ async def _create_registry_only_lead(company: dict) -> dict | None:
             f"Firma hľadá obchodníka na profesii ({company.get('job_title', '')}), "
             "konateľ overený v registri, web nenájdený"
         ],
-        "breakdown": score_result["breakdown"],
+        "score_breakdown": score_result["breakdown"],
         "source_signal": company.get("source_signal"),
         "source_channel": "profesia",
-        "job_url": company.get("job_url"),
-        "persons": [{"name": konatel, "role": "konatel", "source": "registry"}] if konatel else [],
+        "job_url": job_url,
     }
 
 
@@ -5236,6 +5311,17 @@ async def source_auto(req: SourceAutoRequest, user=Depends(verify_jwt)):
             lead["source_channel"] = req.channel
             leads.append(lead)
         except Exception as e:
+            # If scrape failed, try ORSR by name to get IČO → registry-only fallback
+            if not company.get("ico"):
+                loop = asyncio.get_event_loop()
+                orsr = await loop.run_in_executor(None, orsr_search_by_name, company.get("company_name", ""))
+                if orsr:
+                    company["ico"] = orsr.get("ico")
+            if company.get("ico"):
+                reg_lead = await _create_registry_only_lead(company)
+                if reg_lead:
+                    leads.append(reg_lead)
+                    continue
             skipped.append({"company": company.get("company_name"), "url": url, "reason": str(e)[:120]})
 
     # 3. Sort by score DESC
