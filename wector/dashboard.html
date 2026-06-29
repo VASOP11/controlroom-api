@@ -498,6 +498,39 @@ a { color: inherit; text-decoration: none; }
 .tw-chip.active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(79,110,247,0.08); }
 .tw-count { font-family: var(--font-mono); font-size: 11px; }
 
+/* ── QUICK ACTIONS ── */
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.qa-btn {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg-elevated); font-size: 12px; font-weight: 500;
+  color: var(--text-secondary); text-align: center; cursor: pointer;
+  transition: all 120ms; line-height: 1.2; display: flex; align-items: center; justify-content: center;
+  gap: 5px; text-decoration: none;
+}
+.qa-btn:hover { color: var(--text-primary); background: var(--bg-surface-hover); border-color: var(--text-muted); }
+.qa-btn.qa-green:hover { color: var(--tier-hot); border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.05); }
+.qa-btn.qa-orange:hover { color: var(--tier-warm); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.05); }
+
+/* ── SNOOZE PANEL ── */
+.snooze-panel {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; display: none;
+}
+.snooze-panel.open { display: block; }
+.snooze-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.snooze-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+
+/* ── HISTORY ── */
+.history-list { max-height: 200px; overflow-y: auto; }
+.hist-item {
+  display: flex; gap: 8px; align-items: flex-start; padding: 5px 0;
+  border-bottom: 1px solid var(--border-subtle); font-size: 12px;
+}
+.hist-item:last-child { border-bottom: none; }
+.hist-ts { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap; flex-shrink: 0; min-width: 70px; }
+.hist-body { color: var(--text-secondary); line-height: 1.4; }
+.hist-icon { font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+
 /* ── FOLLOW-UP IN DRAWER ── */
 .followup-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .followup-input {
@@ -1218,6 +1251,25 @@ function renderDrawer(url) {
     </div>`).join('')}` : ''}
 
     <div class="d-divider"></div>
+    <div class="d-label">Rýchle akcie</div>
+    <div class="quick-actions">
+      <button class="qa-btn" onclick="qaCall()" title="Označiť ako volaný bez odpovede">📞 Volaný</button>
+      <button class="qa-btn qa-green" onclick="qaReached()" title="Dovolal som sa — presunúť do Kontaktovaný">💬 Dovolal som sa</button>
+      <a class="qa-btn" href="mailto:${esc(dispEmail || '')}" onclick="if(!${!!dispEmail})event.preventDefault()">✉️ Poslať mail</a>
+      <button class="qa-btn qa-orange" onclick="qaSnoozePanelToggle()">💤 Odložiť +7 dní</button>
+    </div>
+    <div class="snooze-panel" id="snooze-panel">
+      <div class="snooze-label">Odložiť do:</div>
+      <div class="snooze-row">
+        <input type="datetime-local" class="followup-input" id="snooze-dt"
+          value="${snoozeDefault()}" style="flex:1">
+        <button class="note-add-btn" onclick="snoozeConfirm()" style="height:32px;padding:0 10px">OK</button>
+        <button class="note-add-btn" onclick="document.getElementById('snooze-panel').classList.remove('open')" style="height:32px;padding:0 10px">Zrušiť</button>
+      </div>
+      <input type="text" class="followup-note-input" id="snooze-note" placeholder="Dôvod odloženia…" style="width:100%">
+    </div>
+
+    <div class="d-divider"></div>
     <div class="d-label">Akcie</div>
     ${confBtns.map(b => `
       <button class="action-btn${ct === b.type ? ' done' : ''}" ${ct ? 'disabled' : ''} onclick="confirmAction('${esc(url)}','${b.type}')">
@@ -1234,6 +1286,10 @@ function renderDrawer(url) {
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
       <button class="note-add-btn" onclick="addNote()">Pridať</button>
     </div>
+
+    <div class="d-divider"></div>
+    <div class="d-label">História <span style="color:var(--text-muted);font-weight:400;font-size:10px">${(lead.history || []).length}</span></div>
+    <div class="history-list">${historyHtml(lead)}</div>
   `;
 }
 
@@ -1368,6 +1424,87 @@ function saveContactEdit(field, newVal) {
   addHistory(lead, 'contact_edited', `${field}: ${newVal}`);
   saveLeads();
   renderDrawer(openUrl);
+}
+
+// ── QUICK ACTIONS ──
+function qaCall() {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  addHistory(lead, 'call', 'Volaný — bez odpovede');
+  if (lead.stage === 'new') {
+    lead.stage = 'called_no';
+    addHistory(lead, 'stage_change', 'new → called_no');
+  }
+  saveLeads(); render(); renderDrawer(openUrl);
+  toast('Označené: Volaný — bez odpovede', 'info');
+}
+
+function qaReached() {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  const old = lead.stage || 'new';
+  lead.stage = 'contacted';
+  addHistory(lead, 'stage_change', `${old} → contacted`);
+  addHistory(lead, 'call', 'Dovolal som sa');
+  saveLeads(); render(); renderDrawer(openUrl);
+  toast('Označené: Kontaktovaný', 'success');
+}
+
+function qaSnoozePanelToggle() {
+  const panel = document.getElementById('snooze-panel');
+  if (panel) panel.classList.toggle('open');
+}
+
+function snoozeDefault() {
+  const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(9, 0, 0, 0);
+  return d.toISOString().slice(0, 16);
+}
+
+function snoozeConfirm() {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  const dt = document.getElementById('snooze-dt')?.value || snoozeDefault();
+  const note = (document.getElementById('snooze-note')?.value || '').trim();
+  const old = lead.stage || 'new';
+  lead.stage = 'snoozed';
+  lead.followup_date = new Date(dt).toISOString();
+  lead.followup_note = note;
+  addHistory(lead, 'stage_change', `${old} → snoozed`);
+  addHistory(lead, 'followup_set', dt.slice(0, 16) + (note ? ` — ${note}` : ''));
+  saveLeads(); render();
+  updateTodayWidget();
+  if (currentView === 'kanban') renderKanban();
+  if (currentView === 'calendar') renderCalendar();
+  renderDrawer(openUrl);
+  toast('Odložený: follow-up ' + new Date(dt).toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'}), 'info');
+}
+
+// ── HISTORY ──
+const HIST_ICON = {
+  scraped: '🔄', stage_change: '→', note_added: '📝', note_deleted: '🗑',
+  contact_edited: '✏️', call: '📞', followup_set: '📅',
+};
+const HIST_LABEL = {
+  scraped: 'Scrape', stage_change: 'Fáza', note_added: 'Poznámka', note_deleted: 'Zmazaná pozn.',
+  contact_edited: 'Kontakt', call: 'Hovor', followup_set: 'Follow-up',
+};
+
+function historyHtml(lead) {
+  const hs = lead.history || [];
+  if (!hs.length) return '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">Žiadna aktivita</div>';
+  return hs.map(h => {
+    const icon = HIST_ICON[h.type] || '·';
+    const label = HIST_LABEL[h.type] || h.type;
+    const stageData = h.type === 'stage_change' ? h.data.split(' → ').map(sid => {
+      const s = STAGES[sid]; return s ? `${s.emoji} ${s.label}` : sid;
+    }).join(' → ') : null;
+    const body = stageData || (h.data ? esc(h.data.slice(0, 80)) : '');
+    return `<div class="hist-item">
+      <span class="hist-ts">${timeAgo(h.ts)}</span>
+      <span class="hist-icon">${icon}</span>
+      <span class="hist-body"><strong>${esc(label)}</strong>${body ? ': ' + body : ''}</span>
+    </div>`;
+  }).join('');
 }
 
 // ── FOLLOW-UP ──
@@ -1529,6 +1666,7 @@ async function scrape(url) {
     clearInterval(timer);
     upsertLead(data);
     render();
+    updateTodayWidget();
     const tier = data.tier || '';
     const score = data.score ?? '?';
     toast(`${strip(url)} — ${tier} (${score})`, 'success');
