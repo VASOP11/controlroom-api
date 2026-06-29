@@ -407,6 +407,71 @@ a { color: inherit; text-decoration: none; }
   .col-kontakt { display: none; }
   #drawer { width: 100%; }
 }
+
+/* ── STAGE PILLS ── */
+.stage-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500;
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+.stage-selector {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: 10px;
+}
+.stage-sel-btn {
+  padding: 5px 2px; border-radius: 4px; font-size: 10px; line-height: 1.4;
+  border: 1px solid var(--border); background: var(--bg-elevated);
+  color: var(--text-muted); text-align: center; cursor: pointer;
+  transition: all 100ms; white-space: nowrap;
+}
+.stage-sel-btn:hover { color: var(--text-secondary); background: var(--bg-surface-hover); }
+.stage-sel-btn.s-active { font-weight: 600; }
+
+/* ── MANUAL BADGE + EDIT PENCIL ── */
+.manual-badge {
+  font-size: 10px; color: var(--tier-warm); background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.25); border-radius: 3px; padding: 1px 5px;
+  flex-shrink: 0;
+}
+.edit-pencil {
+  opacity: 0; height: 20px; padding: 0 5px; border-radius: 3px; flex-shrink: 0;
+  background: transparent; border: 1px solid transparent;
+  color: var(--text-muted); font-size: 11px; transition: opacity 100ms;
+}
+.d-row:hover .edit-pencil, .edit-pencil.always { opacity: 1; }
+.edit-pencil:hover { background: var(--bg-elevated); border-color: var(--border); color: var(--text-primary); }
+.edit-input {
+  flex: 1; min-width: 0; background: var(--bg-primary); border: 1px solid var(--accent-blue);
+  border-radius: 4px; padding: 3px 8px; color: var(--text-primary); font-size: 13px; outline: none;
+}
+
+/* ── MULTI-NOTES ── */
+.notes-list { margin-bottom: 8px; max-height: 220px; overflow-y: auto; }
+.note-item {
+  padding: 7px 0; border-bottom: 1px solid var(--border-subtle); position: relative;
+}
+.note-item:last-child { border-bottom: none; }
+.note-ts { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 3px; }
+.note-text { font-size: 13px; line-height: 1.5; color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; padding-right: 22px; }
+.note-del {
+  position: absolute; top: 6px; right: 0; padding: 2px 5px; border-radius: 3px;
+  color: var(--text-muted); font-size: 12px; opacity: 0; transition: opacity 100ms;
+}
+.note-item:hover .note-del { opacity: 1; }
+.note-del:hover { color: var(--tier-dead); }
+.note-add-wrap { display: flex; gap: 6px; align-items: flex-end; }
+.note-add-input {
+  flex: 1; background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 5px; padding: 7px 10px; color: var(--text-primary); font-size: 13px;
+  resize: none; outline: none; min-height: 36px; max-height: 100px;
+  transition: border-color 150ms; line-height: 1.4; overflow-y: auto;
+}
+.note-add-input:focus { border-color: var(--accent-blue); }
+.note-add-btn {
+  height: 36px; padding: 0 12px; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: 5px; font-size: 12px;
+  color: var(--text-secondary); transition: all 150ms; flex-shrink: 0;
+}
+.note-add-btn:hover { color: var(--text-primary); background: var(--bg-surface-hover); }
 </style>
 </head>
 <body>
@@ -463,7 +528,7 @@ a { color: inherit; text-decoration: none; }
         <th class="col-kontakt">Kontakt</th>
         <th class="col-telefon">Telefón</th>
         <th class="col-score sortable" data-sort="score">Score <span id="sort-ind">↓</span></th>
-        <th class="col-status">Status</th>
+        <th class="col-status">Fáza</th>
       </tr>
     </thead>
     <tbody id="leads-tbody"></tbody>
@@ -513,8 +578,23 @@ a { color: inherit; text-decoration: none; }
 'use strict';
 const API = 'http://localhost:8000';
 const TOKEN = 'Bearer test-token';
-const STORAGE_KEY = 'wector_leads_v2';
+const STORAGE_KEY = 'wector_leads_v3';
 const MAX_LEADS = 500;
+
+// ── PIPELINE STAGES ──
+const STAGES = {
+  new:        {label:'Nový',            emoji:'🆕', short:'Nový',    color:'#64748B'},
+  called_no:  {label:'Volaný—bez odp.',emoji:'📞', short:'Volaný',  color:'#D97706'},
+  contacted:  {label:'Kontaktovaný',    emoji:'💬', short:'Kontak.', color:'#2563EB'},
+  interested: {label:'Záujem',          emoji:'👋', short:'Záujem',  color:'#7C3AED'},
+  meeting:    {label:'Stretnutie',      emoji:'📅', short:'Stret.',  color:'#0891B2'},
+  offer:      {label:'Ponuka',          emoji:'✉️', short:'Ponuka',  color:'#6366F1'},
+  converted:  {label:'Konvertovaný',    emoji:'✅', short:'Konv.',   color:'#16A34A'},
+  rejected:   {label:'Odmietnutý',      emoji:'❌', short:'Odmiet.', color:'#DC2626'},
+  snoozed:    {label:'Odložený',        emoji:'💤', short:'Odlož.',  color:'#6B7280'},
+  lost:       {label:'Stratený',        emoji:'☠️', short:'Strat.', color:'#374151'},
+};
+const STAGE_ORDER = ['new','called_no','contacted','interested','meeting','offer','converted','rejected','snoozed','lost'];
 
 // ── STATE ──
 let leads = [];
@@ -561,10 +641,22 @@ function telHref(phone) {
   if (d.startsWith('0') && d.length === 10) return `tel:+421${d.slice(1)}`;
   return `tel:${d}`;
 }
-function fmtPhone(p) {
-  if (!p) return '—';
-  return p.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
+function formatPhone(raw) {
+  if (!raw) return null;
+  const d = raw.replace(/\D/g, '');
+  if (d.startsWith('421') && d.length === 12)
+    return '+421 ' + d.slice(3,6) + ' ' + d.slice(6,9) + ' ' + d.slice(9);
+  if (d.startsWith('420') && d.length === 12)
+    return '+420 ' + d.slice(3,6) + ' ' + d.slice(6,9) + ' ' + d.slice(9);
+  if (d.startsWith('00421') && d.length === 14)
+    return '+421 ' + d.slice(5,8) + ' ' + d.slice(8,11) + ' ' + d.slice(11);
+  if (d.length === 10 && d.startsWith('0'))
+    return d.slice(0,4) + ' ' + d.slice(4,7) + ' ' + d.slice(7);
+  if (d.length === 9)
+    return d.slice(0,3) + ' ' + d.slice(3,6) + ' ' + d.slice(6);
+  return raw;
 }
+function fmtPhone(p) { return formatPhone(p) || '—'; }
 function velLabel(v) {
   const map = { micro: 'micro (1–5)', small: 'small (6–49)', medium: 'medium (50–249)', large: 'large (250+)' };
   return map[v] || v || '—';
@@ -592,9 +684,26 @@ function confirmToStatus(ct) {
 
 // ── STORAGE ──
 function loadLeads() {
-  try { leads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-  catch { leads = []; }
-  leads = leads.filter(l => l.data && l.data.score !== undefined);
+  let raw;
+  try { raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { raw = []; }
+  if (!raw.length) {
+    let v2; try { v2 = JSON.parse(localStorage.getItem('wector_leads_v2') || '[]'); } catch { v2 = []; }
+    if (v2.length) {
+      const stMap = {new:'new', called:'called_no', confirmed:'contacted', rejected:'rejected'};
+      raw = v2.map(l => ({
+        url: l.url, data: l.data || {},
+        stage: stMap[l.status] || 'new',
+        followup_date: null, followup_note: '',
+        notes: (l.notes && l.notes.trim()) ? [{id: uid(), ts: l.scraped_at || new Date().toISOString(), text: l.notes.trim()}] : [],
+        history: [{ts: l.scraped_at || new Date().toISOString(), type: 'scraped', data: ''}],
+        overrides: {phone: null, email: null, contact_name: null},
+        scraped_at: l.scraped_at || new Date().toISOString()
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(raw));
+    }
+  }
+  leads = raw.filter(l => l.data && l.data.score !== undefined);
+  leads.forEach(initDefaults);
 }
 function saveLeads() {
   if (leads.length > MAX_LEADS) {
@@ -607,10 +716,15 @@ function saveLeads() {
 function upsertLead(data) {
   const url = data.url;
   const idx = leads.findIndex(l => l.url === url);
+  const ts = data.scraped_at || new Date().toISOString();
   if (idx >= 0) {
-    leads[idx] = { ...leads[idx], data, scraped_at: data.scraped_at || new Date().toISOString() };
+    const ex = leads[idx];
+    addHistory(ex, 'scraped', '');
+    leads[idx] = {...ex, data, scraped_at: ts};
   } else {
-    leads.unshift({ url, data, status: 'new', confirmed_type: null, notes: '', scraped_at: data.scraped_at || new Date().toISOString(), confirmed_at: null });
+    const nl = {url, data, stage: 'new', followup_date: null, followup_note: '', notes: [], history: [], overrides: {phone: null, email: null, contact_name: null}, scraped_at: ts};
+    addHistory(nl, 'scraped', '');
+    leads.unshift(nl);
   }
   saveLeads();
 }
@@ -671,26 +785,26 @@ function rowHtml(l) {
   const tier = d.tier || 'DEAD';
   const pc = d.primary_contact || {};
   const score = d.score ?? '—';
-  const companyRaw = d.company_name || strip(l.url);
+  const companyRaw = d.company_name || '';
   const urlDisplay = strip(l.url);
-  const showSub = companyRaw !== urlDisplay;
   const phone = pc.phone || '';
   const status = l.status || 'new';
   const u = esc(l.url);
+  const contactLabel = pc.name ? (pc.role ? `${esc(pc.name)} · <span style="color:var(--text-muted)">${esc(pc.role)}</span>` : esc(pc.name)) : '—';
 
   return `<tr onclick="openDrawer('${u}')">
     <td class="col-tier"><span class="tier-badge t-${esc(tier)}"><span class="tier-dot"></span>${esc(tier)}</span></td>
     <td class="col-firma">
-      <div class="firma-name">${esc(companyRaw)}</div>
-      ${showSub ? `<div class="firma-url">${esc(urlDisplay)}</div>` : ''}
+      <a class="firma-name" href="${u}" target="_blank" onclick="event.stopPropagation()" style="color:var(--text-primary);text-decoration:none">${esc(urlDisplay)}</a>
+      ${companyRaw ? `<div class="firma-url">${esc(companyRaw)}</div>` : ''}
     </td>
-    <td class="col-kontakt" style="color:var(--text-secondary);font-size:13px">${esc(pc.name || '—')}</td>
+    <td class="col-kontakt" style="color:var(--text-secondary);font-size:13px">${contactLabel}</td>
     <td class="col-telefon">
       ${phone ? `<a class="phone-link" href="${esc(telHref(phone))}" onclick="event.stopPropagation()">${esc(fmtPhone(phone))}</a>` : '<span style="color:var(--text-muted)">—</span>'}
     </td>
     <td class="col-score"><span class="score-val">${score}</span></td>
     <td class="col-status" onclick="event.stopPropagation()">
-      <span class="status-pill ${statusClass(status)}" onclick="showStatusDd(event,'${u}')">${statusLabel(status)} ${ic.chevD}</span>
+      ${stageHtml(l.stage || 'new', u)}
     </td>
   </tr>`;
 }
@@ -705,30 +819,35 @@ function updateCounts() {
   document.getElementById('fc-dead').textContent = counts.DEAD;
 }
 
-// ── STATUS DROPDOWN ──
-function showStatusDd(e, url) {
+// ── STAGE DROPDOWN ──
+function showStageDd(e, url) {
+  e.stopPropagation();
   closeDd();
-  const pill = e.currentTarget;
-  const rect = pill.getBoundingClientRect();
+  const rect = e.currentTarget.getBoundingClientRect();
   const dd = document.createElement('div');
-  dd.id = 'active-dd';
-  dd.className = 'status-dropdown';
-  dd.style.cssText = `top:${rect.bottom + 4}px;left:${rect.left}px;`;
-  dd.innerHTML = [
-    ['new','Nový'],['called','Volaný'],['confirmed','Potvrdený'],['rejected','Odmietnutý']
-  ].map(([v,l]) => `<button onclick="setStatus(event,'${url}','${v}')">${l}</button>`).join('');
+  dd.id = 'active-dd'; dd.className = 'status-dropdown';
+  dd.style.cssText = `top:${rect.bottom + 4}px;left:${rect.left}px;min-width:180px`;
+  dd.innerHTML = STAGE_ORDER.map(sid => {
+    const s = STAGES[sid];
+    return `<button onclick="setStage(event,'${esc(url)}','${sid}')">${s.emoji} ${esc(s.label)}</button>`;
+  }).join('');
   document.body.appendChild(dd);
   activeDd = dd;
 }
 function closeDd() {
   if (activeDd) { activeDd.remove(); activeDd = null; }
 }
-function setStatus(e, url, status) {
-  e.stopPropagation();
+function setStage(e, url, stageId) {
+  if (e) e.stopPropagation();
   const lead = leads.find(l => l.url === url);
-  if (lead) { lead.status = status; saveLeads(); render(); }
-  closeDd();
+  if (!lead || lead.stage === stageId) { closeDd(); return; }
+  addHistory(lead, 'stage_change', `${lead.stage || 'new'} → ${stageId}`);
+  lead.stage = stageId;
+  saveLeads(); render(); closeDd();
   if (openUrl === url) renderDrawer(url);
+}
+function setDrawerStage(stageId) {
+  if (openUrl) setStage(null, openUrl, stageId);
 }
 document.addEventListener('click', closeDd);
 
@@ -758,25 +877,30 @@ function renderDrawer(url) {
   const others = d.other_contacts || [];
   const reasoning = Array.isArray(d.reasoning) ? d.reasoning.join('\n') : (d.reasoning || '—');
   const ct = lead.confirmed_type;
+  const ov = lead.overrides || {};
+  const dispName  = ov.contact_name || pc.name;
+  const dispPhone = ov.phone  || pc.phone;
+  const dispEmail = ov.email  || pc.email;
+  const curStage  = lead.stage || 'new';
 
   const confBtns = [
     { type: 'konatel_confirmed', icon: ic.check, label: 'Potvrdený konateľ' },
     { type: 'contact_confirmed', icon: ic.check, label: 'Správny kontakt (nie konateľ)' },
-    { type: 'wrong_contact', icon: ic.xcirc, label: 'Zlé číslo' },
-    { type: 'no_answer', icon: ic.clock, label: 'Nezdvíha — volať neskôr' },
-    { type: 'not_interested', icon: ic.minus, label: 'Nemá záujem' },
+    { type: 'wrong_contact',     icon: ic.xcirc, label: 'Zlé číslo' },
+    { type: 'no_answer',         icon: ic.clock, label: 'Nezdvíha — volať neskôr' },
+    { type: 'not_interested',    icon: ic.minus, label: 'Nemá záujem' },
   ];
 
   document.getElementById('drawer-content').innerHTML = `
     <div class="d-header">
       <div>
         <div class="d-title">${esc(strip(url))}</div>
-        <div class="d-subtitle">${esc(d.company_name || '')}${d.ico ? ` · IČO: ${esc(d.ico)}` : ''}</div>
+        <div class="d-subtitle">${esc(d.company_name || '')}${d.ico ? ` · IČO: ${esc(d.ico)}` : ''}${d.url_confidence === 'registry_only' ? ' · <span style="color:var(--text-muted);font-size:11px">bez webu</span>' : ''}</div>
       </div>
       <button class="d-close" onclick="closeDrawer()">${ic.x}</button>
     </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div class="d-score-row">
         <span class="d-score-num">${d.score ?? '—'}</span>
         <span class="d-score-denom">/ 100</span>
@@ -785,7 +909,17 @@ function renderDrawer(url) {
         <span class="tier-dot"></span>${esc(tier)}
       </span>
     </div>
-    ${d.confidence ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Confidence: <span style="color:var(--confidence-${d.confidence === 'high' ? 'high' : d.confidence === 'medium' ? 'medium' : 'low'})">${esc(d.confidence)}</span></div>` : ''}
+
+    <div class="d-label">Fáza</div>
+    <div class="stage-selector">
+      ${STAGE_ORDER.map(sid => {
+        const s = STAGES[sid];
+        const act = curStage === sid;
+        return `<button class="stage-sel-btn${act ? ' s-active' : ''}"
+          style="${act ? `color:${s.color};border-color:${s.color};background:${s.color}15` : ''}"
+          onclick="setDrawerStage('${sid}')" title="${esc(s.label)}">${s.emoji}<br>${esc(s.short)}</button>`;
+      }).join('')}
+    </div>
 
     <div class="d-divider"></div>
 
@@ -793,23 +927,27 @@ function renderDrawer(url) {
     <div class="d-card">
       <div class="d-row">
         ${ic.user}
-        <span class="d-name">${esc(pc.name || '—')}</span>
+        <span class="d-name" id="ec-contact_name">${esc(dispName || '—')}</span>
+        ${ov.contact_name ? '<span class="manual-badge">manuálne</span>' : ''}
         ${pc.role ? `<span style="font-size:11px;color:var(--text-muted)">${esc(pc.role)}</span>` : ''}
+        <button class="edit-pencil" onclick="editContact('contact_name')" title="Upraviť meno">✏️</button>
       </div>
-      ${pc.phone ? `
       <div class="d-row">
         ${ic.phone}
-        <span class="d-phone">${esc(fmtPhone(pc.phone))}</span>
-        <button class="icon-btn" onclick="copyText('${esc(pc.phone)}')">${ic.copy} Kopírovať</button>
-        <a class="icon-btn" href="${esc(telHref(pc.phone))}">${ic.phone} Volať</a>
-      </div>` : ''}
-      ${pc.email ? `
+        <span class="d-phone" id="ec-phone">${dispPhone ? esc(fmtPhone(dispPhone)) : '<span style="color:var(--text-muted)">—</span>'}</span>
+        ${ov.phone ? '<span class="manual-badge">manuálne</span>' : ''}
+        ${dispPhone ? `<button class="icon-btn" onclick="copyText('${esc(dispPhone)}')">${ic.copy} Kopírovať</button>
+        <a class="icon-btn" href="${esc(telHref(dispPhone))}">${ic.phone} Volať</a>` : ''}
+        <button class="edit-pencil${dispPhone ? '' : ' always'}" onclick="editContact('phone')" title="Upraviť tel.">✏️</button>
+      </div>
       <div class="d-row">
         ${ic.mail}
-        <span style="font-size:12px;color:var(--text-secondary)">${esc(pc.email)}</span>
-        <button class="icon-btn" onclick="copyText('${esc(pc.email)}')">${ic.copy} Kopírovať</button>
-      </div>` : ''}
-      ${(pc.name_source || pc.phone_type || pc.proximity_chars) ? `
+        <span style="font-size:12px;color:var(--text-secondary)" id="ec-email">${dispEmail ? esc(dispEmail) : '<span style="color:var(--text-muted)">—</span>'}</span>
+        ${ov.email ? '<span class="manual-badge">manuálne</span>' : ''}
+        ${dispEmail ? `<button class="icon-btn" onclick="copyText('${esc(dispEmail)}')">${ic.copy} Kopírovať</button>` : ''}
+        <button class="edit-pencil${dispEmail ? '' : ' always'}" onclick="editContact('email')" title="Upraviť email">✏️</button>
+      </div>
+      ${(pc.name_source || pc.phone_type || pc.proximity_chars != null) ? `
       <div class="d-meta">
         ${pc.name_source ? `Zdroj: ${esc(srcLabel(pc.name_source))}` : ''}
         ${pc.proximity_chars != null ? ` (${pc.proximity_chars} zn.)` : ''}
@@ -824,7 +962,7 @@ function renderDrawer(url) {
       <span>${reg.verified ? `Overené v ${esc(reg.source || 'registri')}` : 'Neoverené'}</span>
     </div>
     ${reg.konatel ? `<div class="d-reg-row">${ic.user}<span>Konateľ: ${esc(reg.konatel)}</span></div>` : ''}
-    ${reg.konatelia_count ? `<div class="d-reg-row">${ic.user}<span>Počet konateľov: ${reg.konatelia_count}</span></div>` : ''}
+    ${reg.konatelia_count ? `<div class="d-reg-row">${ic.user}<span>Konatelia: ${reg.konatelia_count}</span></div>` : ''}
     ${reg.velkost_firmy ? `<div class="d-reg-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/></svg><span>Veľkosť: ${esc(velLabel(reg.velkost_firmy))}</span></div>` : ''}
 
     <div class="d-divider"></div>
@@ -850,18 +988,15 @@ function renderDrawer(url) {
       </button>`).join('')}
 
     <div class="d-divider"></div>
-    <div class="d-label">Poznámky</div>
-    <textarea id="drawer-notes" placeholder="Volané 24.6., poslať mail...">${esc(lead.notes || '')}</textarea>
-    <button id="save-notes-btn" onclick="saveNotes('${esc(url)}')">Uložiť poznámku</button>
+    <div class="d-label">Poznámky <span style="color:var(--text-muted);font-weight:400;font-size:10px">${(lead.notes || []).length}/20</span></div>
+    <div class="notes-list">${notesHtml(lead)}</div>
+    <div class="note-add-wrap">
+      <textarea id="note-add-input" class="note-add-input" placeholder="Pridaj poznámku…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNote()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button class="note-add-btn" onclick="addNote()">Pridať</button>
+    </div>
   `;
-}
-
-function saveNotes(url) {
-  const lead = leads.find(l => l.url === url);
-  if (!lead) return;
-  lead.notes = document.getElementById('drawer-notes')?.value || '';
-  saveLeads();
-  toast('Poznámka uložená', 'info');
 }
 
 async function confirmAction(url, type) {
@@ -884,6 +1019,117 @@ function copyText(text) {
     document.execCommand('copy'); document.body.removeChild(ta);
     toast('Skopírované!', 'success');
   });
+}
+
+// ── CRM HELPERS ──
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function initDefaults(l) {
+  if (!l.stage) {
+    l.stage = {new:'new', called:'called_no', confirmed:'contacted', rejected:'rejected'}[l.status] || 'new';
+  }
+  if (l.followup_date === undefined) l.followup_date = null;
+  if (!l.followup_note) l.followup_note = '';
+  if (!Array.isArray(l.notes)) {
+    const old = l.notes;
+    l.notes = (old && old.trim && old.trim()) ? [{id: uid(), ts: l.scraped_at || new Date().toISOString(), text: old.trim()}] : [];
+  }
+  if (!l.history) l.history = [];
+  if (!l.overrides) l.overrides = {phone: null, email: null, contact_name: null};
+}
+
+function addHistory(l, type, data) {
+  if (!l.history) l.history = [];
+  l.history.unshift({ts: new Date().toISOString(), type, data: data || ''});
+  if (l.history.length > 100) l.history.length = 100;
+}
+
+function timeAgo(ts) {
+  const d = Date.now() - new Date(ts).getTime();
+  const m = Math.floor(d / 60000);
+  if (m < 1) return 'práve teraz';
+  if (m < 60) return `pred ${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `pred ${h}h`;
+  const dy = Math.floor(h / 24);
+  return dy < 7 ? `pred ${dy}d` : new Date(ts).toLocaleDateString('sk-SK');
+}
+
+function stageHtml(stageId, urlEsc) {
+  const s = STAGES[stageId] || STAGES.new;
+  return `<span class="stage-pill" style="color:${s.color};background:${s.color}18"
+    onclick="showStageDd(event,'${urlEsc}')">${s.emoji} ${esc(s.short)} ${ic.chevD}</span>`;
+}
+
+function notesHtml(lead) {
+  const ns = lead.notes || [];
+  if (!ns.length) return '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">Žiadne poznámky</div>';
+  return ns.map(n => `<div class="note-item">
+    <div class="note-ts">${timeAgo(n.ts)} · ${new Date(n.ts).toLocaleString('sk-SK', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+    <div class="note-text">${esc(n.text)}</div>
+    <button class="note-del" onclick="deleteNote('${esc(n.id)}')" title="Zmazať">✕</button>
+  </div>`).join('');
+}
+
+function addNote() {
+  const inp = document.getElementById('note-add-input');
+  const text = (inp?.value || '').trim();
+  if (!text || !openUrl) return;
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  if (!lead.notes) lead.notes = [];
+  if (lead.notes.length >= 20) { toast('Max 20 poznámok', 'error'); return; }
+  lead.notes.unshift({id: uid(), ts: new Date().toISOString(), text});
+  addHistory(lead, 'note_added', text.slice(0, 60));
+  saveLeads();
+  renderDrawer(openUrl);
+}
+
+function deleteNote(noteId) {
+  if (!openUrl) return;
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  lead.notes = (lead.notes || []).filter(n => n.id !== noteId);
+  saveLeads();
+  renderDrawer(openUrl);
+}
+
+function editContact(field) {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  const pc = lead.data?.primary_contact || {};
+  const ov = lead.overrides || {};
+  const rawKey = field === 'contact_name' ? 'name' : field;
+  const current = ov[field] || pc[rawKey] || '';
+  const el = document.getElementById(`ec-${field}`);
+  if (!el) return;
+  const row = el.closest('.d-row');
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.value = current; inp.className = 'edit-input';
+  el.replaceWith(inp);
+  row.querySelector('.manual-badge')?.remove();
+  row.querySelector('.edit-pencil')?.remove();
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'icon-btn'; saveBtn.textContent = 'Uložiť';
+  saveBtn.onclick = () => saveContactEdit(field, inp.value);
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'icon-btn'; cancelBtn.textContent = 'Zrušiť';
+  cancelBtn.onclick = () => renderDrawer(openUrl);
+  inp.after(saveBtn); saveBtn.after(cancelBtn);
+  inp.focus(); inp.select();
+}
+
+function saveContactEdit(field, newVal) {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  newVal = newVal.trim();
+  if (!lead.overrides) lead.overrides = {phone: null, email: null, contact_name: null};
+  lead.overrides[field] = newVal || null;
+  addHistory(lead, 'contact_edited', `${field}: ${newVal}`);
+  saveLeads();
+  renderDrawer(openUrl);
 }
 
 // ── TOAST ──
@@ -1042,7 +1288,33 @@ async function searchProfesia(keyword) {
   if (isScraping) return;
   isScraping = true;
   setScrapeLoading(true);
-  document.getElementById('scrape-status').textContent = 'Hľadám na Profesia.sk...';
+  const status = document.getElementById('scrape-status');
+
+  if (autoScrapeEnabled) {
+    status.textContent = 'Scrapujem Profesia.sk (auto)…';
+    try {
+      const resp = await fetch(`${API}/api/leads/source/auto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': TOKEN },
+        body: JSON.stringify({ channel: 'profesia', keyword, max_results: 20 })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      let added = 0;
+      (data.leads || []).forEach(lead => { if (lead.url) { upsertLead(lead); added++; } });
+      render();
+      toast(`${added} leadov z ${data.found_companies || 0} firiem (${data.skipped?.length || 0} preskočených)`, 'success');
+    } catch (e) {
+      toast(`Profesia.sk auto chyba: ${e.message}`, 'error');
+    } finally {
+      isScraping = false;
+      setScrapeLoading(false);
+      status.textContent = '';
+    }
+    return;
+  }
+
+  status.textContent = 'Hľadám na Profesia.sk...';
   try {
     const resp = await fetch(`${API}/api/leads/source/profesia`, {
       method: 'POST',
@@ -1057,7 +1329,7 @@ async function searchProfesia(keyword) {
   } finally {
     isScraping = false;
     setScrapeLoading(false);
-    document.getElementById('scrape-status').textContent = '';
+    status.textContent = '';
   }
 }
 
