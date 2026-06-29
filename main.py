@@ -645,7 +645,13 @@ def extract_text_from_html(html: bytes) -> str:
     for a in soup.find_all("a", href=True):
         href = a["href"]
         if href.startswith("tel:"):
-            number = href.replace("tel:", "").strip()
+            href_number = href.replace("tel:", "").strip()
+            # ponytail: Shoptet pattern — href has old number, link text shows new one.
+            # Prefer visible text when it's a valid phone different from the href.
+            link_text = a.get_text(strip=True)
+            link_digits = re.sub(r'\D', '', link_text)
+            href_digits = re.sub(r'\D', '', href_number)
+            number = link_text if (link_digits and link_digits != href_digits and is_valid_phone(link_text)) else href_number
             contact_hints.append(f"Telefón: {number}")
         elif href.startswith("mailto:"):
             email = href.replace("mailto:", "").strip()
@@ -1838,6 +1844,7 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
             "context": ctx_text,
             "is_fax": is_fax,
             "near_names": near_names,
+            "abs_pos": ctx_start,
         })
 
     # === NAMES === blízko role kľúčových slov
@@ -2387,7 +2394,23 @@ def pair_contact_with_phone(
 
     all_phones = [p for p in candidates.get("phones", []) if not p.get("is_fax")]
     all_emails = candidates.get("emails", [])
-    first_phone = all_phones[0]["value"] if all_phones else None
+
+    def _score_phone(p: dict) -> int:
+        # ponytail: score phones for fallback selection.
+        # Priority 1: known SK/CZ first name found near phone (strong person signal).
+        # Priority 2: role keyword in context (konateľ, kontakt, etc.).
+        # No abs_pos scoring — deep-page EAN codes have high abs_pos too.
+        s = 0
+        for n in (p.get("near_names") or []):
+            if _first_name_known(n):  # SK/CZ known first name → real person, not product
+                s += 10
+                break
+        ctx = (p.get("context") or "").lower()
+        if re.search(r'konateľ|zodpovedn|kontakt|prevádzkov|vedúci', ctx):
+            s += 5
+        return s
+
+    first_phone = (max(all_phones, key=_score_phone)["value"] if all_phones else None)
     first_email = all_emails[0]["value"] if all_emails else None
     first_email_type = _classify_email_type(first_email, "") if first_email else None
 
@@ -2407,49 +2430,56 @@ def pair_contact_with_phone(
                 out.append({"name": o["meno"], "role": o["rola"], "phone": tel, "confidence": "MEDIUM"})
         return out[:3]
 
-    # Krok 2: konateľ z registra nájdený na webe (pri telefóne alebo kdekoľvek)
-    if konatel and first_phone and _is_person_name(konatel):
-        phone_digits = re.sub(r'\D', '', first_phone)
+    # Krok 2: konateľ z registra nájdený na webe — vyber telefón NAJBLIŽŠÍ k menu
+    # Hľadáme VŠETKY výskyty mena v texte a pre každý telefón berieme minimum.
+    if konatel and all_phones and _is_person_name(konatel):
         terms = [konatel] + ([konatel.split()[-1]] if len(konatel.split()) > 1 else [])
         for term in terms:
-            pos = norm_lower.find(term.lower())
-            if pos < 0:
+            term_lower = term.lower()
+            # Zbieraj všetky pozície mena v texte
+            name_positions = []
+            search_from = 0
+            while True:
+                idx = norm_lower.find(term_lower, search_from)
+                if idx < 0:
+                    break
+                # ponytail: word-boundary — "Blízik" must not match inside "Blíziková"
+                after_end = idx + len(term_lower)
+                before_ok = idx == 0 or not norm_lower[idx - 1].isalpha()
+                after_ok = after_end >= len(norm_lower) or not norm_lower[after_end].isalpha()
+                if before_ok and after_ok:
+                    name_positions.append(idx)
+                search_from = idx + 1
+            if not name_positions:
                 continue
-            # Name IS on the web — check if phone is nearby (±300 chars)
-            win_s, win_e = max(0, pos - 300), min(len(norm_text), pos + 300)
-            phone_in_window = phone_digits in re.sub(r'\D', '', norm_text[win_s:win_e])
-            if phone_in_window:
-                ph_pos = norm_text.lower().find(re.sub(r'\D', '', first_phone)[:7], win_s)
-                dist = abs((ph_pos if ph_pos >= 0 else pos) - pos)
-                reasoning.append(f"Meno '{konatel}' nájdené na webe ({dist} znakov od čísla {first_phone})")
-                return {
-                    "primary_contact": {
-                        "name": konatel, "role": "konateľ",
-                        "name_source": "register+web",
-                        "phone": first_phone, "phone_type": "osobny",
-                        "phone_match": "proximity_direct_chars",
-                        "email": first_email, "email_type": first_email_type,
-                        "confidence": "HIGH",
-                    },
-                    "other_contacts": _other_contacts(konatel, first_phone),
-                    "reasoning": reasoning,
-                    "velkost_category": emp_cat,
-                }
-            else:
-                reasoning.append(f"Meno '{konatel}' nájdené na webe, ďaleko od telefónu (register+web_distant)")
-                return {
-                    "primary_contact": {
-                        "name": konatel, "role": "konateľ",
-                        "name_source": "register+web_distant",
-                        "phone": first_phone, "phone_type": "osobny",
-                        "phone_match": "proximity_indirect_chars",
-                        "email": first_email, "email_type": first_email_type,
-                        "confidence": "MEDIUM-HIGH",
-                    },
-                    "other_contacts": _other_contacts(konatel, first_phone),
-                    "reasoning": reasoning,
-                    "velkost_category": emp_cat,
-                }
+            # ponytail: min distance across ALL name occurrences — one line
+            def _phone_dist(ph_entry):
+                p = ph_entry.get("abs_pos")
+                if p is None:
+                    return 99999
+                return min(abs(p - np) for np in name_positions)
+            best_entry = min(all_phones, key=_phone_dist)
+            best_phone = best_entry["value"]
+            best_dist = _phone_dist(best_entry)
+            name_src = "register+web" if best_dist <= 300 else "register+web_distant"
+            confidence = "HIGH" if best_dist <= 300 else "MEDIUM-HIGH"
+            reasoning.append(
+                f"Meno '{konatel}' nájdené na webe ({best_dist} znakov od čísla {best_phone})"
+            )
+            return {
+                "primary_contact": {
+                    "name": konatel, "role": "konateľ",
+                    "name_source": name_src,
+                    "phone": best_phone, "phone_type": "osobny",
+                    "phone_match": "proximity_closest_chars",
+                    "proximity_chars": best_dist,
+                    "email": first_email, "email_type": first_email_type,
+                    "confidence": confidence,
+                },
+                "other_contacts": _other_contacts(konatel, best_phone),
+                "reasoning": reasoning,
+                "velkost_category": emp_cat,
+            }
 
     # Krok 3: iné meno s rolou + telefón na webe
     for o in osoby:
@@ -3125,6 +3155,8 @@ async def _do_scrape(base_url: str) -> dict:
             "registry_konatel": registry_data.get("konatel"),
             "ico": scraped_ico,
             "velkost_category": pairing.get("velkost_category"),
+            "jurisdiction": jurisdiction_str,
+            "velkost_firmy_raw": registry_data.get("velkost_firmy_raw"),
             "other_contacts": pairing.get("other_contacts", []),
             "phone_confirmed_by_user": phone_confirmed,
         }
@@ -3322,9 +3354,9 @@ async def debug_scrape(req: ScrapeRequest, user=Depends(verify_jwt)):
 
     # --- Encoding diagnostika: stiahni raw bytes z kontaktnej stránky ---
     kontakt_url = f"{base_url}/kontakt"
-    raw_bytes = fetch_raw_bytes_scrapingbee(kontakt_url)
+    raw_bytes = fetch_html_httpx(kontakt_url)
     if not raw_bytes:
-        raw_bytes = fetch_raw_bytes_scrapingbee(base_url)
+        raw_bytes = fetch_html_httpx(base_url)
 
     chardet_result = chardet.detect(raw_bytes[:4000]) if raw_bytes else {}
     # repr() prvých 500 bajtov – ukazuje skutočné bajty vrátane \xc4\xbe atď.
