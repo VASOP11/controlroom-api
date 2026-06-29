@@ -456,6 +456,69 @@ a { color: inherit; text-decoration: none; }
 .kc-followup.overdue { background: rgba(239,68,68,0.12); color: var(--tier-dead); }
 .kc-followup.future { color: var(--text-muted); }
 
+/* ── CALENDAR ── */
+#view-calendar { display: none; padding: 8px 24px 80px; }
+.cal-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.cal-nav-btn {
+  height: 28px; padding: 0 12px; border-radius: 5px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  color: var(--text-secondary); font-size: 12px; transition: all 100ms;
+}
+.cal-nav-btn:hover { color: var(--text-primary); }
+.cal-range { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-day { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px; min-height: 140px; }
+.cal-day.today { border-color: var(--accent-blue); }
+.cal-day-hdr {
+  padding: 7px 8px; border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: center;
+}
+.cal-day.today .cal-day-hdr { color: var(--accent-blue); }
+.cal-day-body { padding: 5px; display: flex; flex-direction: column; gap: 3px; }
+.cal-event {
+  padding: 3px 6px; border-radius: 3px; font-size: 10px; cursor: pointer;
+  border-left: 2px solid transparent; background: var(--bg-elevated); line-height: 1.3;
+  transition: background 100ms;
+}
+.cal-event:hover { background: var(--bg-surface-hover); }
+.cal-event-name { font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-event-note { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── TODAY WIDGET ── */
+#today-widget {
+  display: flex; gap: 8px; padding: 10px 24px 6px; flex-wrap: wrap;
+}
+.tw-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 5px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--bg-surface); cursor: pointer;
+  transition: all 120ms; color: var(--text-secondary);
+}
+.tw-chip:hover { color: var(--text-primary); background: var(--bg-surface-hover); }
+.tw-chip.active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(79,110,247,0.08); }
+.tw-count { font-family: var(--font-mono); font-size: 11px; }
+
+/* ── FOLLOW-UP IN DRAWER ── */
+.followup-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.followup-input {
+  flex: 1; background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 5px; padding: 6px 8px; color: var(--text-primary); font-size: 12px;
+  outline: none; transition: border-color 150ms; font-family: var(--font-sans);
+}
+.followup-input:focus { border-color: var(--accent-blue); }
+.followup-clear {
+  width: 26px; height: 26px; border-radius: 4px; flex-shrink: 0;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 12px; display: flex; align-items: center; justify-content: center;
+}
+.followup-clear:hover { color: var(--tier-dead); }
+.followup-note-input {
+  width: 100%; background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 5px; padding: 6px 8px; color: var(--text-secondary); font-size: 12px;
+  outline: none; transition: border-color 150ms;
+}
+.followup-note-input:focus { border-color: var(--accent-blue); }
+
 /* ── STAGE PILLS ── */
 .stage-pill {
   display: inline-flex; align-items: center; gap: 4px;
@@ -568,11 +631,23 @@ a { color: inherit; text-decoration: none; }
   <div class="view-toggle">
     <button class="view-btn active" id="vbtn-table" onclick="setView('table')">☰ Tabuľka</button>
     <button class="view-btn" id="vbtn-kanban" onclick="setView('kanban')">⬛ Kanban</button>
+    <button class="view-btn" id="vbtn-calendar" onclick="setView('calendar')">📅 Kalendár</button>
   </div>
 </div>
 
+<div id="today-widget" style="display:none"></div>
+
 <main id="main">
   <div id="view-kanban"><div class="kanban-board" id="kanban-board"></div></div>
+  <div id="view-calendar">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calNav(-7)">← Predchádzajúci</button>
+      <span class="cal-range" id="cal-range"></span>
+      <button class="cal-nav-btn" onclick="calNav(7)">Nasledujúci →</button>
+      <button class="cal-nav-btn" onclick="calGoToday()" style="margin-left:4px">Dnes</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
   <table class="leads-table" id="leads-table" style="display:none">
     <thead>
       <tr>
@@ -809,7 +884,14 @@ async function apiConfirm(url, confirmation_type, extra = {}) {
 
 // ── RENDER ──
 function filteredSorted() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
   let list = filter === 'all' ? [...leads] : leads.filter(l => l.data?.tier === filter);
+  if (widgetFollowupFilter) list = list.filter(l => {
+    if (!l.followup_date) return false;
+    const fd = new Date(l.followup_date); return fd >= today && fd < tomorrow;
+  });
+  if (widgetHotFilter) list = list.filter(l => l.data?.tier === 'HOT' && (l.stage || 'new') === 'new');
   list.sort((a, b) => {
     const av = a.data?.[sortField] ?? 0, bv = b.data?.[sortField] ?? 0;
     return sortDir === 'desc' ? bv - av : av - bv;
@@ -832,13 +914,14 @@ function render() {
 function setView(v) {
   currentView = v;
   document.getElementById('view-kanban').style.display = v === 'kanban' ? 'block' : 'none';
+  document.getElementById('view-calendar').style.display = v === 'calendar' ? 'block' : 'none';
   const tableEl = document.getElementById('leads-table');
   const emptyEl = document.getElementById('empty-state');
-  if (v === 'kanban') {
-    tableEl.style.display = 'none'; emptyEl.style.display = 'none';
-  }
+  if (v !== 'table') { tableEl.style.display = 'none'; emptyEl.style.display = 'none'; }
   document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.id === `vbtn-${v}`));
-  render();
+  if (v === 'calendar') renderCalendar();
+  else render();
+  updateTodayWidget();
 }
 
 function renderKanban() {
@@ -1066,6 +1149,18 @@ function renderDrawer(url) {
 
     <div class="d-divider"></div>
 
+    <div class="d-label">Follow-up</div>
+    <div class="followup-row">
+      <input type="datetime-local" class="followup-input" id="followup-dt"
+        value="${lead.followup_date ? lead.followup_date.slice(0, 16) : ''}"
+        onchange="saveFollowup()">
+      ${lead.followup_date ? `<button class="followup-clear" onclick="clearFollowup()" title="Zrušiť">✕</button>` : ''}
+    </div>
+    <input type="text" class="followup-note-input" id="followup-note" placeholder="Poznámka k follow-up…"
+      value="${esc(lead.followup_note || '')}" onblur="saveFollowupNote()">
+
+    <div class="d-divider"></div>
+
     <div class="d-label">Primárny kontakt</div>
     <div class="d-card">
       <div class="d-row">
@@ -1273,6 +1368,136 @@ function saveContactEdit(field, newVal) {
   addHistory(lead, 'contact_edited', `${field}: ${newVal}`);
   saveLeads();
   renderDrawer(openUrl);
+}
+
+// ── FOLLOW-UP ──
+function saveFollowup() {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  const val = document.getElementById('followup-dt')?.value || '';
+  lead.followup_date = val ? new Date(val).toISOString() : null;
+  addHistory(lead, 'followup_set', val ? val.slice(0, 16) : 'zrušený');
+  saveLeads();
+  updateTodayWidget();
+  if (currentView === 'kanban') renderKanban();
+  if (currentView === 'calendar') renderCalendar();
+  // ponytail: re-render drawer only if clear button state needs updating
+  if (!val && openUrl) renderDrawer(openUrl);
+}
+
+function clearFollowup() {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  lead.followup_date = null;
+  addHistory(lead, 'followup_set', 'zrušený');
+  saveLeads();
+  updateTodayWidget();
+  if (currentView === 'kanban') renderKanban();
+  if (currentView === 'calendar') renderCalendar();
+  renderDrawer(openUrl);
+}
+
+function saveFollowupNote() {
+  const lead = leads.find(l => l.url === openUrl);
+  if (!lead) return;
+  lead.followup_note = document.getElementById('followup-note')?.value || '';
+  saveLeads();
+}
+
+// ── TODAY WIDGET ──
+let widgetFollowupFilter = false;
+let widgetHotFilter = false;
+
+function updateTodayWidget() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const todayCount = leads.filter(l => {
+    if (!l.followup_date) return false;
+    const fd = new Date(l.followup_date);
+    return fd >= today && fd < tomorrow;
+  }).length;
+  const hotNew = leads.filter(l => l.data?.tier === 'HOT' && (l.stage || 'new') === 'new').length;
+
+  const w = document.getElementById('today-widget');
+  if (!w) return;
+  if (todayCount === 0 && hotNew === 0) { w.style.display = 'none'; return; }
+  w.style.display = 'flex';
+  w.innerHTML = `
+    ${todayCount > 0 ? `<button class="tw-chip${widgetFollowupFilter ? ' active' : ''}" onclick="toggleWidgetFollowup()">
+      📞 <span class="tw-count">${todayCount}</span> follow-up dnes
+    </button>` : ''}
+    ${hotNew > 0 ? `<button class="tw-chip${widgetHotFilter ? ' active' : ''}" onclick="toggleWidgetHot()">
+      🔥 <span class="tw-count">${hotNew}</span> HOT nevolaných
+    </button>` : ''}
+  `;
+}
+
+function toggleWidgetFollowup() {
+  widgetFollowupFilter = !widgetFollowupFilter;
+  widgetHotFilter = false;
+  if (currentView !== 'table') setView('table');
+  else render();
+  updateTodayWidget();
+}
+function toggleWidgetHot() {
+  widgetHotFilter = !widgetHotFilter;
+  widgetFollowupFilter = false;
+  if (currentView !== 'table') setView('table');
+  else render();
+  updateTodayWidget();
+}
+
+// ── CALENDAR ──
+let calWeekStart = mondayOfWeek(new Date());
+
+function mondayOfWeek(d) {
+  const dt = new Date(d); dt.setHours(0, 0, 0, 0);
+  const day = dt.getDay(); // 0=Sun
+  dt.setDate(dt.getDate() - (day === 0 ? 6 : day - 1));
+  return dt;
+}
+
+function calNav(days) { calWeekStart.setDate(calWeekStart.getDate() + days); renderCalendar(); }
+function calGoToday() { calWeekStart = mondayOfWeek(new Date()); renderCalendar(); }
+
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
+  const rangeEl = document.getElementById('cal-range');
+  if (!grid) return;
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Array.from({length: 7}, (_, i) => {
+    const d = new Date(calWeekStart); d.setDate(calWeekStart.getDate() + i); return d;
+  });
+
+  const DAY_SK = ['Po', 'Ut', 'St', 'Šv', 'Pi', 'So', 'Ne'];
+  rangeEl.textContent = `${days[0].toLocaleDateString('sk-SK', {day:'2-digit', month:'long'})} – ${days[6].toLocaleDateString('sk-SK', {day:'2-digit', month:'long', year:'numeric'})}`;
+
+  grid.innerHTML = days.map((d, i) => {
+    const isToday = d.getTime() === today.getTime();
+    const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
+    const dayLeads = leads.filter(l => {
+      if (!l.followup_date) return false;
+      const fd = new Date(l.followup_date); fd.setHours(0, 0, 0, 0);
+      return fd.getTime() === d.getTime();
+    }).sort((a, b) => new Date(a.followup_date) - new Date(b.followup_date));
+
+    const events = dayLeads.map(l => {
+      const s = STAGES[l.stage || 'new'] || STAGES.new;
+      const name = l.data?.company_name || strip(l.url);
+      const time = new Date(l.followup_date).toLocaleTimeString('sk-SK', {hour:'2-digit', minute:'2-digit'});
+      const u = esc(l.url);
+      return `<div class="cal-event" style="border-left-color:${s.color}" data-url="${u}" onclick="openDrawer(this.dataset.url)">
+        <div class="cal-event-name">${esc(name)}</div>
+        <div class="cal-event-note">${time}${l.followup_note ? ' · ' + esc(l.followup_note.slice(0, 20)) : ''}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="cal-day${isToday ? ' today' : ''}">
+      <div class="cal-day-hdr">${DAY_SK[i]}<br>${d.toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'})}</div>
+      <div class="cal-day-body">${events || ''}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── TOAST ──
@@ -1693,6 +1918,7 @@ document.addEventListener('keydown', e => {
 // ── INIT ──
 loadLeads();
 render();
+updateTodayWidget();
 </script>
 </body>
 </html>
