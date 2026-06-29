@@ -408,6 +408,54 @@ a { color: inherit; text-decoration: none; }
   #drawer { width: 100%; }
 }
 
+/* ── VIEW TOGGLE ── */
+.view-toggle { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+.view-btn {
+  height: 26px; padding: 0 10px; border-radius: 4px;
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
+  transition: all 100ms; border: 1px solid transparent;
+}
+.view-btn:hover { color: var(--text-secondary); }
+.view-btn.active { color: var(--text-primary); background: var(--bg-elevated); border-color: var(--border); }
+
+/* ── KANBAN ── */
+#view-kanban { display: none; padding: 8px 0 80px; overflow-x: auto; }
+.kanban-board {
+  display: flex; gap: 10px; align-items: flex-start;
+  min-width: max-content; padding: 4px 24px 8px;
+}
+.kanban-col {
+  width: 210px; flex-shrink: 0; border-radius: 6px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  display: flex; flex-direction: column; min-height: 200px;
+}
+.kanban-col.drag-over { border-color: var(--accent-blue); background: rgba(79,110,247,0.05); }
+.kanban-col-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.kanban-col-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.kanban-col-count {
+  font-family: var(--font-mono); font-size: 10px; background: var(--bg-elevated);
+  color: var(--text-muted); padding: 0 5px; border-radius: 3px; min-width: 18px; text-align: center;
+}
+.kanban-col-body { padding: 6px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.kanban-card {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 5px; padding: 8px 9px; cursor: pointer; transition: border-color 120ms;
+  user-select: none;
+}
+.kanban-card:hover { border-color: var(--text-muted); }
+.kanban-card.dragging { opacity: 0.4; }
+.kc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.kc-name { font-size: 12px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; line-height: 1.3; word-break: break-all; }
+.kc-contact { font-size: 11px; color: var(--text-secondary); margin-bottom: 1px; }
+.kc-phone { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+.kc-followup { font-size: 10px; margin-top: 4px; padding: 1px 5px; border-radius: 3px; display: inline-block; }
+.kc-followup.today { background: rgba(245,158,11,0.15); color: var(--tier-warm); }
+.kc-followup.overdue { background: rgba(239,68,68,0.12); color: var(--tier-dead); }
+.kc-followup.future { color: var(--text-muted); }
+
 /* ── STAGE PILLS ── */
 .stage-pill {
   display: inline-flex; align-items: center; gap: 4px;
@@ -517,9 +565,14 @@ a { color: inherit; text-decoration: none; }
   <button class="filter-btn" data-filter="WARM">WARM <span class="filter-count" id="fc-warm">0</span></button>
   <button class="filter-btn" data-filter="COOL">COOL <span class="filter-count" id="fc-cool">0</span></button>
   <button class="filter-btn" data-filter="DEAD">DEAD <span class="filter-count" id="fc-dead">0</span></button>
+  <div class="view-toggle">
+    <button class="view-btn active" id="vbtn-table" onclick="setView('table')">☰ Tabuľka</button>
+    <button class="view-btn" id="vbtn-kanban" onclick="setView('kanban')">⬛ Kanban</button>
+  </div>
 </div>
 
 <main id="main">
+  <div id="view-kanban"><div class="kanban-board" id="kanban-board"></div></div>
   <table class="leads-table" id="leads-table" style="display:none">
     <thead>
       <tr>
@@ -609,6 +662,8 @@ let activeDd = null;
 let activeSource = 'url';
 let srcResults = [];
 let autoScrapeEnabled = true;
+let currentView = 'table';
+let draggedUrl = null;
 
 // ── SVG ──
 const ic = {
@@ -763,21 +818,109 @@ function filteredSorted() {
 }
 
 function render() {
-  const list = filteredSorted();
   updateCounts();
+  if (currentView === 'kanban') { renderKanban(); return; }
+  const list = filteredSorted();
   const tbody = document.getElementById('leads-tbody');
   const table = document.getElementById('leads-table');
   const empty = document.getElementById('empty-state');
-
-  if (leads.length === 0) {
-    table.style.display = 'none';
-    empty.style.display = 'flex';
-    return;
-  }
-  table.style.display = 'table';
-  empty.style.display = 'none';
-
+  if (leads.length === 0) { table.style.display = 'none'; empty.style.display = 'flex'; return; }
+  table.style.display = 'table'; empty.style.display = 'none';
   tbody.innerHTML = list.map(l => rowHtml(l)).join('');
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('view-kanban').style.display = v === 'kanban' ? 'block' : 'none';
+  const tableEl = document.getElementById('leads-table');
+  const emptyEl = document.getElementById('empty-state');
+  if (v === 'kanban') {
+    tableEl.style.display = 'none'; emptyEl.style.display = 'none';
+  }
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.id === `vbtn-${v}`));
+  render();
+}
+
+function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+
+  board.innerHTML = STAGE_ORDER.map(sid => {
+    const s = STAGES[sid];
+    const colLeads = leads.filter(l => (filter === 'all' || l.data?.tier === filter) && (l.stage || 'new') === sid)
+      .sort((a, b) => (b.data?.score ?? 0) - (a.data?.score ?? 0));
+
+    const cards = colLeads.map(l => {
+      const d = l.data || {};
+      const pc = d.primary_contact || {};
+      const ov = l.overrides || {};
+      const tier = d.tier || 'DEAD';
+      const name = d.company_name || strip(l.url);
+      const contact = ov.contact_name || pc.name || '';
+      const phone = ov.phone || pc.phone || '';
+      const u = esc(l.url);
+
+      let followupBadge = '';
+      if (l.followup_date) {
+        const fd = new Date(l.followup_date); fd.setHours(0, 0, 0, 0);
+        if (fd < today) followupBadge = `<span class="kc-followup overdue">⚠ ${new Date(l.followup_date).toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'})}</span>`;
+        else if (fd.getTime() === today.getTime()) followupBadge = `<span class="kc-followup today">📅 Dnes</span>`;
+        else followupBadge = `<span class="kc-followup future">📅 ${new Date(l.followup_date).toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'})}</span>`;
+      }
+
+      return `<div class="kanban-card" data-url="${u}" draggable="true"
+          onclick="openDrawer(this.dataset.url)"
+          ondragstart="kdragStart(event, this.dataset.url)"
+          ondragend="kdragEnd(event)">
+        <div class="kc-top">
+          <span class="tier-badge t-${esc(tier)}" style="font-size:10px"><span class="tier-dot"></span>${esc(tier)}</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${d.score ?? '?'}</span>
+        </div>
+        <div class="kc-name">${esc(name)}</div>
+        ${contact ? `<div class="kc-contact">${esc(contact)}</div>` : ''}
+        ${phone ? `<div class="kc-phone">${esc(fmtPhone(phone))}</div>` : ''}
+        ${followupBadge}
+      </div>`;
+    }).join('');
+
+    return `<div class="kanban-col" data-stage="${sid}"
+        ondragover="kdragOver(event)"
+        ondragleave="kdragLeave(event)"
+        ondrop="kdrop(event, '${sid}')">
+      <div class="kanban-col-hdr">
+        <span class="kanban-col-title" style="color:${s.color}">${s.emoji} ${esc(s.label)}</span>
+        <span class="kanban-col-count">${colLeads.length}</span>
+      </div>
+      <div class="kanban-col-body">${cards || '<div style="font-size:11px;color:var(--text-muted);padding:6px 0;text-align:center">–</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function kdragStart(e, url) {
+  draggedUrl = url;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+function kdragEnd(e) { e.target.classList.remove('dragging'); }
+function kdragOver(e) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function kdragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function kdrop(e, stageId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!draggedUrl) return;
+  const lead = leads.find(l => l.url === draggedUrl);
+  if (lead && lead.stage !== stageId) {
+    addHistory(lead, 'stage_change', `${lead.stage || 'new'} → ${stageId}`);
+    lead.stage = stageId;
+    saveLeads();
+    renderKanban();
+    if (openUrl === draggedUrl) renderDrawer(draggedUrl);
+  }
+  draggedUrl = null;
 }
 
 function rowHtml(l) {
