@@ -414,7 +414,9 @@ a { color: inherit; text-decoration: none; }
   height: 26px; padding: 0 10px; border-radius: 4px;
   font-size: 12px; font-weight: 500; color: var(--text-muted);
   transition: all 100ms; border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 5px;
 }
+.view-btn .vb-ic { display: inline-flex; }
 .view-btn:hover { color: var(--text-secondary); }
 .view-btn.active { color: var(--text-primary); background: var(--bg-elevated); border-color: var(--border); }
 
@@ -448,10 +450,10 @@ a { color: inherit; text-decoration: none; }
 .kanban-card:hover { border-color: var(--text-muted); }
 .kanban-card.dragging { opacity: 0.4; }
 .kc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.kc-name { font-size: 12px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; line-height: 1.3; word-break: break-all; }
+.kc-name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; line-height: 1.3; word-break: break-all; }
 .kc-contact { font-size: 11px; color: var(--text-secondary); margin-bottom: 1px; }
 .kc-phone { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
-.kc-followup { font-size: 10px; margin-top: 4px; padding: 1px 5px; border-radius: 3px; display: inline-block; }
+.kc-followup { font-size: 10px; margin-top: 4px; padding: 1px 5px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px; }
 .kc-followup.today { background: rgba(245,158,11,0.15); color: var(--tier-warm); }
 .kc-followup.overdue { background: rgba(239,68,68,0.12); color: var(--tier-dead); }
 .kc-followup.future { color: var(--text-muted); }
@@ -481,7 +483,8 @@ a { color: inherit; text-decoration: none; }
   transition: background 100ms;
 }
 .cal-event:hover { background: var(--bg-surface-hover); }
-.cal-event-name { font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-event-name { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-event-contact { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-event-note { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── TODAY WIDGET ── */
@@ -656,15 +659,11 @@ a { color: inherit; text-decoration: none; }
 </header>
 
 <div id="filter-bar">
-  <button class="filter-btn active" data-filter="all">Všetky <span class="filter-count" id="fc-all">0</span></button>
-  <button class="filter-btn" data-filter="HOT">HOT <span class="filter-count" id="fc-hot">0</span></button>
-  <button class="filter-btn" data-filter="WARM">WARM <span class="filter-count" id="fc-warm">0</span></button>
-  <button class="filter-btn" data-filter="COOL">COOL <span class="filter-count" id="fc-cool">0</span></button>
-  <button class="filter-btn" data-filter="DEAD">DEAD <span class="filter-count" id="fc-dead">0</span></button>
+  <div id="filter-controls" style="display:flex;align-items:center;gap:4px"></div>
   <div class="view-toggle">
-    <button class="view-btn active" id="vbtn-table" onclick="setView('table')">☰ Tabuľka</button>
-    <button class="view-btn" id="vbtn-kanban" onclick="setView('kanban')">⬛ Kanban</button>
-    <button class="view-btn" id="vbtn-calendar" onclick="setView('calendar')">📅 Kalendár</button>
+    <button class="view-btn active" id="vbtn-table" onclick="setView('table')"><span class="vb-ic"></span> Tabuľka</button>
+    <button class="view-btn" id="vbtn-kanban" onclick="setView('kanban')"><span class="vb-ic"></span> Kanban</button>
+    <button class="view-btn" id="vbtn-calendar" onclick="setView('calendar')"><span class="vb-ic"></span> Kalendár</button>
   </div>
 </div>
 
@@ -744,22 +743,26 @@ const MAX_LEADS = 500;
 
 // ── PIPELINE STAGES ──
 const STAGES = {
-  new:        {label:'Nový',            emoji:'🆕', short:'Nový',    color:'#64748B'},
-  called_no:  {label:'Volaný—bez odp.',emoji:'📞', short:'Volaný',  color:'#D97706'},
-  contacted:  {label:'Kontaktovaný',    emoji:'💬', short:'Kontak.', color:'#2563EB'},
-  interested: {label:'Záujem',          emoji:'👋', short:'Záujem',  color:'#7C3AED'},
-  meeting:    {label:'Stretnutie',      emoji:'📅', short:'Stret.',  color:'#0891B2'},
-  offer:      {label:'Ponuka',          emoji:'✉️', short:'Ponuka',  color:'#6366F1'},
-  converted:  {label:'Konvertovaný',    emoji:'✅', short:'Konv.',   color:'#16A34A'},
-  rejected:   {label:'Odmietnutý',      emoji:'❌', short:'Odmiet.', color:'#DC2626'},
-  snoozed:    {label:'Odložený',        emoji:'💤', short:'Odlož.',  color:'#6B7280'},
-  lost:       {label:'Stratený',        emoji:'☠️', short:'Strat.', color:'#374151'},
+  new:        {label:'Nový',            short:'Nový',    color:'#64748B'},
+  called_no:  {label:'Volaný—bez odp.', short:'Volaný',  color:'#D97706'},
+  contacted:  {label:'Kontaktovaný',    short:'Kontak.', color:'#2563EB'},
+  interested: {label:'Záujem',          short:'Záujem',  color:'#7C3AED'},
+  meeting:    {label:'Stretnutie',      short:'Stret.',  color:'#0891B2'},
+  offer:      {label:'Ponuka',          short:'Ponuka',  color:'#6366F1'},
+  converted:  {label:'Konvertovaný',    short:'Konv.',   color:'#16A34A'},
+  rejected:   {label:'Odmietnutý',      short:'Odmiet.', color:'#DC2626'},
+  snoozed:    {label:'Odložený',        short:'Odlož.',  color:'#6B7280'},
+  lost:       {label:'Stratený',        short:'Strat.',  color:'#374151'},
 };
+function stageDot(color, size = 7) {
+  return `<span style="display:inline-block;width:${size}px;height:${size}px;border-radius:50%;background:${color};flex-shrink:0"></span>`;
+}
 const STAGE_ORDER = ['new','called_no','contacted','interested','meeting','offer','converted','rejected','snoozed','lost'];
 
 // ── STATE ──
 let leads = [];
-let filter = 'all';
+// shared across table/kanban/calendar; empty array = no filter
+let filters = { tiers: [], stages: [], followup: 'all', sources: [] };
 let sortField = 'score';
 let sortDir = 'desc';
 let openUrl = null;
@@ -789,6 +792,28 @@ const ic = {
   spinner: `<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`,
   chevD: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
 };
+
+// lucide-style paths, rendered via icon(name, size)
+const IC_PATHS = {
+  calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  message: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  note: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M15 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  arrowR: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  listView: '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+  kanbanView: '<path d="M5 5v14"/><path d="M12 5v9"/><path d="M19 5v6"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 14a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.63 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 10.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 17z"/>',
+  mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+};
+function icon(name, size = 13, sw = 1.5) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC_PATHS[name] || ''}</svg>`;
+}
 
 // ── HELPERS ──
 function esc(s) {
@@ -876,6 +901,8 @@ function saveLeads() {
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
 }
+let scrapeChannel = 'url'; // which source tab produced the current scrape batch
+
 function upsertLead(data) {
   const url = data.url;
   const idx = leads.findIndex(l => l.url === url);
@@ -885,7 +912,7 @@ function upsertLead(data) {
     addHistory(ex, 'scraped', '');
     leads[idx] = {...ex, data, scraped_at: ts};
   } else {
-    const nl = {url, data, stage: 'new', followup_date: null, followup_note: '', notes: [], history: [], overrides: {phone: null, email: null, contact_name: null}, scraped_at: ts};
+    const nl = {url, data, source: scrapeChannel, stage: 'new', followup_date: null, followup_note: '', notes: [], history: [], overrides: {phone: null, email: null, contact_name: null}, scraped_at: ts};
     addHistory(nl, 'scraped', '');
     leads.unshift(nl);
   }
@@ -915,11 +942,100 @@ async function apiConfirm(url, confirmation_type, extra = {}) {
   } catch (_) { /* 404 or network — ignore, stored locally */ }
 }
 
+// ── FILTERS (shared across views) ──
+const SOURCE_LABELS = {
+  url: 'Priama URL', profesia: 'Profesia', heureka: 'Heureka',
+  eshops: 'E-shopy', orsr_new: 'Nové firmy', maps: 'Maps', csv: 'CSV', manual: 'Manuálny',
+};
+function passesFilters(l) {
+  if (filters.tiers.length && !filters.tiers.includes(l.data?.tier)) return false;
+  if (filters.stages.length && !filters.stages.includes(l.stage || 'new')) return false;
+  if (filters.followup !== 'all') {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const fd = l.followup_date ? new Date(l.followup_date) : null;
+    if (filters.followup === 'yes' && !fd) return false;
+    if (filters.followup === 'no' && fd) return false;
+    if (filters.followup === 'overdue' && !(fd && fd < today)) return false;
+  }
+  if (filters.sources.length && !filters.sources.includes(l.source || 'url')) return false;
+  return true;
+}
+function toggleArrFilter(key, val) {
+  const arr = filters[key];
+  const i = arr.indexOf(val);
+  if (i >= 0) arr.splice(i, 1); else arr.push(val);
+  onFiltersChanged();
+}
+function setFollowupFilter(val) { filters.followup = val; onFiltersChanged(); }
+function clearTierFilter() { filters.tiers = []; onFiltersChanged(); }
+function onFiltersChanged() {
+  renderFilterBar();
+  if (currentView === 'calendar') renderCalendar();
+  else render();
+}
+function renderFilterBar() {
+  const el = document.getElementById('filter-controls');
+  if (!el) return;
+  const counts = { HOT: 0, WARM: 0, COOL: 0, DEAD: 0 };
+  leads.forEach(l => { const t = l.data?.tier; if (counts[t] !== undefined) counts[t]++; });
+  const tierBtns = ['HOT', 'WARM', 'COOL', 'DEAD'].map(t =>
+    `<button class="filter-btn${filters.tiers.includes(t) ? ' active' : ''}" onclick="toggleArrFilter('tiers','${t}')">
+      <span class="tier-dot" style="background:var(--tier-${t.toLowerCase()})"></span>${t} <span class="filter-count">${counts[t]}</span>
+    </button>`).join('');
+  const stageActive = filters.stages.length;
+  const srcActive = filters.sources.length;
+  const fuLabels = { all: 'Follow-up', yes: 'Má follow-up', no: 'Bez follow-upu', overdue: 'Po termíne' };
+  el.innerHTML = `
+    <button class="filter-btn${!filters.tiers.length ? ' active' : ''}" onclick="clearTierFilter()">Všetky <span class="filter-count">${leads.length}</span></button>
+    ${tierBtns}
+    <span style="width:1px;height:16px;background:var(--border);margin:0 4px;flex-shrink:0"></span>
+    <button class="filter-btn${stageActive ? ' active' : ''}" onclick="showFilterDd(event,'stages')">
+      Fáza${stageActive ? ` <span class="filter-count">${stageActive}</span>` : ''} ${ic.chevD}
+    </button>
+    <button class="filter-btn${filters.followup !== 'all' ? ' active' : ''}" onclick="showFilterDd(event,'followup')">
+      ${esc(fuLabels[filters.followup])} ${ic.chevD}
+    </button>
+    <button class="filter-btn${srcActive ? ' active' : ''}" onclick="showFilterDd(event,'sources')">
+      Zdroj${srcActive ? ` <span class="filter-count">${srcActive}</span>` : ''} ${ic.chevD}
+    </button>`;
+}
+function showFilterDd(e, kind) {
+  e.stopPropagation();
+  closeDd();
+  const rect = e.currentTarget.getBoundingClientRect();
+  const dd = document.createElement('div');
+  dd.className = 'status-dropdown';
+  dd.style.cssText = `top:${rect.bottom + 4}px;left:${rect.left}px;min-width:180px`;
+  dd.addEventListener('click', ev => ev.stopPropagation());
+  if (kind === 'stages') {
+    dd.innerHTML = STAGE_ORDER.map(sid => {
+      const s = STAGES[sid];
+      const on = filters.stages.includes(sid);
+      return `<button onclick="toggleArrFilter('stages','${sid}')" style="display:flex;align-items:center;gap:7px${on ? ';color:var(--text-primary)' : ''}">
+        ${stageDot(s.color, 6)}${esc(s.label)}${on ? '<span style="margin-left:auto">✓</span>' : ''}</button>`;
+    }).join('');
+  } else if (kind === 'followup') {
+    const opts = [['all', 'Všetky'], ['yes', 'Má follow-up'], ['no', 'Bez follow-upu'], ['overdue', 'Po termíne']];
+    dd.innerHTML = opts.map(([v, lab]) =>
+      `<button onclick="setFollowupFilter('${v}');closeDd()" style="display:flex;align-items:center;gap:7px${filters.followup === v ? ';color:var(--text-primary)' : ''}">
+        ${esc(lab)}${filters.followup === v ? '<span style="margin-left:auto">✓</span>' : ''}</button>`).join('');
+  } else {
+    const present = [...new Set(leads.map(l => l.source || 'url'))];
+    dd.innerHTML = present.map(src => {
+      const on = filters.sources.includes(src);
+      return `<button onclick="toggleArrFilter('sources','${esc(src)}')" style="display:flex;align-items:center;gap:7px${on ? ';color:var(--text-primary)' : ''}">
+        ${esc(SOURCE_LABELS[src] || src)}${on ? '<span style="margin-left:auto">✓</span>' : ''}</button>`;
+    }).join('') || '<button disabled>Žiadne zdroje</button>';
+  }
+  document.body.appendChild(dd);
+  activeDd = dd;
+}
+
 // ── RENDER ──
 function filteredSorted() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-  let list = filter === 'all' ? [...leads] : leads.filter(l => l.data?.tier === filter);
+  let list = leads.filter(passesFilters);
   if (widgetFollowupFilter) list = list.filter(l => {
     if (!l.followup_date) return false;
     const fd = new Date(l.followup_date); return fd >= today && fd < tomorrow;
@@ -964,7 +1080,7 @@ function renderKanban() {
 
   board.innerHTML = STAGE_ORDER.map(sid => {
     const s = STAGES[sid];
-    const colLeads = leads.filter(l => (filter === 'all' || l.data?.tier === filter) && (l.stage || 'new') === sid)
+    const colLeads = leads.filter(l => passesFilters(l) && (l.stage || 'new') === sid)
       .sort((a, b) => (b.data?.score ?? 0) - (a.data?.score ?? 0));
 
     const cards = colLeads.map(l => {
@@ -972,7 +1088,7 @@ function renderKanban() {
       const pc = d.primary_contact || {};
       const ov = l.overrides || {};
       const tier = d.tier || 'DEAD';
-      const name = d.company_name || strip(l.url);
+      const name = strip(l.url);
       const contact = ov.contact_name || pc.name || '';
       const phone = ov.phone || pc.phone || '';
       const u = esc(l.url);
@@ -980,9 +1096,10 @@ function renderKanban() {
       let followupBadge = '';
       if (l.followup_date) {
         const fd = new Date(l.followup_date); fd.setHours(0, 0, 0, 0);
-        if (fd < today) followupBadge = `<span class="kc-followup overdue">⚠ ${new Date(l.followup_date).toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'})}</span>`;
-        else if (fd.getTime() === today.getTime()) followupBadge = `<span class="kc-followup today">📅 Dnes</span>`;
-        else followupBadge = `<span class="kc-followup future">📅 ${new Date(l.followup_date).toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'})}</span>`;
+        const dateStr = new Date(l.followup_date).toLocaleDateString('sk-SK', {day:'2-digit', month:'2-digit'});
+        if (fd < today) followupBadge = `<span class="kc-followup overdue">${icon('alert', 9, 2)} ${dateStr}</span>`;
+        else if (fd.getTime() === today.getTime()) followupBadge = `<span class="kc-followup today">${icon('calendar', 9, 2)} Dnes</span>`;
+        else followupBadge = `<span class="kc-followup future">${icon('calendar', 9, 2)} ${dateStr}</span>`;
       }
 
       return `<div class="kanban-card" data-url="${u}" draggable="true"
@@ -1005,7 +1122,7 @@ function renderKanban() {
         ondragleave="kdragLeave(event)"
         ondrop="kdrop(event, '${sid}')">
       <div class="kanban-col-hdr">
-        <span class="kanban-col-title" style="color:${s.color}">${s.emoji} ${esc(s.label)}</span>
+        <span class="kanban-col-title" style="color:${s.color};display:inline-flex;align-items:center;gap:6px">${stageDot(s.color, 6)}${esc(s.label)}</span>
         <span class="kanban-col-count">${colLeads.length}</span>
       </div>
       <div class="kanban-col-body">${cards || '<div style="font-size:11px;color:var(--text-muted);padding:6px 0;text-align:center">–</div>'}</div>
@@ -1068,15 +1185,7 @@ function rowHtml(l) {
   </tr>`;
 }
 
-function updateCounts() {
-  const counts = { all: leads.length, HOT: 0, WARM: 0, COOL: 0, DEAD: 0 };
-  leads.forEach(l => { const t = l.data?.tier; if (t && counts[t] !== undefined) counts[t]++; });
-  document.getElementById('fc-all').textContent = counts.all;
-  document.getElementById('fc-hot').textContent = counts.HOT;
-  document.getElementById('fc-warm').textContent = counts.WARM;
-  document.getElementById('fc-cool').textContent = counts.COOL;
-  document.getElementById('fc-dead').textContent = counts.DEAD;
-}
+function updateCounts() { renderFilterBar(); }
 
 // ── STAGE DROPDOWN ──
 function showStageDd(e, url) {
@@ -1088,7 +1197,7 @@ function showStageDd(e, url) {
   dd.style.cssText = `top:${rect.bottom + 4}px;left:${rect.left}px;min-width:180px`;
   dd.innerHTML = STAGE_ORDER.map(sid => {
     const s = STAGES[sid];
-    return `<button onclick="setStage(event,'${esc(url)}','${sid}')">${s.emoji} ${esc(s.label)}</button>`;
+    return `<button onclick="setStage(event,'${esc(url)}','${sid}')" style="display:flex;align-items:center;gap:7px">${stageDot(s.color, 6)}${esc(s.label)}</button>`;
   }).join('');
   document.body.appendChild(dd);
   activeDd = dd;
@@ -1176,7 +1285,7 @@ function renderDrawer(url) {
         const act = curStage === sid;
         return `<button class="stage-sel-btn${act ? ' s-active' : ''}"
           style="${act ? `color:${s.color};border-color:${s.color};background:${s.color}15` : ''}"
-          onclick="setDrawerStage('${sid}')" title="${esc(s.label)}">${s.emoji}<br>${esc(s.short)}</button>`;
+          onclick="setDrawerStage('${sid}')" title="${esc(s.label)}"><span style="display:flex;justify-content:center;margin-bottom:3px">${stageDot(s.color, 6)}</span>${esc(s.short)}</button>`;
       }).join('')}
     </div>
 
@@ -1201,7 +1310,7 @@ function renderDrawer(url) {
         <span class="d-name" id="ec-contact_name">${esc(dispName || '—')}</span>
         ${ov.contact_name ? '<span class="manual-badge">manuálne</span>' : ''}
         ${pc.role ? `<span style="font-size:11px;color:var(--text-muted)">${esc(pc.role)}</span>` : ''}
-        <button class="edit-pencil" onclick="editContact('contact_name')" title="Upraviť meno">✏️</button>
+        <button class="edit-pencil" onclick="editContact('contact_name')" title="Upraviť meno">${icon('pencil', 11)}</button>
       </div>
       <div class="d-row">
         ${ic.phone}
@@ -1209,14 +1318,14 @@ function renderDrawer(url) {
         ${ov.phone ? '<span class="manual-badge">manuálne</span>' : ''}
         ${dispPhone ? `<button class="icon-btn" onclick="copyText('${esc(dispPhone)}')">${ic.copy} Kopírovať</button>
         <a class="icon-btn" href="${esc(telHref(dispPhone))}">${ic.phone} Volať</a>` : ''}
-        <button class="edit-pencil${dispPhone ? '' : ' always'}" onclick="editContact('phone')" title="Upraviť tel.">✏️</button>
+        <button class="edit-pencil${dispPhone ? '' : ' always'}" onclick="editContact('phone')" title="Upraviť tel.">${icon('pencil', 11)}</button>
       </div>
       <div class="d-row">
         ${ic.mail}
         <span style="font-size:12px;color:var(--text-secondary)" id="ec-email">${dispEmail ? esc(dispEmail) : '<span style="color:var(--text-muted)">—</span>'}</span>
         ${ov.email ? '<span class="manual-badge">manuálne</span>' : ''}
         ${dispEmail ? `<button class="icon-btn" onclick="copyText('${esc(dispEmail)}')">${ic.copy} Kopírovať</button>` : ''}
-        <button class="edit-pencil${dispEmail ? '' : ' always'}" onclick="editContact('email')" title="Upraviť email">✏️</button>
+        <button class="edit-pencil${dispEmail ? '' : ' always'}" onclick="editContact('email')" title="Upraviť email">${icon('pencil', 11)}</button>
       </div>
       ${(pc.name_source || pc.phone_type || pc.proximity_chars != null) ? `
       <div class="d-meta">
@@ -1227,6 +1336,10 @@ function renderDrawer(url) {
     </div>
 
     <div class="d-divider"></div>
+    <div class="d-label">Reasoning</div>
+    <div class="reasoning-box">${esc(reasoning)}</div>
+
+    <div class="d-divider"></div>
     <div class="d-label">Register</div>
     <div class="d-reg-row ${reg.verified ? '' : 'unv'}">
       ${ic.shield}
@@ -1235,10 +1348,6 @@ function renderDrawer(url) {
     ${reg.konatel ? `<div class="d-reg-row">${ic.user}<span>Konateľ: ${esc(reg.konatel)}</span></div>` : ''}
     ${reg.konatelia_count ? `<div class="d-reg-row">${ic.user}<span>Konatelia: ${reg.konatelia_count}</span></div>` : ''}
     ${reg.velkost_firmy ? `<div class="d-reg-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/></svg><span>Veľkosť: ${esc(velLabel(reg.velkost_firmy))}</span></div>` : ''}
-
-    <div class="d-divider"></div>
-    <div class="d-label">Reasoning</div>
-    <div class="reasoning-box">${esc(reasoning)}</div>
 
     ${others.length ? `
     <div class="d-divider"></div>
@@ -1253,10 +1362,10 @@ function renderDrawer(url) {
     <div class="d-divider"></div>
     <div class="d-label">Rýchle akcie</div>
     <div class="quick-actions">
-      <button class="qa-btn" onclick="qaCall()" title="Označiť ako volaný bez odpovede">📞 Volaný</button>
-      <button class="qa-btn qa-green" onclick="qaReached()" title="Dovolal som sa — presunúť do Kontaktovaný">💬 Dovolal som sa</button>
-      <a class="qa-btn" href="mailto:${esc(dispEmail || '')}" onclick="if(!${!!dispEmail})event.preventDefault()">✉️ Poslať mail</a>
-      <button class="qa-btn qa-orange" onclick="qaSnoozePanelToggle()">💤 Odložiť +7 dní</button>
+      <button class="qa-btn" onclick="qaCall()" title="Označiť ako volaný bez odpovede">${icon('phone', 12)} Volaný</button>
+      <button class="qa-btn qa-green" onclick="qaReached()" title="Dovolal som sa — presunúť do Kontaktovaný">${icon('message', 12)} Dovolal som sa</button>
+      <a class="qa-btn" href="mailto:${esc(dispEmail || '')}" onclick="if(!${!!dispEmail})event.preventDefault()">${icon('mail', 12)} Poslať mail</a>
+      <button class="qa-btn qa-orange" onclick="qaSnoozePanelToggle()">${icon('moon', 12)} Odložiť +7 dní</button>
     </div>
     <div class="snooze-panel" id="snooze-panel">
       <div class="snooze-label">Odložiť do:</div>
@@ -1354,7 +1463,7 @@ function timeAgo(ts) {
 function stageHtml(stageId, urlEsc) {
   const s = STAGES[stageId] || STAGES.new;
   return `<span class="stage-pill" style="color:${s.color};background:${s.color}18"
-    onclick="showStageDd(event,'${urlEsc}')">${s.emoji} ${esc(s.short)} ${ic.chevD}</span>`;
+    onclick="showStageDd(event,'${urlEsc}')">${stageDot(s.color, 6)} ${esc(s.short)} ${ic.chevD}</span>`;
 }
 
 function notesHtml(lead) {
@@ -1481,8 +1590,8 @@ function snoozeConfirm() {
 
 // ── HISTORY ──
 const HIST_ICON = {
-  scraped: '🔄', stage_change: '→', note_added: '📝', note_deleted: '🗑',
-  contact_edited: '✏️', call: '📞', followup_set: '📅',
+  scraped: 'refresh', stage_change: 'arrowR', note_added: 'note', note_deleted: 'trash',
+  contact_edited: 'pencil', call: 'phone', followup_set: 'calendar',
 };
 const HIST_LABEL = {
   scraped: 'Scrape', stage_change: 'Fáza', note_added: 'Poznámka', note_deleted: 'Zmazaná pozn.',
@@ -1493,15 +1602,15 @@ function historyHtml(lead) {
   const hs = lead.history || [];
   if (!hs.length) return '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">Žiadna aktivita</div>';
   return hs.map(h => {
-    const icon = HIST_ICON[h.type] || '·';
+    const iconHtml = HIST_ICON[h.type] ? icon(HIST_ICON[h.type], 12) : '·';
     const label = HIST_LABEL[h.type] || h.type;
     const stageData = h.type === 'stage_change' ? h.data.split(' → ').map(sid => {
-      const s = STAGES[sid]; return s ? `${s.emoji} ${s.label}` : sid;
+      const s = STAGES[sid]; return s ? s.label : sid;
     }).join(' → ') : null;
     const body = stageData || (h.data ? esc(h.data.slice(0, 80)) : '');
     return `<div class="hist-item">
       <span class="hist-ts">${timeAgo(h.ts)}</span>
-      <span class="hist-icon">${icon}</span>
+      <span class="hist-icon" style="color:var(--text-muted)">${iconHtml}</span>
       <span class="hist-body"><strong>${esc(label)}</strong>${body ? ': ' + body : ''}</span>
     </div>`;
   }).join('');
@@ -1561,10 +1670,10 @@ function updateTodayWidget() {
   w.style.display = 'flex';
   w.innerHTML = `
     ${todayCount > 0 ? `<button class="tw-chip${widgetFollowupFilter ? ' active' : ''}" onclick="toggleWidgetFollowup()">
-      📞 <span class="tw-count">${todayCount}</span> follow-up dnes
+      ${icon('phone', 12)} <span class="tw-count">${todayCount}</span> follow-up dnes
     </button>` : ''}
     ${hotNew > 0 ? `<button class="tw-chip${widgetHotFilter ? ' active' : ''}" onclick="toggleWidgetHot()">
-      🔥 <span class="tw-count">${hotNew}</span> HOT nevolaných
+      ${icon('flame', 12)} <span class="tw-count">${hotNew}</span> HOT nevolaných
     </button>` : ''}
   `;
 }
@@ -1620,12 +1729,15 @@ function renderCalendar() {
     }).sort((a, b) => new Date(a.followup_date) - new Date(b.followup_date));
 
     const events = dayLeads.map(l => {
+      if (!passesFilters(l)) return '';
       const s = STAGES[l.stage || 'new'] || STAGES.new;
-      const name = l.data?.company_name || strip(l.url);
+      const name = strip(l.url);
+      const contact = (l.overrides || {}).contact_name || l.data?.primary_contact?.name || '';
       const time = new Date(l.followup_date).toLocaleTimeString('sk-SK', {hour:'2-digit', minute:'2-digit'});
       const u = esc(l.url);
       return `<div class="cal-event" style="border-left-color:${s.color}" data-url="${u}" onclick="openDrawer(this.dataset.url)">
         <div class="cal-event-name">${esc(name)}</div>
+        ${contact ? `<div class="cal-event-contact">${esc(contact)}</div>` : ''}
         <div class="cal-event-note">${time}${l.followup_note ? ' · ' + esc(l.followup_note.slice(0, 20)) : ''}</div>
       </div>`;
     }).join('');
@@ -1782,6 +1894,7 @@ function switchSource(src) {
 function onScrapeClick() {
   const val = document.getElementById('url-input').value.trim();
   if (!val && activeSource === 'url') return;
+  scrapeChannel = activeSource;
   if (activeSource === 'url') { scrape(val); return; }
   if (activeSource === 'profesia') { searchProfesia(val); return; }
   if (activeSource === 'heureka') { searchHeureka(val); return; }
@@ -1960,7 +2073,7 @@ function showSrcResults(results, source, totalFound, title) {
       <input type="checkbox" id="src-cb-${i}" ${isAgency ? '' : 'checked'} ${!url ? 'disabled' : ''} onchange="updateSrcCount()">
       <label for="src-cb-${i}" class="src-item-info" style="cursor:pointer">
         <div class="src-item-name">${name}</div>
-        ${url ? `<div class="src-item-url">${esc(url)}</div>` : `<div class="src-item-warn">⚠ URL neznáme — nebude scrapované</div>`}
+        ${url ? `<div class="src-item-url">${esc(url)}</div>` : `<div class="src-item-warn">${icon('alert', 10, 2)} URL neznáme — nebude scrapované</div>`}
         ${meta ? `<div class="src-item-meta">${esc(meta)}</div>` : ''}
         ${isAgency ? `<div class="src-item-meta" style="color:var(--tier-dead)">Personálna agentúra</div>` : ''}
       </label>
@@ -2023,19 +2136,11 @@ document.getElementById('csv-file').addEventListener('change', e => {
   reader.onload = ev => {
     const urls = parseCsv(ev.target.result);
     if (!urls.length) { toast('Žiadne URL v súbore', 'error'); return; }
+    scrapeChannel = 'csv';
     showCsvModal(urls);
   };
   reader.readAsText(file);
   e.target.value = '';
-});
-
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    filter = btn.dataset.filter;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    render();
-  });
 });
 
 document.querySelector('.col-score.sortable')?.addEventListener('click', () => {
@@ -2054,6 +2159,9 @@ document.addEventListener('keydown', e => {
 });
 
 // ── INIT ──
+document.querySelector('#vbtn-table .vb-ic').innerHTML = icon('listView', 12, 2);
+document.querySelector('#vbtn-kanban .vb-ic').innerHTML = icon('kanbanView', 12, 2);
+document.querySelector('#vbtn-calendar .vb-ic').innerHTML = icon('calendar', 12, 2);
 loadLeads();
 render();
 updateTodayWidget();
