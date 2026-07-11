@@ -57,7 +57,21 @@ def _cache_set(ico: str, data: dict) -> None:
 # ---------------------------------------------------------------------------
 
 _ICO_RE = re.compile(
-    r'(?:IČO|IČ|ICO|IC)\s*[:\s]\s*(\d[\d\s]{5,9}\d)',
+    r'(IČO|IČ|ICO|IC)\s*[:\s]\s*(\d[\d\s]{5,9}\d)',
+    re.IGNORECASE,
+)
+
+# DIČ/IČ DPH na stránke: CZ12345678(90) / SK1234567890 — deklarácia VLASTNEJ firmy
+_DIC_DECL_RE = re.compile(r'\b(?:CZ|SK)\s?(\d{8,10})\b')
+
+# IČO v okolí týchto slov patrí tretej strane (GDPR zoznamy spracovateľov,
+# dopravcovia, platobné brány) — silná penalizácia
+_THIRD_PARTY_RE = re.compile(
+    r'zpracovatel|spracovateľ|spracovatel'
+    r'|dopravce|dopravca|přepravce|prepravca'
+    r'|platební\s+brán|platobná\s+brán|platobna\s+bran'
+    r'|dodavatel|dodávateľ|subdodavatel|subdodávateľ'
+    r'|zprostředkovatel|sprostredkovateľ|sprostredkovatel',
     re.IGNORECASE,
 )
 
@@ -69,9 +83,15 @@ def extract_ico_from_text(text: str) -> dict:
 
     best = None
     best_conf = 0
+    # country signály zbierame zo VŠETKÝCH výskytov daného IČO, nie len z víťazného
+    countries_by_ico: dict = {}
+
+    # Krížová kontrola DIČ↔IČO: IČO obsiahnuté v DIČ na stránke vyhráva vždy
+    # (CZ DIČ s.r.o. = CZ + IČO; DIČ deklaruje vlastnú firmu, nie tretiu stranu)
+    dic_icos = {dm.group(1)[-8:] for dm in _DIC_DECL_RE.finditer(text)}
 
     for m in _ICO_RE.finditer(text):
-        raw = m.group(1).replace(" ", "")
+        raw = m.group(2).replace(" ", "")
         if len(raw) != 8 or not raw.isdigit():
             continue
         if len(set(raw)) <= 2:
@@ -83,23 +103,42 @@ def extract_ico_from_text(text: str) -> dict:
 
         conf = 5
         ctx_lower = ctx.lower()
-        if "ičo" in ctx_lower or "ico" in ctx_lower:
+        # +2 len ak label IČO/ICO patrí TOMUTO číslu (z vlastného matchu),
+        # nie hocijakému výskytu v okne ±50 (ten môže patriť susednej firme)
+        if m.group(1).upper() in ("IČO", "ICO"):
             conf += 2
-        if re.search(r'dič|dic|ič dph|ic dph', ctx_lower):
+        if re.search(r'\b(?:dič|dic)\b|ič\s?dph|ic\s?dph', ctx_lower):
             conf += 1
         if re.search(r's\.?\s*r\.?\s*o|a\.?\s*s\.', ctx_lower):
             conf += 1
+        # IČO tretej strany (spracovateľ/dopravca/platobná brána v ±100 znakoch)
+        tp_window = text[max(0, m.start() - 100):m.end() + 100]
+        if _THIRD_PARTY_RE.search(tp_window):
+            conf -= 5
+        # DIČ↔IČO zhoda: automatický víťaz bez ohľadu na conf ostatných
+        if raw in dic_icos:
+            conf += 100
 
+        # DIČ prefix s voliteľnou medzerou: "CZ11734906" aj "CZ 11734906"
+        window = text[max(0, m.start()-200):m.end()+200]
         country = None
-        if re.search(r'\bSK\d{10}\b', text[max(0, m.start()-200):m.end()+200]):
+        if re.search(r'\bSK\s?\d{10}\b', window):
             country = "sk"
-        elif re.search(r'\bCZ\d{8,10}\b', text[max(0, m.start()-200):m.end()+200]):
+        elif re.search(r'\bCZ\s?\d{8,10}\b', window):
             country = "cz"
+        if country:
+            countries_by_ico.setdefault(raw, set()).add(country)
 
         if conf > best_conf:
             best_conf = conf
             best = {"ico": raw, "country": country, "confidence": conf, "context": ctx}
 
+    if best:
+        seen = countries_by_ico.get(best["ico"], set())
+        if not best["country"] and len(seen) == 1:
+            best["country"] = next(iter(seen))
+        elif len(seen) == 1:
+            best["country"] = next(iter(seen))
     return best or {"ico": None, "country": None, "confidence": 0, "context": ""}
 
 
@@ -356,6 +395,37 @@ def lookup_ares(ico: str) -> dict:
                     print(f"[WARN] Justice.cz: no subjektId found for IČO {ico}")
     except Exception as e:
         print(f"[WARN] Justice.cz scrape error for {ico}: {e}")
+
+    # Step 3: ARES VR (verejný rejstřík) JSON — spoľahlivejší než justice.cz HTML scrape
+    if not result["konatelia"]:
+        try:
+            with httpx.Client(timeout=15, follow_redirects=True) as client:
+                vr = client.get(
+                    f"https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty-vr/{ico}",
+                    headers=_HEADERS,
+                )
+            if vr.status_code == 200:
+                zaznamy = vr.json().get("zaznamy") or [{}]
+                members = []
+                for org in (zaznamy[0].get("statutarniOrgany") or []):
+                    funkcia = ((org.get("nazevOrganu") or {}).get("value")
+                               if isinstance(org.get("nazevOrganu"), dict)
+                               else org.get("nazevOrganu")) or "jednatel"
+                    for cl in (org.get("clenoveOrganu") or []):
+                        if cl.get("datumZaniku"):
+                            continue  # zaniknuté členstvo
+                        fo = cl.get("fyzickaOsoba") or {}
+                        jmeno, prijmeni = fo.get("jmeno"), fo.get("prijmeni")
+                        if jmeno and prijmeni:
+                            nice = f"{jmeno.capitalize()} {prijmeni.capitalize()}"
+                            members.append({"meno": nice,
+                                            "funkcia": str(funkcia).lower(),
+                                            "od": cl.get("datumVzniku")})
+                if members:
+                    result["konatelia"] = members
+                    print(f"[OK] ARES VR: {len(members)} members for IČO {ico}")
+        except Exception as e:
+            print(f"[WARN] ARES VR error for {ico}: {e}")
 
     _cache_set(f"cz_{ico}", result)
     return result

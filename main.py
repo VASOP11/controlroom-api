@@ -909,12 +909,25 @@ _IGNORED_CTX_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Placeholder/example emaily z formulárov a šablón — nikdy to nie je reálny kontakt
+_PLACEHOLDER_EMAILS = frozenset({
+    "jan@novak.sk", "jan@novak.cz", "jan.novak@example.com",
+    "meno@priezvisko.sk", "vas@email.sk", "vas@email.cz", "tvoj@email.sk",
+    "email@example.com", "info@example.com", "test@test.sk", "test@test.cz",
+})
+_PLACEHOLDER_DOMAINS = frozenset({"example.com", "example.org", "email.tld", "domena.sk", "domena.cz"})
+
+
 def _email_is_ignored(addr: str, context: str = "") -> bool:
-    """True ak email patrí dopravcovi, SOI, banke, Heureke."""
+    """True ak email patrí dopravcovi, SOI, banke, Heureke, alebo je placeholder."""
     if addr and "@" in addr:
+        if addr.lower().strip() in _PLACEHOLDER_EMAILS:
+            return True
         domain = addr.split("@")[-1].lower().strip()
         if domain.startswith("www."):
             domain = domain[4:]
+        if domain in _PLACEHOLDER_DOMAINS:
+            return True
         if domain in IGNORED_CONTACT_DOMAINS:
             return True
         for ign in IGNORED_CONTACT_DOMAINS:
@@ -1780,16 +1793,16 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
     phone_pattern = re.compile(
         r'(?:'
         # International prefix (+421, +420, 00421, 00420)
-        r'(?:00421|00420|\+421|\+420)\s?(?:\d[\s\-]?){8}\d'
+        r'(?:00421|00420|\+421|\+420)\s?(?:\d[\s\-]?){8}\d(?!\d)'
         r'|'
         # SK landline 0X / XXXX XXXX — predvoľba + separator (aj "02 / 1234 5678", "02/58272 172") + číslo
-        r'0[1-9][\s\/\-]{1,3}\d{3,5}[\s\/\-]?\d{3,4}'
+        r'(?<!\d)0[1-9][\s\/\-]{1,3}\d{3,5}[\s\/\-]?\d{3,4}(?!\d)'
         r'|'
         # SK mobile 09XX XXX XXX (10 číslic)
-        r'0[689]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}'
+        r'(?<!\d)0[689]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
         r'|'
         # Ostatné 0XX XXX XXX (SK/CZ s leading 0, 10 číslic) — posledná skupina 3 ALEBO 4 číslice
-        r'0\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3,4}'
+        r'(?<!\d)0\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3,4}(?!\d)'
         r'|'
         # Bare 9 číslic bez predvoľby (CZ/SK mobil/pevná): 317804046, 777592979 ...
         r'(?<!\d)[2-9]\d{2}[\s\-\/]?\d{3}[\s\-\/]?\d{3}(?!\d)'
@@ -1799,6 +1812,7 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         r')'
     )
     seen_phones = set()
+    _BANK_CTX_RE = re.compile(r'účt|uct|IBAN|SWIFT|BIC\b|banka|bank\b', re.IGNORECASE)
     for m in phone_pattern.finditer(stripped_for_phones):
         raw = m.group(0).strip()
         norm = re.sub(r'\D', '', raw)
@@ -1809,6 +1823,24 @@ def extract_all_candidates(text: str) -> Dict[str, List[Dict[str, Any]]]:
         # preskočiť čísla ktoré sú IČO (aj s leading zeros: 0002605074 → 02605074)
         if norm in ico_digits_set or norm.lstrip('0').zfill(8) in ico_digits_set:
             print(f"⚠️ Preskakujem IČO ako telefón: {raw}")
+            continue
+        # preskočiť čísla účtov: "2202030979/8330" (kód banky za lomkou)
+        # alebo "účet/IBAN/SWIFT" v okolí (80 pred / 30 za — IBAN býva ďalej pred číslom)
+        tail = stripped_for_phones[m.end():m.end() + 6]
+        around = stripped_for_phones[max(0, m.start() - 80):m.end() + 30]
+        if re.match(r'\s?/\s?\d{4}\b', tail) or _BANK_CTX_RE.search(around):
+            print(f"⚠️ Preskakujem číslo účtu ako telefón: {raw}")
+            continue
+        # preskočiť DIČ: číslice hneď za písmenami CZ/SK ("DIČ: CZ460412431")
+        pre2 = stripped_for_phones[max(0, m.start() - 2):m.start()]
+        if pre2.upper() in ("CZ", "SK"):
+            print(f"⚠️ Preskakujem DIČ ako telefón: {raw}")
+            continue
+        # preskočiť produktové kódy: "Kód: 501150129", SKU/EAN label do 15 znakov pred číslom
+        pre15 = stripped_for_phones[max(0, m.start() - 15):m.start()]
+        if re.search(r'\b(?:k[óo]d(?:\s+v[ýy]robku)?|product\s*code|sku|ean)\s*[:.]?\s*$',
+                     pre15, re.IGNORECASE):
+            print(f"⚠️ Preskakujem produktový kód ako telefón: {raw}")
             continue
         seen_phones.add(norm)
         # Kontext ber z pôvodného norm_text (pred odstránením tel: prefixov)
@@ -2338,6 +2370,13 @@ class ScrapeRequest(BaseModel):
 
 # ─── v7 contact pairing (Kroky 1-5) ─────────────────────────────────────────
 
+_FOUNDER_ROLE_RE = re.compile(
+    r'zakladateľ\w*|zakladatel\w*|spoluzakladateľ\w*|spoluzakladatel\w*'
+    r'|majiteľ(?:ka)?|majitel(?:ka)?|\bCEO\b|\bfounder\b|co-founder'
+    r'|ředitel(?:ka)?|riaditeľ(?:ka)?',
+    re.IGNORECASE,
+)
+
 _PAIR_ROLE_RE = re.compile(
     r'vedúci|vedúca|manažér|obchodný|zákaznícky|konateľ|konateľka|'
     r'jednateľ|riaditeľ|majiteľ|prevádzkovateľ|CEO|'
@@ -2377,180 +2416,709 @@ def _is_person_name(name: str) -> bool:
     return not any(p.lower().rstrip(".") in _COMPANY_SUFFIXES for p in parts)
 
 
+# ─── v8 helpers: veľkosť firmy, roly telefónov, meno@firma pattern ───────────
+
+_INFO_CTX_RE = re.compile(
+    r'zákazníck|zakaznick|podpora|helpdesk|hotline|infolink|call\s*centr|'
+    r'\binfo\b|otváracie|otevírací|objednávk|objednavk',
+    re.IGNORECASE)
+
+# (label, quality, regex) — vyšší quality = bližšie k rozhodovateľovi
+# quality: 5=osobné meno pri čísle, 4=vedenie, 3=obchod/marketing,
+#          2=prevádzka/bez kontextu, 1=info/sklad/servis
+_ROLE_CTX_PATTERNS = [
+    ("vedenie", 4, re.compile(
+        r'konateľ|konatel|jednatel|riaditeľ|reditel|majiteľ|majitel|'
+        r'zakladateľ|zakladatel|founder|owner|\bCEO\b|vedenie', re.IGNORECASE)),
+    ("obchodné oddelenie", 3, re.compile(
+        r'obchodn[éíeý]|veľkoobchod|velkoobchod|\bsales\b|\bB2B\b', re.IGNORECASE)),
+    ("marketing", 3, re.compile(r'marketing|\bPR\b', re.IGNORECASE)),
+    ("prevádzka", 2, re.compile(r'prevádzk|provoz', re.IGNORECASE)),
+    ("sklad/doprava/servis", 1, re.compile(
+        r'sklad|doprav|expedí|expedic|reklamác|reklamac|servis', re.IGNORECASE)),
+]
+
+
+_PHONE_MARKER_RE = re.compile(
+    r'tel|mobil|phone|volajte|zavolajte|linka|hotline|kontakt|\+42', re.IGNORECASE)
+
+
+def _phone_role_label(entry: dict) -> tuple:
+    """(label, quality) pre telefón podľa kontextu okolo čísla."""
+    ctx = entry.get("context") or ""
+    val = entry.get("value") or ""
+    names = [n for n in (entry.get("near_names") or []) if _first_name_known(n)]
+    if names:
+        return (f"osoba: {names[0]}", 5)
+    # Neformátovaný 9-ciferný blok bez tel markera v kontexte = pravdepodobne
+    # produktový kód/EAN — role label z okolitého textu produktov je falošný
+    looks_like_phone = bool(re.search(r'[\s\-/]', val) or val.startswith(('+', '00')))
+    ctx_has_marker = bool(_PHONE_MARKER_RE.search(ctx))
+    for label, rank, rx in _ROLE_CTX_PATTERNS:
+        if rx.search(ctx):
+            if rank <= 2 and _INFO_CTX_RE.search(ctx):
+                return ("info/zákaznícky servis", 1)
+            if rank >= 3 and not looks_like_phone and not ctx_has_marker:
+                return (f"{label} (nespoľahlivé — možný produktový kód)", 2)
+            return (label, rank)
+    if _INFO_CTX_RE.search(ctx):
+        return ("info/zákaznícky servis", 1)
+    return ("bez kontextu", 2)
+
+
+def _find_name_at_email_pattern(emails: list, konatel: Optional[str]) -> Optional[dict]:
+    """Pravidlo #4: email v tvare meno.priezvisko@ / priezvisko@ / m.priezvisko@
+    zhodný s registrovaným konateľom → silný signál totožnosti."""
+    if not konatel or not emails:
+        return None
+    parts = [p for p in konatel.replace(',', ' ').split()
+             if len(p) > 2 and not p.endswith('.')]
+    if not parts:
+        return None
+    first = _de_accent(parts[0]).lower()
+    last = _de_accent(parts[-1]).lower()
+    pats = {f"{first}.{last}", f"{last}.{first}", last,
+            f"{first}{last}", f"{first[0]}.{last}", f"{first[0]}{last}"}
+    if len(first) >= 4:
+        pats.add(first)  # juraj@minilove.sk — bežné pri malých firmách
+    pats_clean = {re.sub(r'[^a-z]', '', p) for p in pats}
+    for e in emails:
+        local = _de_accent(e["value"].split("@")[0].lower())
+        if local in pats or re.sub(r'[^a-z]', '', local) in pats_clean:
+            return e
+    return None
+
+
+async def _social_follower_signal(home_html: bytes) -> Optional[dict]:
+    """Nájde FB/IG odkaz na homepage a skúsi vytiahnuť počet followerov
+    z metadát stránky (og:description a pod.), nie cez API."""
+    if not home_html:
+        return None
+    html_str = home_html.decode('utf-8', errors='replace')
+    m = re.search(r'https?://(?:www\.)?(?:facebook\.com|instagram\.com)/[A-Za-z0-9_.\-%]+',
+                  html_str)
+    if not m:
+        return None
+    social_url = m.group(0).split('?')[0]
+    if any(x in social_url.lower() for x in ('/sharer', '/share', '/plugins', '/tr')):
+        return None
+    try:
+        async with httpx.AsyncClient(
+                timeout=8, follow_redirects=True,
+                headers={"User-Agent": random.choice(_USER_AGENTS)}) as c:
+            r = await c.get(social_url)
+        page = r.text[:300000]
+    except Exception:
+        return None
+    mm = re.search(
+        r'([\d][\d\s.,\xa0]{0,10}?)\s*(tis\.?|K|M)?\s*'
+        r'(?:followers|sledovateľov|sledujících|To sa mi páči|Páči sa mi|likes|lidem se to líbí)',
+        page, re.IGNORECASE)
+    if not mm:
+        return None
+    num = mm.group(1).replace(' ', '').replace('\xa0', '').replace(',', '.')
+    try:
+        val = float(num)
+    except ValueError:
+        return None
+    suf = (mm.group(2) or '').lower()
+    if suf.startswith('tis') or suf == 'k':
+        val *= 1000
+    elif suf == 'm':
+        val *= 1_000_000
+    return {"followers": int(val), "url": social_url}
+
+
+_BUCKET_FROM_CAT = {"solo": "1-3", "micro": "4-9", "small": "10+",
+                    "medium": "10+", "large": "10+"}
+_ARES_RAW_BUCKET = {"NULA": "1-3", "JEDNA_AZ_CTYRI": "1-3", "PET_AZ_DEVET": "4-9"}
+
+
+async def _detect_company_size(jurisdiction: str, registry_data: dict,
+                               home_html: bytes, nav_count: int) -> dict:
+    """Pravidlo #2: odhad veľkosti firmy.
+    CZ: ARES kategória. SK poradie: register (FinStat/RPO) → FB/IG followers
+    → počet štatutárov → rozsah webu → konzervatívny odhad (radšej podceniť)."""
+    # Živnostník (RPO sourceRegister code 2) → vždy 1-3, žiadna zhoda mena netreba
+    if registry_data.get("is_sole_trader"):
+        return {"bucket": "1-3", "source": "RPO (živnostník)",
+                "confidence": "high", "detail": "SZČO"}
+    raw = (registry_data.get("velkost_firmy_raw") or "").upper().replace(" ", "_")
+    cat = registry_data.get("velkost_category")
+    if jurisdiction == "CZ" and (raw or cat):
+        bucket = _ARES_RAW_BUCKET.get(raw) or _BUCKET_FROM_CAT.get(cat, "4-9")
+        return {"bucket": bucket, "source": "ARES", "confidence": "high",
+                "detail": raw or cat}
+    if cat:
+        return {"bucket": _BUCKET_FROM_CAT.get(cat, "4-9"),
+                "source": registry_data.get("source") or "register",
+                "confidence": "medium", "detail": cat}
+    social = None
+    try:
+        social = await _social_follower_signal(home_html)
+    except Exception as e:
+        print(f"social signal chyba: {e}")
+    if social:
+        f = social["followers"]
+        bucket = "10+" if f > 5000 else ("1-3" if f < 500 else "4-9")
+        return {"bucket": bucket, "source": f"FB/IG followers ({f})",
+                "confidence": "medium", "detail": social["url"]}
+    kc = registry_data.get("konatelia_count", 0)
+    if kc >= 4:
+        return {"bucket": "10+", "source": "počet štatutárov (RPO/ORSR)",
+                "confidence": "low", "detail": f"{kc} štatutárov"}
+    if kc >= 2:
+        return {"bucket": "4-9", "source": "počet štatutárov (RPO/ORSR)",
+                "confidence": "low", "detail": f"{kc} štatutári"}
+    if nav_count >= 18:
+        return {"bucket": "4-9", "source": "rozsah webu",
+                "confidence": "low", "detail": f"{nav_count}+ podstránok"}
+    # ponytail: konzervatívny fallback — radšej podceniť ako preceniť
+    return {"bucket": "1-3" if kc == 1 else "4-9", "source": "odhad",
+            "confidence": "low", "detail": "žiadny priamy zdroj veľkosti"}
+
+
+_COUNTRY_TLD = {"CZ": ".cz", "SK": ".sk", "DE": ".de"}
+
+
+async def _localize_scrape_url(base_url: str, combined_text: str,
+                               extra_text: str = "") -> Optional[dict]:
+    """Pravidlo #1: ak sídlo firmy (DIČ/adresné signály) nesedí s TLD webu,
+    skús lokalizovanú verziu (alternatívna doména alebo /cz/ cesta)."""
+    jur = detect_jurisdiction(combined_text, base_url, extra_text)
+    country = jur.get("jurisdiction")
+    if (country in (None, "UNKNOWN")
+            or country == jur.get("domain_country")
+            or jur.get("confidence", 0) < 4):
+        return None
+    tld = _COUNTRY_TLD.get(country)
+    if not tld:
+        return None
+    parsed = urlparse(base_url)
+    root, _, _cur = parsed.netloc.rpartition('.')
+    candidates = []
+    if root:
+        candidates.append(f"{parsed.scheme}://{root}{tld}")
+    candidates.append(base_url + "/" + tld.lstrip('.'))  # /cz/, /de/ cesta
+    loop = asyncio.get_event_loop()
+    for cand in candidates:
+        try:
+            html = await loop.run_in_executor(None, fetch_html_httpx, cand)
+            text = extract_text_from_html(html) if html else ""
+            if text and len(text) > 500 and not is_garbled_content(text):
+                return {"url": cand, "jurisdiction": country,
+                        "signals": jur.get("signals", [])}
+        except Exception:
+            continue
+    return None
+
+
+_GENERIC_EMAIL_PRIORITY = [
+    (re.compile(r'^(obchod|sales|b2b|velkoobchod|veľkoobchod)', re.IGNORECASE),
+     "obchodný email"),
+    (re.compile(r'^(marketing|pr)$', re.IGNORECASE), "marketingový email"),
+    (re.compile(r'^(objednavky|shop|eshop)', re.IGNORECASE), "prevádzkový email"),
+]
+
+
+def _select_best_email(emails: list, konatel: Optional[str]) -> tuple:
+    """Pravidlo #6: (email, email_type, dôvod výberu).
+    Preferencia: konateľ-pattern > osobný > rola (obchod@/sales@/marketing@) > info@."""
+    if not emails:
+        return None, None, "žiadny email nenájdený na webe"
+    pat = _find_name_at_email_pattern(emails, konatel)
+    if pat:
+        return pat["value"], "personal", \
+            f"zodpovedá menu konateľa ({konatel}) — meno@firma pattern"
+    for e in emails:
+        et = _classify_email_type(e["value"], e.get("context", ""))
+        if et == "personal":
+            return e["value"], "personal", "osobný tvar adresy (meno v adrese)"
+    for rx, label in _GENERIC_EMAIL_PRIORITY:
+        for e in emails:
+            if rx.match(e["value"].split("@")[0]):
+                return e["value"], "generic", f"{label} — lepší pre outreach ako všeobecný info@"
+    return emails[0]["value"], "generic", \
+        "iba všeobecný email (info@/kontakt@) — nič lepšie na webe nenájdené"
+
+
 def pair_contact_with_phone(
     registry_data: dict,
     osoby: list,
     candidates: dict,
     combined_text: str,
     jurisdiction: str,
+    size_info: Optional[dict] = None,
+    domain: str = "",
 ) -> dict:
     """
-    Implementuje Kroky 1-5 zo špecifikácie.
-    Vracia primary_contact, other_contacts, reasoning, velkost_category.
+    v8: presné scoring pravidlá podľa veľkosti firmy (pravidlá #0-#6).
+    Nikdy sa neuspokojí s prvým číslom — vyhodnotí VŠETKY čísla s kontextom.
+    Vracia primary_contact, other_contacts, reasoning, reasoning_structured,
+    match_case, velkost_category, size_info.
     """
-    reasoning: list = []
     norm_text = re.sub(r'\s+', ' ', combined_text.replace('\xa0', ' '))
     norm_lower = norm_text.lower()
+    size_info = size_info or {"bucket": "4-9", "source": "odhad",
+                              "confidence": "low", "detail": ""}
+    bucket = size_info.get("bucket", "4-9")
 
     all_phones = [p for p in candidates.get("phones", []) if not p.get("is_fax")]
     all_emails = candidates.get("emails", [])
-
-    def _score_phone(p: dict) -> int:
-        # ponytail: score phones for fallback selection.
-        # Priority 1: known SK/CZ first name found near phone (strong person signal).
-        # Priority 2: role keyword in context (konateľ, kontakt, etc.).
-        # No abs_pos scoring — deep-page EAN codes have high abs_pos too.
-        s = 0
-        for n in (p.get("near_names") or []):
-            if _first_name_known(n):  # SK/CZ known first name → real person, not product
-                s += 10
-                break
-        ctx = (p.get("context") or "").lower()
-        if re.search(r'konateľ|zodpovedn|kontakt|prevádzkov|vedúci', ctx):
-            s += 5
-        return s
-
-    first_phone = (max(all_phones, key=_score_phone)["value"] if all_phones else None)
-    first_email = all_emails[0]["value"] if all_emails else None
-    first_email_type = _classify_email_type(first_email, "") if first_email else None
-
     konatel = registry_data.get("konatel")
-    konatelia_count = registry_data.get("konatelia_count", 0)
-    emp_cat = _estimate_firm_size(jurisdiction, konatelia_count, osoby, registry_data)
+    konatel_is_person = bool(konatel and _is_person_name(konatel))
+    emp_cat_legacy = _estimate_firm_size(
+        jurisdiction, registry_data.get("konatelia_count", 0), osoby, registry_data)
+
+    # Pravidlo #0: VŠETKY čísla s rolou/kontextom — rozhodnutie až potom
+    phones_ctx = []
+    for p in all_phones:
+        label, quality = _phone_role_label(p)
+        phones_ctx.append({**p, "role_label": label, "quality": quality})
+
+    # Pravidlo #6 + #4: výber najlepšieho emailu s dôvodom
+    best_email, best_email_type, email_reason = _select_best_email(
+        all_emails, konatel if konatel_is_person else None)
+    pattern_email = (_find_name_at_email_pattern(all_emails, konatel)
+                     if konatel_is_person else None)
+
+    # Pozície mena konateľa v texte (word-boundary; plné meno > priezvisko)
+    name_positions: list = []
+    if konatel_is_person:
+        terms = [konatel] + ([konatel.split()[-1]] if len(konatel.split()) > 1 else [])
+        for term in terms:
+            tl = term.lower()
+            start = 0
+            while True:
+                idx = norm_lower.find(tl, start)
+                if idx < 0:
+                    break
+                after = idx + len(tl)
+                before_ok = idx == 0 or not norm_lower[idx - 1].isalpha()
+                after_ok = after >= len(norm_lower) or not norm_lower[after].isalpha()
+                if before_ok and after_ok:
+                    name_positions.append(idx)
+                start = idx + 1
+            if name_positions:
+                break
+    # Pravidlo #4: pozície meno@firma emailu sa rátajú ako pozície mena
+    email_pattern_used = False
+    if pattern_email:
+        ev = pattern_email["value"].lower()
+        start = 0
+        while True:
+            idx = norm_lower.find(ev, start)
+            if idx < 0:
+                break
+            name_positions.append(idx)
+            email_pattern_used = True
+            start = idx + 1
+
+    name_found_on_web = bool(name_positions)
+
+    # Bod 2: jedna normalizácia — pozície mena AJ čísla v norm_text.
+    # Vzdialenosť sa meria k NAJBLIŽŠIEMU výskytu čísla, nie k prvému
+    # (číslo opakované vo footri sa už neukotví na prvý výskyt).
+    def _phone_positions(value: str) -> list:
+        v = re.sub(r'\s+', ' ', value)
+        out, start = [], 0
+        while True:
+            i = norm_text.find(v, start)
+            if i < 0:
+                break
+            out.append(i)
+            start = i + 1
+        return out
+
+    def _dist(p):
+        if not name_positions:
+            return None
+        occ = _phone_positions(p["value"])
+        if not occ and p.get("abs_pos") is not None:
+            occ = [p["abs_pos"]]
+        if not occ:
+            return None
+        return min(abs(i - np) for i in occ for np in name_positions)
+
+    best_phone_entry = None
+    best_dist = None
+    if name_positions and phones_ctx:
+        pairs = [(p, _dist(p)) for p in phones_ctx]
+        pairs = [t for t in pairs if t[1] is not None]
+        if pairs:
+            best_phone_entry, best_dist = min(pairs, key=lambda t: t[1])
+
+    def _sel_key(p):
+        # tie-break: formátované číslo (medzery/+42x) > holý číselný blok
+        formatted = 1 if (re.search(r'[\s\-/]', p["value"]) or p["value"].startswith(('+', '00'))) else 0
+        return (p["quality"], formatted)
+
+    best_role_phone = max(phones_ctx, key=_sel_key) if phones_ctx else None
+
+    # Číslo s menom INEJ osoby nie je kandidát na "číslo majiteľa" —
+    # inak by reasoning tvrdil, že číslo Blanky patrí konateľovi Jiřímu
+    def _is_owner_candidate(p):
+        if p["quality"] == 5 and konatel_is_person:
+            person = p["role_label"].replace("osoba: ", "").lower()
+            kon_l = konatel.lower()
+            surname = konatel.split()[-1].lower()
+            if kon_l not in person and surname not in person:
+                return False
+        return True
+
+    _owner_pool = [p for p in phones_ctx if _is_owner_candidate(p)]
+    best_owner_phone = (max(_owner_pool, key=_sel_key)
+                        if _owner_pool else best_role_phone)
+
+    # Pravidlo #3e: číslo v obchodných podmienkach blízko IČO/DIČ
+    vop_phone = None
+    for p in phones_ctx:
+        ctx_l = (p.get("context") or "").lower()
+        if re.search(r'ičo|\bico\b|dič|obchodn[ée] podmienky', ctx_l) and p["quality"] >= 2:
+            vop_phone = p
+            break
+
+    # web-only fallback: iná osoba s rolou + telefónom (keď register nedal meno)
+    web_person = None
+    if not konatel_is_person:
+        for o in osoby:
+            if o.get("rola") and _PAIR_ROLE_RE.search(o["rola"]) and o.get("telefon_osoby"):
+                web_person = o
+                break
+
+    # ── Bod 6: tímová stránka ako prioritný zdroj roly ──
+    # Osoba s founder/owner popiskom do 30 znakov od mena na webe má prednosť
+    # pred registrovým konateľom, ak sa nezhodujú (svihej.cz case).
+    _domain_core = _de_accent((domain or "").split(".")[0].replace("www.", "").lower())
+
+    def _founder_role_near_name(meno: str, rola: str) -> bool:
+        ml, rl = meno.lower(), rola.lower()
+        for rm in re.finditer(re.escape(rl), norm_lower):
+            lo = norm_lower[max(0, rm.start() - 30 - len(ml)):rm.start()]
+            hi = norm_lower[rm.end():rm.end() + 30 + len(ml)]
+            if ml not in lo and ml not in hi:
+                continue
+            # Guard: rola nasledovaná CUDZÍM brandom ("CEO Be Lenka" v zozname
+            # prispievateľov) nie je rola v TEJTO firme (clovecinahra.sk case)
+            after = norm_text[rm.end():rm.end() + 30].lstrip(" ,–-")
+            if _de_accent(after.lower()).startswith(_de_accent(ml)):
+                return True  # "rola Meno" poradie — za rolou je samotné meno
+            mcaps = re.match(r'[A-ZÁ-Ž][\w\-á-žÁ-Ž]*(?:\s+[A-ZÁ-Ž][\w\-á-žÁ-Ž]*)?', after)
+            if mcaps and _domain_core:
+                toks = [_de_accent(t).lower() for t in mcaps.group(0).split()]
+                if not any(t in _domain_core or _domain_core in t
+                           for t in toks if len(t) > 2):
+                    continue  # rola patrí inej firme
+            return True
+        return False
+
+    web_founder = None
+    for o in osoby:
+        if (o.get("rola") and _FOUNDER_ROLE_RE.search(o["rola"])
+                and _founder_role_near_name(o["meno"], o["rola"])):
+            if web_founder is None or (o.get("telefon_osoby")
+                                       and not web_founder.get("telefon_osoby")):
+                web_founder = o
+        if web_founder and web_founder.get("telefon_osoby"):
+            break
+
+    founder_conflict = False
+    if web_founder and konatel_is_person:
+        surname = konatel.split()[-1].lower()
+        founder_conflict = surname not in web_founder["meno"].lower()
+
+    # ── Rozhodnutie o prípade podľa veľkosti (pravidlo #3) ──
+    match_case = None
+    sel = None
+    sel_dist = None
+    if phones_ctx:
+        if bucket == "1-3" and konatel_is_person:
+            match_case = "tiny_any_phone"
+            sel = best_phone_entry if best_dist is not None else best_owner_phone
+            sel_dist = best_dist
+        elif bucket in ("1-3", "4-9"):
+            if konatel_is_person and name_found_on_web and best_dist is not None and best_dist <= 300:
+                match_case = "small_match"
+                sel, sel_dist = best_phone_entry, best_dist
+            elif konatel_is_person:
+                match_case = "small_no_match"
+                sel = best_owner_phone
+            # bez konateľa: web_person fallback nižšie
+        else:  # 10+
+            if konatel_is_person and name_found_on_web and best_dist is not None and best_dist <= 100:
+                match_case = "large_name_near"
+                sel, sel_dist = best_phone_entry, best_dist
+            elif konatel_is_person and name_found_on_web and best_role_phone and best_role_phone["quality"] >= 3:
+                match_case = "large_name_far_role"
+                sel, sel_dist = best_role_phone, best_dist
+            elif konatel_is_person and best_role_phone and best_role_phone["quality"] >= 3:
+                match_case = "large_role_only"
+                sel = best_role_phone
+            elif not konatel_is_person and best_role_phone and best_role_phone["quality"] >= 3:
+                match_case = "large_role_only"
+                sel = best_role_phone
+            elif vop_phone and any(p["quality"] <= 1 for p in phones_ctx
+                                   if p["value"] != vop_phone["value"]):
+                match_case = "vop_alt_phone"
+                sel = vop_phone
+            else:
+                match_case = "large_info_only"
+                sel = best_role_phone
 
     def _other_contacts(exclude_name, exclude_phone):
         out = []
         for o in osoby:
-            if o.get("meno") == exclude_name:
-                continue
-            if not o.get("rola"):
+            if o.get("meno") == exclude_name or not o.get("rola"):
                 continue
             tel = o.get("telefon_osoby")
             if tel and tel != exclude_phone:
-                out.append({"name": o["meno"], "role": o["rola"], "phone": tel, "confidence": "MEDIUM"})
+                out.append({"name": o["meno"], "role": o["rola"],
+                            "phone": tel, "confidence": "MEDIUM"})
         return out[:3]
 
-    # Krok 2: konateľ z registra nájdený na webe — vyber telefón NAJBLIŽŠÍ k menu
-    # Hľadáme VŠETKY výskyty mena v texte a pre každý telefón berieme minimum.
-    if konatel and all_phones and _is_person_name(konatel):
-        terms = [konatel] + ([konatel.split()[-1]] if len(konatel.split()) > 1 else [])
-        for term in terms:
-            term_lower = term.lower()
-            # Zbieraj všetky pozície mena v texte
-            name_positions = []
-            search_from = 0
-            while True:
-                idx = norm_lower.find(term_lower, search_from)
-                if idx < 0:
-                    break
-                # ponytail: word-boundary — "Blízik" must not match inside "Blíziková"
-                after_end = idx + len(term_lower)
-                before_ok = idx == 0 or not norm_lower[idx - 1].isalpha()
-                after_ok = after_end >= len(norm_lower) or not norm_lower[after_end].isalpha()
-                if before_ok and after_ok:
-                    name_positions.append(idx)
-                search_from = idx + 1
-            if not name_positions:
-                continue
-            # ponytail: min distance across ALL name occurrences — one line
-            def _phone_dist(ph_entry):
-                p = ph_entry.get("abs_pos")
-                if p is None:
-                    return 99999
-                return min(abs(p - np) for np in name_positions)
-            best_entry = min(all_phones, key=_phone_dist)
-            best_phone = best_entry["value"]
-            best_dist = _phone_dist(best_entry)
-            name_src = "register+web" if best_dist <= 300 else "register+web_distant"
-            confidence = "HIGH" if best_dist <= 300 else "MEDIUM-HIGH"
-            reasoning.append(
-                f"Meno '{konatel}' nájdené na webe ({best_dist} znakov od čísla {best_phone})"
-            )
-            return {
-                "primary_contact": {
-                    "name": konatel, "role": "konateľ",
-                    "name_source": name_src,
-                    "phone": best_phone, "phone_type": "osobny",
-                    "phone_match": "proximity_closest_chars",
-                    "proximity_chars": best_dist,
-                    "email": first_email, "email_type": first_email_type,
-                    "confidence": confidence,
-                },
-                "other_contacts": _other_contacts(konatel, best_phone),
-                "reasoning": reasoning,
-                "velkost_category": emp_cat,
-            }
+    # ── Pravidlo #5: štruktúrovaný reasoning (5 sekcií) ──
+    src_lbl = size_info.get("source", "odhad")
+    register_line = (
+        f"{konatel or 'meno konateľa nenájdené v registri'}"
+        f" · odhad veľkosti: {bucket} zamestnancov"
+        f" (zdroj: {src_lbl}, istota: {size_info.get('confidence', 'low')})"
+    )
+    if founder_conflict:
+        register_line += (
+            f" · ⚠️ NEZHODA: web uvádza '{web_founder['meno']}' "
+            f"({web_founder['rola']}) — webová rola má prednosť")
+    if name_found_on_web and sel_dist is not None and sel:
+        zhoda_line = f"nájdené · {sel_dist} znakov od čísla {sel['value']}"
+        if email_pattern_used:
+            zhoda_line += f" (vrátane meno@firma emailu {pattern_email['value']})"
+    elif name_found_on_web:
+        zhoda_line = "nájdené na webe, ale bez telefónu v okolí"
+        if email_pattern_used:
+            zhoda_line += f" (meno@firma email: {pattern_email['value']})"
+    else:
+        zhoda_line = "nenájdené"
+    def _uryvok_at(pos: int, ln: int, pad: int = 45) -> str:
+        s, e = max(0, pos - pad), min(len(norm_text), pos + ln + pad)
+        return (("…" if s else "") + norm_text[s:e].strip()
+                + ("…" if e < len(norm_text) else ""))
 
-    # Krok 3: iné meno s rolou + telefón na webe
-    for o in osoby:
-        if o.get("meno") == konatel:
-            continue
-        if not o.get("rola") or not _PAIR_ROLE_RE.search(o["rola"]):
-            continue
-        tel = o.get("telefon_osoby")
-        if not tel:
-            continue
-        reasoning.append(f"Meno '{o['meno']}' (rola: {o['rola']}) nájdené na webe s telefónom {tel}")
+    def _uryvok(value: str, pad: int = 45) -> str:
+        i = norm_text.find(value)
+        return _uryvok_at(i, len(value), pad) if i >= 0 else ""
+
+    def _dokaz(value: Optional[str]) -> str:
+        """6. sekcia: presný úryvok textu z webu okolo vybraného čísla + mena.
+        Berie výskyt čísla NAJBLIŽŠÍ k menu — ten istý, s ktorým sa počítala
+        vzdialenosť v sekcii 2."""
+        if not value:
+            return "žiadne číslo nevybrané"
+        occ = _phone_positions(value)
+        if not occ:
+            return "úryvok sa nepodarilo nájsť v texte"
+        if name_positions:
+            i = min(occ, key=lambda o: min(abs(o - n) for n in name_positions))
+        else:
+            i = occ[0]
+        vlen = len(re.sub(r'\s+', ' ', value))
+        parts = [f"číslo: „{_uryvok_at(i, vlen, 50)}“"]
+        if name_positions:
+            npb = min(name_positions, key=lambda n: abs(n - i))
+            nlen = len(konatel) if konatel else 20
+            parts.append(f"meno ({abs(npb - i)} zn. od čísla): "
+                         f"„{_uryvok_at(npb, nlen, 50)}“")
+        return " | ".join(parts)
+
+    all_numbers = [{"cislo": p["value"], "kontext": p["role_label"],
+                    "ukazka": _uryvok(p["value"])} for p in phones_ctx]
+
+    _case_reasons = {
+        "tiny_any_phone": (
+            f"Firma má odhadom 1-3 zamestnancov (zdroj: {src_lbl}), preto je vysoká "
+            f"pravdepodobnosť, že nájdené číslo patrí majiteľovi {konatel}, "
+            + ("meno bolo nájdené aj priamo pri čísle."
+               if (best_dist is not None and best_dist <= 300)
+               else "aj keď meno nebolo nájdené priamo pri čísle.")),
+        "small_match": (
+            f"Meno '{konatel}' nájdené na webe, telefón {sel_dist} znakov od mena."),
+        "small_no_match": (
+            f"Zhoda mena a čísla nenájdená, ale firma má odhadom 3-9 zamestnancov, "
+            f"preto je číslo pravdepodobne priamo na majiteľa/konateľa {konatel}."),
+        "large_name_near": (
+            f"Meno '{konatel}' nájdené na webe, telefón {sel_dist} znakov od mena."),
+        "large_name_far_role": (
+            f"Meno nájdené na webe, ale najbližšie k číslu {sel['value'] if sel else '?'} "
+            f"je rola '{sel['role_label'] if sel else '?'}', nie priamo meno konateľa "
+            f"— pravdepodobne nejde o osobnú linku."),
+        "large_role_only": (
+            f"Meno konateľa nenájdené na webe. Nájdené číslo má pri sebe rolu "
+            f"'{sel['role_label'] if sel else '?'}' — môže byť relevantný kontakt, "
+            f"ale nie je potvrdené, že ide o konateľa."),
+        "large_info_only": (
+            "Meno konateľa nenájdené na webe. Dostupné číslo je všeobecná "
+            "info/zákaznícka linka, nie priama linka na vedenie."),
+        "vop_alt_phone": (
+            "Info číslo v kontaktoch, ale iné číslo nájdené v obchodných podmienkach "
+            "blízko IČO — môže byť priamejší kontakt."),
+    }
+    vybrane_line = (f"{sel['value']} — {_case_reasons.get(match_case, 'bez telefónu')}"
+                    if sel else "žiadne — na webe nebol nájdený platný telefón")
+    email_line = f"{best_email or '—'} — {email_reason}"
+
+    reasoning_structured = {
+        "register": register_line,
+        "zhoda_mena": zhoda_line,
+        "vsetky_cisla": all_numbers,
+        "vybrane_cislo": vybrane_line,
+        "email": email_line,
+    }
+    reasoning_structured["dokaz"] = _dokaz(sel["value"] if sel else None)
+    reasoning = [
+        f"1. REGISTER: {register_line}",
+        f"2. WEB SCRAPE - ZHODA MENA: {zhoda_line}",
+        "3. VŠETKY ČÍSLA: " + ("; ".join(
+            f"{n['cislo']} ({n['kontext']})" for n in all_numbers) or "žiadne"),
+        f"4. VYBRANÉ ČÍSLO: {vybrane_line}",
+        f"5. EMAIL: {email_line}",
+        f"6. DÔKAZ: {reasoning_structured['dokaz']}",
+    ]
+
+    # ── Bod 6: nezhoda register vs webová founder-rola → web má prednosť ──
+    if founder_conflict:
+        f_phone = web_founder.get("telefon_osoby")
+        # founder bez vlastného čísla → najlepšie firemné číslo (nesmie sa stratiť)
+        f_fallback = None if f_phone else (best_owner_phone or best_role_phone)
+        if f_fallback:
+            f_phone = f_fallback["value"]
+        reasoning_structured["vybrane_cislo"] = (
+            f"{f_phone or 'bez čísla'} — osoba '{web_founder['meno']}' má na webe "
+            f"rolu '{web_founder['rola']}' pri mene; nezhoda medzi registrom "
+            f"a webovou rolou (register: '{konatel}') — použitá webová rola"
+            + (" (číslo je najlepšie dostupné firemné, nie priamo osoby)"
+               if f_fallback else ""))
+        reasoning[3] = "4. VYBRANÉ ČÍSLO: " + reasoning_structured["vybrane_cislo"]
+        reasoning_structured["dokaz"] = _dokaz(f_phone)
+        reasoning[5] = "6. DÔKAZ: " + reasoning_structured["dokaz"]
         return {
             "primary_contact": {
-                "name": o["meno"], "role": o["rola"],
+                "name": web_founder["meno"], "role": web_founder["rola"],
+                "name_source": "web_team_page",
+                "phone": f_phone,
+                "phone_type": ("osobny" if f_phone and not f_fallback
+                               else "odhad_osobny" if f_phone else None),
+                "phone_match": None,
+                "email": best_email, "email_type": best_email_type,
+                "confidence": "MEDIUM",
+            },
+            "other_contacts": ([{"name": konatel, "role": "konateľ (register — nezhoda s webom)",
+                                 "phone": None, "confidence": "LOW"}]
+                               + _other_contacts(web_founder["meno"], f_phone)),
+            "reasoning": reasoning,
+            "reasoning_structured": reasoning_structured,
+            "name_found_on_web": True,
+            "velkost_category": emp_cat_legacy,
+            "size_info": size_info,
+        }
+
+    # ── Zostavenie výsledku ──
+    if match_case:
+        near = match_case in ("small_match", "large_name_near") or (
+            match_case == "tiny_any_phone" and best_dist is not None and best_dist <= 300)
+        name_source = ("register+web" if near
+                       else "register+web_distant" if name_found_on_web
+                       else "registry_only")
+        phone_type = ("osobny" if near
+                      else "odhad_osobny" if match_case in ("tiny_any_phone", "small_no_match")
+                      else "rola" if sel and sel["quality"] >= 3
+                      else "info")
+        confidence = ("HIGH" if near
+                      else "MEDIUM" if phone_type in ("odhad_osobny", "rola")
+                      else "LOW")
+        return {
+            "primary_contact": {
+                "name": konatel, "role": "konateľ",
+                "name_source": name_source,
+                "phone": sel["value"] if sel else None,
+                "phone_type": phone_type,
+                "phone_match": "proximity_closest_chars" if sel_dist is not None else None,
+                "proximity_chars": sel_dist,
+                "email": best_email, "email_type": best_email_type,
+                "confidence": confidence,
+            },
+            "other_contacts": _other_contacts(konatel, sel["value"] if sel else None),
+            "reasoning": reasoning,
+            "reasoning_structured": reasoning_structured,
+            "match_case": match_case,
+            "phone_quality": sel["quality"] if sel else 0,
+            "name_found_on_web": name_found_on_web,
+            "velkost_category": emp_cat_legacy,
+            "size_info": size_info,
+        }
+
+    # web-only osoba s rolou (register nedal meno) — legacy skórovanie
+    if web_person:
+        reasoning_structured["vybrane_cislo"] = (
+            f"{web_person['telefon_osoby']} — osoba '{web_person['meno']}' "
+            f"(rola: {web_person['rola']}) nájdená na webe s telefónom")
+        reasoning[3] = "4. VYBRANÉ ČÍSLO: " + reasoning_structured["vybrane_cislo"]
+        reasoning_structured["dokaz"] = _dokaz(web_person["telefon_osoby"])
+        reasoning[5] = "6. DÔKAZ: " + reasoning_structured["dokaz"]
+        return {
+            "primary_contact": {
+                "name": web_person["meno"], "role": web_person["rola"],
                 "name_source": "web_only",
-                "phone": tel, "phone_type": "osobny",
+                "phone": web_person["telefon_osoby"], "phone_type": "osobny",
                 "phone_match": "proximity_300_chars",
-                "email": first_email, "email_type": first_email_type,
+                "email": best_email, "email_type": best_email_type,
                 "confidence": "MEDIUM-HIGH",
             },
-            "other_contacts": _other_contacts(o["meno"], tel),
+            "other_contacts": _other_contacts(web_person["meno"], web_person["telefon_osoby"]),
             "reasoning": reasoning,
-            "velkost_category": emp_cat,
+            "reasoning_structured": reasoning_structured,
+            "velkost_category": emp_cat_legacy,
+            "size_info": size_info,
         }
 
-    # Krok 4: žiadne meno pri telefóne — rozhoduje veľkosť
-    if not first_phone:
-        reasoning.append("Žiadny telefón nenájdený na webe")
-        _ns_no_phone = (
-            "registry_only"
-            if (konatel and _is_person_name(konatel) and registry_data.get("verified"))
-            else None
-        )
+    # telefóny existujú, ale žiadne meno (register ani web) — číslo sa nesmie stratiť
+    if phones_ctx:
+        sel = best_owner_phone or best_role_phone
+        ptype = ("odhad_osobny" if bucket in ("1-3", "4-9")
+                 else "rola" if sel["quality"] >= 3 else "info")
+        reasoning_structured["vybrane_cislo"] = (
+            f"{sel['value']} — najlepšie dostupné číslo ({sel['role_label']}); "
+            f"meno konateľa sa nepodarilo zistiť z registra ani z webu")
+        reasoning[3] = "4. VYBRANÉ ČÍSLO: " + reasoning_structured["vybrane_cislo"]
+        reasoning_structured["dokaz"] = _dokaz(sel["value"])
+        reasoning[5] = "6. DÔKAZ: " + reasoning_structured["dokaz"]
         return {
             "primary_contact": {
-                "name": konatel, "role": "konateľ" if konatel else None,
-                "name_source": _ns_no_phone, "phone": None, "phone_type": None,
-                "phone_match": None, "email": first_email, "email_type": first_email_type,
+                "name": None, "role": None,
+                "name_source": None, "phone": sel["value"], "phone_type": ptype,
+                "phone_match": None, "email": best_email, "email_type": best_email_type,
                 "confidence": "LOW",
             },
-            "other_contacts": [],
+            "other_contacts": _other_contacts(None, sel["value"]),
             "reasoning": reasoning,
-            "velkost_category": emp_cat,
+            "reasoning_structured": reasoning_structured,
+            "velkost_category": emp_cat_legacy,
+            "size_info": size_info,
         }
 
-    # Phone exists but no name match
-    if emp_cat in ("solo", "micro") or (jurisdiction == "SK" and emp_cat == "unknown"):
-        phone_type, confidence = "odhad_osobny", "MEDIUM"
-        reasoning.append(
-            f"Konateľ '{konatel or '?'}' nenájdený pri telefóne. "
-            f"Odhad veľkosti: {emp_cat} → telefón pravdepodobne osobný"
-        )
-    else:
-        phone_type, confidence = "info", "LOW"
-        reasoning.append(f"Firma odhad väčšia ({emp_cat}) → pravdepodobne info linka")
-
-    _ns = (
-        "registry_only"
-        if (konatel and _is_person_name(konatel) and registry_data.get("verified"))
-        else None
-    )
+    # žiadny telefón — legacy registry_only skórovanie
+    _ns = ("registry_only"
+           if (konatel_is_person and registry_data.get("verified"))
+           else None)
     return {
         "primary_contact": {
             "name": konatel, "role": "konateľ" if konatel else None,
-            "name_source": _ns, "phone": first_phone, "phone_type": phone_type,
-            "phone_match": None, "email": first_email, "email_type": first_email_type,
-            "confidence": confidence,
+            "name_source": _ns, "phone": None, "phone_type": None,
+            "phone_match": None, "email": best_email, "email_type": best_email_type,
+            "confidence": "LOW",
         },
-        "other_contacts": _other_contacts(konatel, first_phone),
+        "other_contacts": [],
         "reasoning": reasoning,
-        "velkost_category": emp_cat,
+        "reasoning_structured": reasoning_structured,
+        "velkost_category": emp_cat_legacy,
+        "size_info": size_info,
     }
 
 
@@ -3075,7 +3643,8 @@ async def _scrape_all_pages(base_url: str) -> Dict[str, Any]:
           f"has_Martin={'Martin' in combined}, "
           f"has_zodpoved={'zodpoved' in combined.lower()}")
     return {"text": combined, "jsonld": jsonld_data, "whois": whois_data,
-            "jur_extra": "\n".join(jur_texts)}
+            "jur_extra": "\n".join(jur_texts),
+            "home_html": home_bytes, "nav_count": len(nav_links)}
 
 
 async def _do_scrape(base_url: str) -> dict:
@@ -3091,16 +3660,57 @@ async def _do_scrape(base_url: str) -> dict:
         whois_data = scrape_out.get("whois", {})
 
         if not combined_text and not jsonld_data and not whois_data:
-            raise HTTPException(status_code=400, detail="Nepodarilo sa načítať žiadny text.")
+            # Pravidlo #3f: nedostupný web (Cloudflare/403/timeout) → MANUAL_REVIEW, nie chyba
+            return {
+                "action": "manual_review",
+                "url": base_url,
+                "manual_review": True,
+                "company_name": _domain_of(base_url),
+                "ico": "",
+                "jurisdiction": None,
+                "registry": {"source": None, "verified": False, "konatel": None,
+                             "konatelia_count": 0, "velkost_firmy": None},
+                "primary_contact": {},
+                "other_contacts": [],
+                "all_phones": [], "all_emails": [],
+                "score": 0,
+                "tier": "MANUAL_REVIEW",
+                "confidence": "NONE",
+                "reasoning": ["Stránka nedostupná ani po všetkých fallbackoch "
+                              "(httpx, cloudscraper, Scrapling, Playwright, WHOIS) "
+                              "— vyžaduje manuálnu kontrolu."],
+                "score_breakdown": {},
+                "scraped_at": datetime.datetime.utcnow().isoformat(),
+            }
 
-        # === v7: IČO → registry → pair contact → score ===
+        # === v8: lokalizácia → IČO → registry → veľkosť → pair contact → score ===
+
+        # Pravidlo #1: jurisdikcia zo sídla (DIČ/adresné signály) PRED extrakciou.
+        # Ak sídlo nesedí s TLD, scrapni lokalizovanú verziu webu a použi ju ako primárnu.
+        jurisdiction_str = "SK" if ".sk" in base_url.lower() else "CZ" if ".cz" in base_url.lower() else "SK"
+        try:
+            localized = await _localize_scrape_url(
+                base_url, combined_text, scrape_out.get("jur_extra", ""))
+        except Exception as _loc_err:
+            print(f"⚠️ Lokalizácia chyba: {_loc_err}")
+            localized = None
+        if localized:
+            print(f"🌍 Sídlo {localized['jurisdiction']} ≠ TLD webu — scrapujem "
+                  f"lokalizovanú verziu: {localized['url']}")
+            try:
+                alt_out = await _scrape_all_pages(localized["url"])
+                if alt_out.get("text"):
+                    combined_text = alt_out["text"] + "\n" + combined_text
+                    jsonld_data = alt_out.get("jsonld") or jsonld_data
+                    if alt_out.get("home_html"):
+                        scrape_out["home_html"] = alt_out["home_html"]
+                jurisdiction_str = localized["jurisdiction"]
+            except Exception as _alt_err:
+                print(f"⚠️ Lokalizovaný scrape zlyhal: {_alt_err}")
 
         # 1. IČO z textu
         ico_info = extract_ico_from_text(combined_text)
         scraped_ico = ico_info.get("ico") or ""
-
-        # 2. Jurisdikcia
-        jurisdiction_str = "SK" if ".sk" in base_url.lower() else "CZ" if ".cz" in base_url.lower() else "SK"
 
         # 3. Registry lookup (sync → run in executor to avoid blocking)
         registry_data: dict = {"source": None, "verified": False, "konatel": None,
@@ -3117,17 +3727,35 @@ async def _do_scrape(base_url: str) -> dict:
                     reg = await loop.run_in_executor(None, lookup_cz, scraped_ico)
                 else:
                     reg = await loop.run_in_executor(None, lookup_sk, scraped_ico)
+                # Cross-registry fallback: IČO neoverené v prvom registri → skús druhý.
+                # (CZ prevádzkovateľ na .sk doméne bez DIČ v texte — napr. cannapio.sk)
+                if not reg.get("verified"):
+                    alt_reg = await loop.run_in_executor(
+                        None, lookup_sk if use_cz else lookup_cz, scraped_ico)
+                    if alt_reg.get("verified"):
+                        reg = alt_reg
+                        jurisdiction_str = "SK" if use_cz else "CZ"
+                        print(f"🔁 Cross-registry fallback → {jurisdiction_str}")
                 registry_data = reg
                 print(f"📋 Registry [{reg.get('source')}] verified={reg.get('verified')} konatel={reg.get('konatel')}")
             except Exception as reg_err:
                 print(f"⚠️ Registry lookup error: {reg_err}")
 
+        # 3b. Pravidlo #2: odhad veľkosti firmy (ARES/register → FB-IG → štatutári → web)
+        size_info = await _detect_company_size(
+            jurisdiction_str, registry_data,
+            scrape_out.get("home_html") or b"", scrape_out.get("nav_count", 0))
+        print(f"📏 Veľkosť: {size_info['bucket']} (zdroj: {size_info['source']}, "
+              f"istota: {size_info['confidence']})")
+
         # 4. Kandidáti + osoby
         candidates = extract_all_candidates(combined_text)
         osoby = associate_persons_with_roles(combined_text)
 
-        # 5. Pair contact → phone
-        pairing = pair_contact_with_phone(registry_data, osoby, candidates, combined_text, jurisdiction_str)
+        # 5. Pair contact → phone (v8: pravidlá #0-#6)
+        pairing = pair_contact_with_phone(
+            registry_data, osoby, candidates, combined_text, jurisdiction_str,
+            size_info=size_info, domain=_domain_of(base_url))
         pc = pairing["primary_contact"]
 
         # 6. Company name: registry > JSON-LD > domain
@@ -3159,6 +3787,12 @@ async def _do_scrape(base_url: str) -> dict:
             "velkost_firmy_raw": registry_data.get("velkost_firmy_raw"),
             "other_contacts": pairing.get("other_contacts", []),
             "phone_confirmed_by_user": phone_confirmed,
+            # v8 case-based scoring
+            "match_case": pairing.get("match_case"),
+            "size_bucket": pairing.get("size_info", {}).get("bucket"),
+            "phone_quality": pairing.get("phone_quality"),
+            "name_found_on_web": pairing.get("name_found_on_web", False),
+            "proximity_chars": pc.get("proximity_chars"),
         }
         score_result = scoring.calculate_lead_score(score_input)
         final_score = score_result["score"]
@@ -3218,6 +3852,8 @@ async def _do_scrape(base_url: str) -> dict:
                 "tier": final_tier,
                 "confidence": score_result["confidence"],
                 "reasoning": full_reasoning,
+                "reasoning_structured": pairing.get("reasoning_structured"),
+                "velkost": pairing.get("size_info"),
                 "score_breakdown": score_result["breakdown"],
                 "scraped_at": db_metadata["scraped_at"],
                 # legacy fields — frontend ignoruje kým ho neprerobíme
