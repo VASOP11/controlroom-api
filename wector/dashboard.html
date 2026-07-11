@@ -154,6 +154,26 @@ a { color: inherit; text-decoration: none; }
 .t-COOL .tier-dot { background: var(--tier-cool); }
 .t-DEAD { color: var(--tier-dead); }
 .t-DEAD .tier-dot { background: var(--tier-dead); }
+.t-MANUAL_REVIEW { color: var(--tier-warm); }
+.t-MANUAL_REVIEW .tier-dot { background: var(--tier-warm); }
+.manual-review-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 500; color: var(--tier-warm);
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 4px; padding: 1px 7px; white-space: nowrap;
+}
+
+/* ── STRUCTURED REASONING ── */
+.rs-section { padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+.rs-section:last-child { border-bottom: none; }
+.rs-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 3px;
+}
+.rs-body { font-size: 12px; color: var(--text-secondary); line-height: 1.55; word-break: break-word; }
+.rs-phone-item { display: flex; gap: 8px; padding: 2px 0; font-size: 12px; }
+.rs-phone-item .mono { font-family: var(--font-mono); color: var(--text-primary); flex-shrink: 0; }
+.rs-phone-item .rs-ctx { color: var(--text-muted); }
 
 .firma-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
 .firma-url { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 1px; }
@@ -854,7 +874,7 @@ function srcLabel(s) {
   return map[s] || s || '—';
 }
 function ptypeLabel(t) {
-  const map = { personal: 'osobný', info: 'info', delivery: 'dopravca', fax: 'fax' };
+  const map = { personal: 'osobný', osobny: 'osobný', odhad_osobny: 'odhad osobný', rola: 'rola', info: 'info', delivery: 'dopravca', fax: 'fax' };
   return map[t] || t || '—';
 }
 function statusLabel(s) {
@@ -1167,12 +1187,13 @@ function rowHtml(l) {
   const status = l.status || 'new';
   const u = esc(l.url);
   const contactLabel = pc.name ? (pc.role ? `${esc(pc.name)} · <span style="color:var(--text-muted)">${esc(pc.role)}</span>` : esc(pc.name)) : '—';
+  const isManual = tier === 'MANUAL_REVIEW';
 
   return `<tr onclick="openDrawer('${u}')">
-    <td class="col-tier"><span class="tier-badge t-${esc(tier)}"><span class="tier-dot"></span>${esc(tier)}</span></td>
+    <td class="col-tier"><span class="tier-badge t-${esc(tier)}"><span class="tier-dot"></span>${isManual ? 'MANUÁL' : esc(tier)}</span></td>
     <td class="col-firma">
       <a class="firma-name" href="${u}" target="_blank" onclick="event.stopPropagation()" style="color:var(--text-primary);text-decoration:none">${esc(urlDisplay)}</a>
-      ${companyRaw ? `<div class="firma-url">${esc(companyRaw)}</div>` : ''}
+      ${isManual ? `<div style="margin-top:2px"><span class="manual-review-badge">${icon('alert', 10, 2)} Vyžaduje manuálnu kontrolu</span></div>` : companyRaw ? `<div class="firma-url">${esc(companyRaw)}</div>` : ''}
     </td>
     <td class="col-kontakt" style="color:var(--text-secondary);font-size:13px">${contactLabel}</td>
     <td class="col-telefon">
@@ -1337,7 +1358,7 @@ function renderDrawer(url) {
 
     <div class="d-divider"></div>
     <div class="d-label">Reasoning</div>
-    <div class="reasoning-box">${esc(reasoning)}</div>
+    ${d.reasoning_structured ? structuredReasoningHtml(d.reasoning_structured) : `<div class="reasoning-box">${esc(reasoning)}</div>`}
 
     <div class="d-divider"></div>
     <div class="d-label">Register</div>
@@ -1458,6 +1479,22 @@ function timeAgo(ts) {
   if (h < 24) return `pred ${h}h`;
   const dy = Math.floor(h / 24);
   return dy < 7 ? `pred ${dy}d` : new Date(ts).toLocaleDateString('sk-SK');
+}
+
+function structuredReasoningHtml(rs) {
+  const phones = (rs.vsetky_cisla || []).map(n =>
+    `<div class="rs-phone-item"><span class="mono">${esc(fmtPhone(n.cislo))}</span><span class="rs-ctx">${esc(n.kontext || '')}${n.ukazka ? `<br><span style="font-style:italic">${esc(n.ukazka)}</span>` : ''}</span></div>`
+  ).join('') || '<div class="rs-body" style="color:var(--text-muted)">žiadne čísla nenájdené</div>';
+  const sec = (title, body) =>
+    `<div class="rs-section"><div class="rs-title">${title}</div><div class="rs-body">${body}</div></div>`;
+  return `<div class="d-card" style="padding:4px 12px">
+    ${sec('1 · Register', esc(rs.register || '—'))}
+    ${sec('2 · Zhoda mena', esc(rs.zhoda_mena || '—'))}
+    ${sec('3 · Všetky čísla na stránke', phones)}
+    ${sec('4 · Vybrané číslo', esc(rs.vybrane_cislo || '—'))}
+    ${sec('5 · Email', esc(rs.email || '—'))}
+    ${rs.dokaz ? sec('6 · Dôkaz (úryvok z webu)', esc(rs.dokaz)) : ''}
+  </div>`;
 }
 
 function stageHtml(stageId, urlEsc) {

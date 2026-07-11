@@ -137,9 +137,90 @@ _NAME_SCORE: dict = {
 }
 
 
+# ── v8 case-based scorer ──────────────────────────────────────────────────────
+# Presné rozsahy podľa veľkosti firmy (pravidlo #3 špecifikácie):
+#   tiny_any_phone       1-3 zam. + meno z registra + akékoľvek číslo → 80-100
+#   small_match          3-9 zam. + zhoda meno+telefón → 70-90 (podľa vzdialenosti)
+#   small_no_match       3-9 zam. bez zhody → 60-80
+#   large_name_near      10+ meno na webe + telefón ≤100 znakov → 80-100
+#   large_name_far_role  10+ meno na webe, číslo pri inej role → 30-60
+#   large_role_only      10+ meno nenájdené, číslo pri role (nie info) → 50-75
+#   large_info_only      10+ len info linka → 25-50
+#   vop_alt_phone        info v kontakte, iné číslo vo VOP pri IČO → 40-70
+
+def _lin(x, x0, x1, y0, y1):
+    """Lineárna interpolácia s clampom."""
+    if x is None:
+        return (y0 + y1) / 2
+    if x <= x0:
+        return y0
+    if x >= x1:
+        return y1
+    return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+
+
+def _score_by_case(lead_data: dict) -> dict:
+    case = lead_data["match_case"]
+    dist = lead_data.get("proximity_chars")
+    q = lead_data.get("phone_quality") or 2
+    name_found = lead_data.get("name_found_on_web", False)
+    email_type = lead_data.get("email_type")
+
+    if case == "tiny_any_phone":
+        score = 85 + (10 if name_found else 0) - (5 if q <= 1 else 0)
+    elif case == "small_match":
+        score = _lin(dist, 0, 300, 90, 70)
+    elif case == "small_no_match":
+        score = 70 + (8 if q >= 3 else 0) - (10 if q <= 1 else 0)
+    elif case == "large_name_near":
+        score = _lin(dist, 0, 100, 100, 80)
+    elif case == "large_name_far_role":
+        score = {5: 60, 4: 60, 3: 48}.get(q, 35)
+    elif case == "large_role_only":
+        score = {5: 75, 4: 75, 3: 62}.get(q, 50)
+    elif case == "vop_alt_phone":
+        # ponytail: bez presného počtu zamestnancov stred pásma 40-70;
+        # škálovanie podľa počtu doplniť keď bude spoľahlivý zdroj
+        score = 55
+    else:  # large_info_only
+        score = 35 + (10 if name_found else 0) + (5 if email_type == "personal" else 0)
+
+    score = int(round(max(0, min(100, score))))
+    tier = "HOT" if score >= 70 else "WARM" if score >= 50 else "COOL" if score >= 30 else "DEAD"
+
+    if case in ("small_match", "large_name_near") or (case == "tiny_any_phone" and name_found):
+        confidence = "HIGH"
+    elif case in ("tiny_any_phone", "small_no_match", "large_role_only", "large_name_far_role"):
+        confidence = "MEDIUM"
+    else:
+        confidence = "LOW"
+
+    reasoning = [f"[veľkosť: {lead_data.get('size_bucket', '?')}] prípad: {case} → skóre {score}"]
+
+    if lead_data.get("phone_confirmed_by_user"):
+        confidence = "CONFIRMED"
+        if tier in ("DEAD", "COOL"):
+            tier = "WARM"
+        reasoning.append("Telefón potvrdený používateľom → tier zamknutý")
+
+    reasoning.append(f"Tier: {tier} (skóre {score}/100)")
+    return {
+        "score": score,
+        "tier": tier,
+        "confidence": confidence,
+        "reasoning": reasoning,
+        "breakdown": {"match_case": case, "case_score": score,
+                      "phone_quality": q, "proximity_chars": dist},
+    }
+
+
 # ── Main scorer ───────────────────────────────────────────────────────────────
 
 def calculate_lead_score(lead_data: dict) -> dict:
+    # v8: keď pairing určil match_case, platí presná matica podľa veľkosti
+    if lead_data.get("match_case"):
+        return _score_by_case(lead_data)
+
     score = 0
     breakdown: dict = {}
     reasoning: list = []
@@ -203,6 +284,13 @@ def calculate_lead_score(lead_data: dict) -> dict:
             reasoning.append(f"Generický email {email} (+5)")
 
     # --- Company size bonus ---
+    _ARES_RAW_LABEL = {
+        "NULA": "0", "JEDNA_AZ_CTYRI": "1–4", "PET_AZ_DEVET": "5–9",
+        "DESET_AZ_DEVATENACT": "10–19", "DVACET_AZ_CTYRICIT_DEVET": "20–49",
+        "PADESAT_AZ_DEVATDESATDEVET": "50–99",
+    }
+    velkost_raw = (lead_data.get("velkost_firmy_raw") or "").upper().replace(" ", "_")
+    ares_label = _ARES_RAW_LABEL.get(velkost_raw)
     if cat == "solo":
         score += 10
         breakdown["size_solo"] = 10
@@ -210,11 +298,19 @@ def calculate_lead_score(lead_data: dict) -> dict:
     elif cat == "micro":
         score += 5
         breakdown["size_micro"] = 5
-        reasoning.append("Firma: 1–9 zamestnancov (+5)")
+        if jurisdiction == "CZ" and ares_label:
+            reasoning.append(f"Firma: micro (ARES: {ares_label} zamestnancov) (+5)")
+        elif jurisdiction == "CZ":
+            reasoning.append("Firma: micro (ARES) (+5)")
+        else:
+            reasoning.append("Firma: SK (odhad micro, počet neznámy) (+5)")
     elif cat in ("small", "medium", "large"):
         score -= 5
         breakdown["size_large"] = -5
-        reasoning.append("Firma: 10+ zamestnancov (-5)")
+        if jurisdiction == "CZ" and ares_label:
+            reasoning.append(f"Firma: {cat} (ARES: {ares_label} zamestnancov) (-5)")
+        else:
+            reasoning.append(f"Firma: {cat} (-5)")
 
     # --- Other contacts ---
     if lead_data.get("other_contacts"):
