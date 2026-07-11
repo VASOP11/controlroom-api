@@ -4,3 +4,7 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+*.log
+batch_50.txt
+batch_300.txt
+registry_cache.json
