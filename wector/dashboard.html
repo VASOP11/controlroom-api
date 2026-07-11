@@ -921,6 +921,55 @@ function saveLeads() {
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
 }
+// ── ONE-TIME MIGRÁCIA (júl 2026): wipe starých scrape testov + import Petrovho pipeline ──
+// Staré leady (300+ z batch_50/batch_300) boli skórované logikou pred opravami
+// (DIČ↔IČO cross-check, third-party penalizácia, DÔKAZ) — nepoužiteľné, mažú sa celé.
+function runImportBatch1() {
+  if (localStorage.getItem('wector_leads_v3_imported_batch1')) return;
+  localStorage.removeItem(STORAGE_KEY);        // KROK 0: všetko preč
+  localStorage.removeItem('wector_leads_v2');  // aj v2, inak by ju loadLeads() re-migroval
+  localStorage.removeItem('wector_leads_v1');
+  const now = new Date().toISOString();
+  // [url, stage, followup 'YYYY-MM-DDTHH:MM'|null, meno, rola, telefón, email, poznámka]
+  const B1 = [
+    // Posiela ponuka / registrácia → offer
+    ['dekorbymirka.sk','offer','2026-07-10T09:00','Miroslava Baránková','majiteľ','+421 911 648 596','info@dekorbymirka.sk','Stihla sa registrovať? Ako bolo v Bulharsku hokej tábor? 6.7. asi ešte na dovolenke'],
+    ['leofan.sk','offer','2026-07-13T09:00','Daniel Szoó','CEO','+421 949 471 030','info@leofan.sk','Sám má e-shop, sám si robil na opensource, vie API. Pýtal sa na online reklamu (free aj platená), kombinácia Packeta + vlastný dopravca. Chce mať hotové vo štvrtok, produkty nahrané. Pýtal sa na viazanosť/odstúpenie od zmluvy, mesačné poplatky, mark-up fee. Zistiť ako sa vystavuje faktúra (Temu vystaví nakupujúcemu, ten zaplatí, Temu vystaví faktúru predajcovi?)'],
+    ['indarceky.sk','offer','2026-07-13T09:00','Rastislav Fiala','CEO','+421 905 433 876','podpora@indarceky.sk','Nezdvíha, zistiť či má číslo už. Poslal mail viackrát, volal viackrát.'],
+    ['minilove.sk','offer','2026-07-13T09:00','Juraj Blízik','majiteľ','+421 905 443 225','info@minilove.sk','Buď stihne registráciu teraz vo štvrtok, alebo ide na 10 dní dovolenku — ozvem sa v polke mesiaca.'],
+    ['hodiny-na-stenu.sk','offer','2026-07-16T09:00','Šulava','CEO','+421 908 962 505','obchod@hodiny-na-stenu.sk','Spravená skupina, poslaný kód na registráciu — 25.6.'],
+    ['citycomp.sk','offer','2026-08-04T09:00','Činčera','CEO','+421 905 309 896','eshop@citycomp.sk','Už skúšal cez Baselinker, ale vypadol mu systém. Dostane sa k tomu v rámci leta, teraz rieši niečo prioritnejšie.'],
+    // Stretnutie naplánované/malo → meeting
+    ['fajntricko.sk','meeting','2026-07-13T09:00','Kozák','konateľ','+421 905 900 359','obchod@fajntricko.sk','EAN kód nie je problém, nie je to cenová vojna. Čo na to vedenie?'],
+    ['bioruza.sk','meeting','2026-07-21T10:00','Natália Hrabošová','Sales Manager','+421 905 864 140','natalia.hrabosova@bioruza.sk','9.7. video call, všetko jej vysvetlím. | Druhý email: radoslavconev@bioruza.sk'],
+    ['fassany.sk','meeting','2026-07-14T09:00','Fedor Dúbravský','majiteľ','+421 944 453 625','info@fassany.sk','Trochu moc ukecaný som bol na neho ale zaujímal sa. Robí to popri práci, na sklade menej, začal pred rokom. Povedal som o cene, pýtal sa na prepojenie Shopify — veľmi dobre. Spomenul dopravu. O 2 týždne ozvať sa čo hovorí. | Druhé číslo: +421 944 453 432'],
+    ['officeland.sk','meeting','2026-08-01T09:00','Peter Ďurian','majiteľ','+421 903 631 558','shop@officeland.sk','Menia e-shop o mesiac (začiatok augusta). Poslal info ohľadne napojenia, asi chce API — rozhodnú sa ešte.'],
+    ['mojsvet.eu','meeting','2026-08-04T09:00','Milan Oravec','e-shop','+421 905 405 756','eshop@mojsvet.eu','Áno, chce ísť do registrácie. Celé leto dovolenka, v auguste dohodneme termín.'],
+    // Záujem → interested
+    ['plantnest.eu','interested',null,'Mgr. Matej Prokypčák','CEO',null,'info@plantnest.eu','Pripojili sa cez môj link sami ale zle — nasmerovať na správny register. (1 zam., tel: ?)'],
+    ['lavanda.sk','interested','2026-07-09T09:00','Ing. Beata Štrbová','majiteľka','+421 903 715 094','lavanda@lavanda.sk','Naposledy nedostupná 30.6. Poslaný mail, volať follow-up. Bola trochu skeptická.'],
+    ['koikapor.sk','interested','2026-07-10T09:00','Andrej Blaško','majiteľ','+421 904 290 539','obchod@jenkie.eu','Majú 11 e-shopov na jednu firmu. Znie fajn ale všade nejaké „ale“, nebolo to skepticky, skôr zvedavý ako to funguje. Hovoril som o cene (free, nový predajný kanál). Budúci štvrtok volať čo hovorí na mail.'],
+    ['tiahome.sk','interested','2026-07-13T09:00','pán Šarka','konateľ','+421 908 859 950','info@tiahome.sk','Ide na dovolenku 9.7., vracia sa. Pýtal sa na cenu, platbu, prepojenie, čo ak niekto objedná a nemá na sklade. Posielam info do mailu zatiaľ, ozvem sa 9.7.'],
+    ['armpek.com','interested','2026-07-13T09:00','Referent internetového obchodu','(meno neznáme)','+421 910 127 252','nakup@armpek.sk','Zlá skúsenosť s marketplaces, najprv nechcel, ale vysvetlil som podmienky. Chce si to prejsť v kľude ako to funguje a potom sa rozhodne. Poslať všetko.'],
+    ['zapakuj.sk','interested','2026-07-14T09:00','Milan Lajčin','majiteľ','+421 950 887 079','info@zapakuj.sk','Nemá skúsenosť s marketplaces zatiaľ ale chápe. Vysvetlil som prečo voláme (expandujú, môže byť jeden z prvých lokálnych na platforme), podmienky, mark-up rate. Spomenul dopravu — presne napísať ako to funguje, možnosti napojenia, vyplácanie, väčší dosah.'],
+    ['hairbook.sk','interested','2026-07-15T09:00','Karáf','CEO','+421 948 381 589','info@hairbook.sk','Volať 8.6. Mal námietku ohľadne marže, v maily upresnené — keď budeš volať, otvor si ten mail.'],
+    ['silurus.sk','interested','2026-07-20T09:00','Marián Polgári','konateľ','+421 918 981 475','marian.polgari@gmail.com','Zlá skúsenosť s marketplaces, najprv nechcel, vysvetlil som podmienky. Chce si to prejsť v kľude a rozhodnúť sa. Poslať všetko.'],
+    ['cool-mania.eu','interested','2026-07-21T09:00','Ing. Mário Bruchánik','majiteľ','+421 940 240 464','m.bruchanik@cool-mania.eu','Číslo na konateľa je druhé. Majú veľké zisky. Povedal že sa na to pozrie, ale nie moc pozitívny signál. | Druhé číslo (konateľ): +421 907 211 712'],
+  ];
+  const imported = B1.map(([dom, stage, fu, name, role, phone, email, note]) => ({
+    url: 'https://' + dom, source: 'manual', stage,
+    followup_date: fu ? new Date(fu).toISOString() : null, followup_note: '',
+    notes: note ? [{id: uid(), ts: now, text: note}] : [],
+    history: [{ts: now, type: 'imported', data: 'manuálny import (batch1, júl 2026)'}],
+    overrides: {phone: null, email: null, contact_name: null},
+    scraped_at: now,
+    data: {url: 'https://' + dom, score: null, tier: 'MANUAL_REVIEW',
+           primary_contact: {name, role, phone, email}},
+  }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
+  localStorage.setItem('wector_leads_v3_imported_batch1', now);
+}
+
 let scrapeChannel = 'url'; // which source tab produced the current scrape batch
 
 function upsertLead(data) {
@@ -2199,6 +2248,7 @@ document.addEventListener('keydown', e => {
 document.querySelector('#vbtn-table .vb-ic').innerHTML = icon('listView', 12, 2);
 document.querySelector('#vbtn-kanban .vb-ic').innerHTML = icon('kanbanView', 12, 2);
 document.querySelector('#vbtn-calendar .vb-ic').innerHTML = icon('calendar', 12, 2);
+runImportBatch1();
 loadLeads();
 render();
 updateTodayWidget();
